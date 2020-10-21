@@ -1,0 +1,742 @@
+steps:
+# Install top-level deps.
+- name: 'node:10'
+  entrypoint: 'yarn'
+  id: 'yarn-common'
+  args: ['install']
+
+############
+### Core ###
+############
+# Install tfjs-core dependencies.
+- name: 'node:10'
+  dir: 'tfjs-core'
+  id: 'yarn-tfjs-core'
+  entrypoint: 'yarn'
+  args: ['install']
+  waitFor: ['yarn-common']
+
+# Build deps.
+- name: 'node:10'
+  dir: 'tfjs-core'
+  id: 'build-deps-tfjs-core'
+  entrypoint: 'yarn'
+  args: ['build-deps-ci']
+  waitFor: ['yarn-tfjs-core']
+
+# Build.
+- name: 'node:10'
+  dir: 'tfjs-core'
+  id: 'build-tfjs-core'
+  entrypoint: 'yarn'
+  args: ['build-ci']
+  waitFor: ['yarn-tfjs-core', 'build-deps-tfjs-core']
+
+# Lint.
+- name: 'node:10'
+  dir: 'tfjs-core'
+  id: 'lint-tfjs-core'
+  entrypoint: 'yarn'
+  args: ['lint']
+  waitFor: ['yarn-tfjs-core', 'build-deps-tfjs-core']
+
+# Run unit tests.
+- name: 'node:10'
+  dir: 'tfjs-core'
+  id: 'test-tfjs-core'
+  entrypoint: 'yarn'
+  args: ['test-ci']
+  waitFor: ['yarn-tfjs-core', 'build-deps-tfjs-core', 'lint-tfjs-core']
+  env: ['BROWSERSTACK_USERNAME=deeplearnjs1', 'NIGHTLY=$_NIGHTLY']
+  secretEnv: ['BROWSERSTACK_KEY']
+
+# bundle size check
+- name: 'node:10'
+  dir: 'tfjs-core'
+  id: 'test-bundle-size-tfjs-core'
+  entrypoint: 'yarn'
+  args: ['test-bundle-size']
+  waitFor: ['yarn-tfjs-core']
+
+# test doc snippets
+- name: 'node:10'
+  dir: 'tfjs-core'
+  id: 'test-snippets-tfjs-core'
+  entrypoint: 'yarn'
+  args: ['test-snippets']
+  waitFor: ['yarn-tfjs-core']
+
+# test Async backends
+- name: 'node:10'
+  dir: 'tfjs-core'
+  id: 'test-async-backends-tfjs-core'
+  entrypoint: 'yarn'
+  args: ['test-async-backends-ci']
+  waitFor: ['build-tfjs-core']
+
+###################
+### CPU Backend ###
+###################
+# Install packages.
+- name: 'node:10'
+  dir: 'tfjs-backend-cpu'
+  id: 'yarn-tfjs-backend-cpu'
+  entrypoint: 'yarn'
+  args: ['install']
+  waitFor: ['yarn-common']
+
+# Build dependencies.
+# - name: 'node:10'
+#   dir: 'tfjs-backend-cpu'
+#   id: 'build-deps-tfjs-backend-cpu'
+#   entrypoint: 'yarn'
+#   args: ['build-deps-ci']
+#   waitFor: ['yarn-common']
+
+# Build.
+- name: 'node:10'
+  dir: 'tfjs-backend-cpu'
+  id: 'build-tfjs-backend-cpu'
+  entrypoint: 'yarn'
+  args: ['build-ci']
+  waitFor: ['yarn-tfjs-backend-cpu', 'build-tfjs-core']
+
+# Lint.
+- name: 'node:10'
+  dir: 'tfjs-backend-cpu'
+  id: 'lint-tfjs-backend-cpu'
+  entrypoint: 'yarn'
+  args: ['lint']
+  waitFor: ['yarn-tfjs-backend-cpu', 'build-tfjs-core']
+
+# Run tests.
+- name: 'node:10'
+  dir: 'tfjs-backend-cpu'
+  entrypoint: 'yarn'
+  id: 'test-backend-cpu'
+  args: ['test-ci']
+  waitFor: ['yarn-tfjs-backend-cpu', 'build-tfjs-core', 'lint-tfjs-backend-cpu']
+  env: ['BROWSERSTACK_USERNAME=deeplearnjs1', 'NIGHTLY=$_NIGHTLY']
+  secretEnv: ['BROWSERSTACK_KEY']
+
+#####################
+### WebGL Backend ###
+#####################
+# Install packages.
+- name: 'node:10'
+  dir: 'tfjs-backend-webgl'
+  id: 'yarn-tfjs-backend-webgl'
+  entrypoint: 'yarn'
+  args: ['install']
+  waitFor: ['yarn-common']
+
+# Build deps.
+# - name: 'node:10'
+#   dir: 'tfjs-backend-webgl'
+#   id: 'build-deps'
+#   entrypoint: 'yarn'
+#   args: ['build-deps-ci']
+#   waitFor: ['yarn-common']
+
+# Build.
+- name: 'node:10'
+  dir: 'tfjs-backend-webgl'
+  id: 'build-tfjs-backend-webgl'
+  entrypoint: 'yarn'
+  args: ['build-ci']
+  waitFor: ['yarn-tfjs-backend-webgl', 'build-tfjs-core', 'build-tfjs-backend-cpu']
+
+# Lint.
+- name: 'node:10'
+  dir: 'tfjs-backend-webgl'
+  id: 'lint-tfjs-backend-webgl'
+  entrypoint: 'yarn'
+  args: ['lint']
+  waitFor: ['yarn-tfjs-backend-webgl', 'build-tfjs-core', 'build-tfjs-backend-cpu']
+
+# Run tests.
+- name: 'node:10'
+  dir: 'tfjs-backend-webgl'
+  entrypoint: 'yarn'
+  id: 'test-tfjs-backend-webgl'
+  args: ['test-ci']
+  waitFor: ['yarn-tfjs-backend-webgl', 'build-tfjs-core', 'build-tfjs-backend-cpu', 'lint-tfjs-backend-webgl']
+  env: ['BROWSERSTACK_USERNAME=deeplearnjs1', 'NIGHTLY=$_NIGHTLY']
+  secretEnv: ['BROWSERSTACK_KEY']
+
+######################
+### TFJS Converter ###
+######################
+# Install tfjs-converter dependencies.
+- name: 'node:10'
+  dir: 'tfjs-converter'
+  entrypoint: 'yarn'
+  id: 'yarn-tfjs-converter'
+  args: ['install']
+  waitFor: ['yarn-common']
+
+# Build deps.
+# - name: 'node:10'
+#   dir: 'tfjs-converter'
+#   entrypoint: 'yarn'
+#   id: 'build-deps'
+#   args: ['build-deps-ci']
+#   waitFor: ['yarn-common']
+
+# Build.
+- name: 'node:10'
+  dir: 'tfjs-converter'
+  entrypoint: 'yarn'
+  id: 'build-tfjs-converter'
+  args: ['build-ci']
+  waitFor: ['yarn-tfjs-converter', 'build-tfjs-core', 'build-tfjs-backend-cpu']
+
+# Lint.
+- name: 'node:10'
+  dir: 'tfjs-converter'
+  entrypoint: 'yarn'
+  id: 'lint-tfjs-converter'
+  args: ['lint']
+  waitFor: ['yarn-tfjs-converter', 'build-tfjs-core', 'build-tfjs-backend-cpu']
+
+# Run javascript tests.
+- name: 'node:10'
+  dir: 'tfjs-converter'
+  entrypoint: 'yarn'
+  id: 'test-js-tfjs-converter'
+  args: ['test-ci']
+  waitFor: ['yarn-tfjs-converter', 'build-tfjs-core', 'build-tfjs-backend-cpu', 'lint-tfjs-converter']
+  env: ['NIGHTLY=$_NIGHTLY']
+
+# Run python tests.
+- name: 'gcr.io/google-appengine/python'
+  dir: 'tfjs-converter/python'
+  entrypoint: 'bash'
+  args: ['./build-pip-package.sh', '--test', '/tmp/tfjs-pips']
+  waitFor: ['yarn-common']
+
+- name: 'python:2'
+  dir: 'tfjs-converter/python'
+  entrypoint: 'bash'
+  args: ['./run-python-tests.sh']
+  waitFor: ['yarn-common']
+
+- name: 'python:3.6'
+  dir: 'tfjs-converter/python'
+  entrypoint: 'bash'
+  args: ['./run-python-tests.sh']
+  waitFor: ['yarn-common']
+
+- name: 'node:10'
+  dir: 'tfjs-converter'
+  entrypoint: 'yarn'
+  id: 'test-snippets-tfjs-converter'
+  args: ['test-snippets']
+  waitFor: ['build-tfjs-converter']
+
+
+###################
+### TFJS Layers ###
+###################
+# Install packages.
+- name: 'node:10'
+  dir: 'tfjs-layers'
+  entrypoint: 'yarn'
+  id: 'yarn-tfjs-layers'
+  args: ['install']
+  waitFor: ['yarn-common']
+
+# Build deps.
+# - name: 'node:10'
+#   dir: 'tfjs-layers'
+#   entrypoint: 'yarn'
+#   id: 'build-deps'
+#   args: ['build-deps-ci']
+#   waitFor: ['yarn-common']
+
+# Build.
+- name: 'node:10'
+  dir: 'tfjs-layers'
+  entrypoint: 'yarn'
+  id: 'build-tfjs-layers'
+  args: ['build-ci']
+  waitFor: ['yarn-tfjs-layers', 'build-tfjs-core', 'build-tfjs-backend-cpu', 'build-tfjs-backend-webgl']
+
+# Lint.
+- name: 'node:10'
+  dir: 'tfjs-layers'
+  entrypoint: 'yarn'
+  id: 'lint-tfjs-layers'
+  args: ['lint']
+  waitFor: ['yarn-tfjs-layers', 'build-tfjs-core', 'build-tfjs-backend-cpu', 'build-tfjs-backend-webgl']
+
+# Run javascript tests
+- name: 'node:10'
+  dir: 'tfjs-layers'
+  entrypoint: 'yarn'
+  id: 'test-browser-tfjs-layers'
+  args: ['test-ci']
+  waitFor: ['yarn-tfjs-layers', 'build-tfjs-core', 'build-tfjs-backend-cpu', 'build-tfjs-backend-webgl', 'lint-tfjs-layers']
+  env: ['BROWSERSTACK_USERNAME=deeplearnjs1', 'NIGHTLY=$_NIGHTLY']
+  secretEnv: ['BROWSERSTACK_KEY']
+
+- name: 'node:10'
+  dir: 'tfjs-layers'
+  entrypoint: 'yarn'
+  id: 'test-snippets-tfjs-layers'
+  args: ['test-snippets']
+  waitFor: ['build-tfjs-layers']
+
+#################
+### TFJS Data ###
+#################
+# Install packages.
+- name: 'node:10'
+  dir: 'tfjs-data'
+  entrypoint: 'yarn'
+  id: 'yarn-tfjs-data'
+  args: ['install']
+  waitFor: ['yarn-common']
+
+# Build deps.
+# - name: 'node:10'
+#   dir: 'tfjs-data'
+#   entrypoint: 'yarn'
+#   id: 'build-deps'
+#   args: ['build-deps-ci']
+#   waitFor: ['yarn-common']
+
+# Build.
+- name: 'node:10'
+  dir: 'tfjs-data'
+  entrypoint: 'yarn'
+  id: 'build-tfjs-data'
+  args: ['build-ci']
+  waitFor: ['yarn-tfjs-data', 'build-tfjs-core', 'build-tfjs-layers', 'build-tfjs-backend-cpu']
+
+# Lint.
+- name: 'node:10'
+  dir: 'tfjs-data'
+  entrypoint: 'yarn'
+  id: 'lint-tfjs-data'
+  args: ['lint']
+  waitFor: ['yarn-tfjs-data', 'build-tfjs-core', 'build-tfjs-layers', 'build-tfjs-backend-cpu']
+
+# Run tests in node.
+- name: 'node:10'
+  dir: 'tfjs-data'
+  entrypoint: 'yarn'
+  id: 'test-tfjs-data'
+  args: ['test-ci']
+  waitFor: ['yarn-tfjs-data', 'build-tfjs-core', 'build-tfjs-layers', 'build-tfjs-backend-cpu', 'lint-tfjs-data']
+
+# Run data snippets tests.
+- name: 'node:10'
+  dir: 'tfjs-data'
+  entrypoint: 'yarn'
+  id: 'test-snippets-tfjs-data'
+  args: ['test-snippets']
+  waitFor: ['build-tfjs-data']
+
+#########################
+### Union (tfjs/tfjs) ###
+#########################
+# Install packages.
+- name: 'node:10'
+  dir: 'tfjs'
+  entrypoint: 'yarn'
+  id: 'yarn-tfjs'
+  args: ['install']
+  waitFor: ['yarn-common']
+
+# Build deps.
+# - name: 'node:10'
+#   dir: 'tfjs'
+#   entrypoint: 'yarn'
+#   id: 'build-deps'
+#   args: ['build-deps-ci']
+#   waitFor: ['yarn-common']
+
+# Build.
+- name: 'node:10'
+  dir: 'tfjs'
+  entrypoint: 'yarn'
+  id: 'build-tfjs'
+  args: ['build-ci']
+  waitFor: ['yarn-tfjs', 'build-tfjs-core', 'build-tfjs-layers', 'build-tfjs-converter', 'build-tfjs-data', 'build-tfjs-backend-cpu', 'build-tfjs-backend-webgl']
+
+# Lint.
+- name: 'node:10'
+  dir: 'tfjs'
+  entrypoint: 'yarn'
+  id: 'lint-tfjs'
+  args: ['lint']
+  waitFor: ['yarn-tfjs', 'build-tfjs-core', 'build-tfjs-layers', 'build-tfjs-converter', 'build-tfjs-data', 'build-tfjs-backend-cpu', 'build-tfjs-backend-webgl']
+
+# Run tfjs tests.
+- name: 'node:10'
+  dir: 'tfjs'
+  entrypoint: 'yarn'
+  id: 'test-tfjs'
+  args: ['test-ci']
+  waitFor: ['yarn-tfjs', 'build-tfjs-core', 'build-tfjs-layers', 'build-tfjs-converter', 'build-tfjs-data', 'build-tfjs-backend-cpu', 'build-tfjs-backend-webgl', 'lint-tfjs']
+  env: ['BROWSERSTACK_USERNAME=deeplearnjs1', 'NIGHTLY=$_NIGHTLY']
+  secretEnv: ['BROWSERSTACK_KEY', 'FIREBASE_KEY']
+
+###########
+### Vis ###
+###########
+# # Install tfjs-vis dependencies.
+# - name: 'node:10'
+#   dir: 'tfjs-node'
+#   entrypoint: 'yarn'
+#   id: 'yarn-tfjs-vis'
+#   args: ['install']
+#   waitFor: ['yarn-common']
+
+# # Run vis tests.
+# - name: 'node:10'
+#   dir: 'tfjs-vis'
+#   id: 'test-tfjs-vis'
+#   entrypoint: 'yarn'
+#   args: ['test-ci']
+#   env: ['BROWSERSTACK_USERNAME=deeplearnjs1']
+#   secretEnv: ['BROWSERSTACK_KEY']
+#   waitFor: ['yarn-tfjs-vis']
+
+######################
+### WebGPU Backend ###
+######################
+# Install webgpu dependencies.
+- name: 'node:10'
+  dir: 'tfjs-backend-webgpu'
+  id: 'yarn-tfjs-backend-webgpu'
+  entrypoint: 'yarn'
+  args: ['install']
+  waitFor: ['yarn-common']
+
+# # Build core from master.
+# - name: 'node:10'
+#   dir: 'tfjs-backend-webgpu'
+#   id: 'build-core-tfjs-backend-webgpu'
+#   entrypoint: 'yarn'
+#   args: ['build-core']
+#   waitFor: ['yarn-common']
+
+# Run tests.
+- name: 'node:10'
+  dir: 'tfjs-backend-webgpu'
+  entrypoint: 'yarn'
+  id: 'test-webgpu-tfjs-backend-webgpu'
+  args: ['test-ci-single-instance']
+  waitFor: ['build-tfjs-core', 'build-tfjs-backend-cpu', 'build-tfjs-backend-webgl', 'build-tfjs-converter']
+#  waitFor: ['build-core-tfjs-backend-webgpu']
+
+# ####################
+# ### WASM Backend ###
+# ####################
+# Install packages.
+- name: 'node:10'
+  dir: 'tfjs-backend-wasm'
+  entrypoint: 'yarn'
+  id: 'yarn-tfjs-bakend-wasm'
+  args: ['install']
+  waitFor: ['yarn-common']
+
+# Install build-deps.
+# - name: 'node:10'
+#   dir: 'tfjs-backend-wasm'
+#   entrypoint: 'yarn'
+#   id: 'build-deps'
+#   args: ['build-deps-ci']
+#   waitFor: ['yarn-common']
+
+# Build.
+- name: 'gcr.io/learnjs-174218/wasm'
+  dir: 'tfjs-backend-wasm'
+  entrypoint: 'bash'
+  id: 'build-tfjs-wasm-backend'
+  args: ['./scripts/build-ci.sh']
+  waitFor: ['yarn-tfjs-bakend-wasm', 'build-tfjs-core']
+
+# Lint.
+- name: 'node:10'
+  dir: 'tfjs-backend-wasm'
+  entrypoint: 'yarn'
+  id: 'lint-tfjs-bakend-wasm'
+  args: ['lint']
+  waitFor: ['yarn-tfjs-bakend-wasm', 'build-tfjs-core']
+
+# Run JS tests.
+- name: 'node:10'
+  dir: 'tfjs-backend-wasm'
+  entrypoint: 'yarn'
+  id: 'test-wasm-tfjs-bakend-wasm'
+  args: ['test-ci']
+  waitFor: ['yarn-tfjs-bakend-wasm', 'build-tfjs-core', 'build-tfjs-wasm-backend', 'lint-tfjs-bakend-wasm']
+  env: ['BROWSERSTACK_USERNAME=deeplearnjs1', 'NIGHTLY=$_NIGHTLY']
+  secretEnv: ['BROWSERSTACK_KEY']
+
+# Run C++ tests.
+- name: 'gcr.io/learnjs-174218/wasm'
+  dir: 'tfjs-backend-wasm'
+  entrypoint: 'yarn'
+  id: 'test-cc-tfjs-bakend-wasm'
+  args: ['test-cc']
+  waitFor: ['build-tfjs-wasm-backend']
+
+# Check bundle size.
+- name: 'gcr.io/learnjs-174218/wasm'
+  dir: 'tfjs-backend-wasm'
+  id: 'test-bundle-size-tfjs-bakend-wasm'
+  entrypoint: 'yarn'
+  args: ['test-bundle-size']
+  waitFor: ['yarn-tfjs-bakend-wasm', 'build-tfjs-core', 'build-tfjs-wasm-backend']
+
+# Lint bazel files.
+- name: 'node:10'
+  dir: 'tfjs-backend-wasm'
+  id: 'buildifier-tfjs-bakend-wasm'
+  entrypoint: 'yarn'
+  args: ['buildifier-ci']
+  waitFor: ['yarn-tfjs-bakend-wasm']
+
+# ####################
+# ### React Native ###
+# ####################
+# Install react native dependencies.
+- name: 'node:10'
+  dir: 'tfjs-react-native'
+  id: 'yarn-tfjs-react-native'
+  entrypoint: 'yarn'
+  args: ['install']
+  waitFor: ['yarn-common']
+
+# Build tfjs-react-native.
+- name: 'node:10'
+  dir: 'tfjs-react-native'
+  id: 'build-tfjs-react-native'
+  entrypoint: 'yarn'
+  args: ['build-ci']
+  waitFor: ['yarn-tfjs-react-native']
+
+# Run unit tests in react native. Tests against version published on NPM.
+- name: 'node:10'
+  dir: 'tfjs-react-native/integration_rn59'
+  id: 'test-ci-tfjs-react-native'
+  entrypoint: 'yarn'
+  args: ['test-ci']
+  waitFor: ['build-tfjs-react-native']
+  env: ['BROWSERSTACK_USERNAME=deeplearnjs1']
+  secretEnv: ['BROWSERSTACK_KEY']
+
+# ################
+# ### Node CPU ###
+# ################
+# Install packages.
+- name: 'node:10'
+  dir: 'tfjs-node'
+  entrypoint: 'yarn'
+  id: 'yarn-tfjs-node'
+  args: ['install']
+  waitFor: ['yarn-common']
+
+# Build add-on.
+- name: 'node:10'
+  dir: 'tfjs-node'
+  entrypoint: 'yarn'
+  id: 'build-addon-tfjs-node'
+  args: ['build-addon-from-source']
+  waitFor: ['yarn-tfjs-node']
+
+# Build deps. 
+# - name: 'node:10'
+#   dir: 'tfjs-node'
+#   entrypoint: 'yarn'
+#   id: 'build-deps'
+#   args: ['build-deps-ci']
+#   waitFor: ['yarn-common']
+
+# Build.
+- name: 'node:10'
+  dir: 'tfjs-node'
+  entrypoint: 'yarn'
+  id: 'build-tfjs-node'
+  args: ['build-ci']
+  waitFor: ['yarn-tfjs-node', 'build-tfjs-core', 'build-tfjs-backend-cpu', 'build-tfjs-backend-webgl', 'build-tfjs-layers', 'build-tfjs-converter', 'build-tfjs-data', 'build-tfjs']
+
+# Lint.
+- name: 'node:10'
+  dir: 'tfjs-node'
+  entrypoint: 'yarn'
+  id: 'lint-tfjs-node'
+  args: ['lint']
+  waitFor: ['yarn-tfjs-node', 'build-tfjs-core', 'build-tfjs-backend-cpu', 'build-tfjs-backend-webgl', 'build-tfjs-layers', 'build-tfjs-converter', 'build-tfjs-data', 'build-tfjs']
+
+# Unit tests.
+- name: 'node:10'
+  dir: 'tfjs-node'
+  entrypoint: 'yarn'
+  id: 'test-tfjs-node'
+  args: ['test-ci']
+  waitFor: ['yarn-tfjs-node', 'build-tfjs-core', 'build-tfjs-backend-cpu', 'build-tfjs-backend-webgl', 'build-tfjs-layers', 'build-tfjs-converter', 'build-tfjs-data', 'build-tfjs', 'lint-tfjs-node']
+
+# CPU / GPU package alignment.
+- name: 'node:10'
+  dir: 'tfjs-node'
+  entrypoint: 'yarn'
+  id: 'ensure-cpu-gpu-packages-align-tfjs-node'
+  args: ['ensure-cpu-gpu-packages-align']
+  waitFor: ['yarn-common']
+  
+# ################
+# ### Node GPU ###
+# ################
+# Prepare tfjs-node-gpu folder, copy files from tfjs-node.
+- name: 'node:10'
+  dir: 'tfjs-node-gpu'
+  id: 'prep-gpu-tfjs-node-gpu'
+  entrypoint: 'yarn'
+  args: ['prep-gpu']
+
+# Install packages.
+- name: 'node:10'
+  dir: 'tfjs-node-gpu'
+  entrypoint: 'yarn'
+  id: 'yarn-tfjs-node-gpu'
+  args: ['install']
+  waitFor: ['yarn-common', 'prep-gpu-tfjs-node-gpu']
+
+# Build add-on.
+- name: 'node:10'
+  dir: 'tfjs-node-gpu'
+  entrypoint: 'yarn'
+  id: 'build-addon-tfjs-node-gpu'
+  args: ['build-addon-from-source']
+  waitFor: ['yarn-tfjs-node-gpu']
+
+# Build deps.
+# - name: 'node:10'
+#   dir: 'tfjs-node-gpu'
+#   entrypoint: 'yarn'
+#   id: 'build-deps'
+#   args: ['build-deps-ci']
+#   waitFor: ['yarn-common', 'prep-gpu-tfjs-node-gpu']
+
+# Build.
+- name: 'node:10'
+  dir: 'tfjs-node-gpu'
+  entrypoint: 'yarn'
+  id: 'build-tfjs-node-gpu'
+  args: ['build-ci']
+  waitFor: ['yarn-tfjs-node-gpu', 'build-tfjs-core', 'build-tfjs-backend-cpu', 'build-tfjs-backend-webgl', 'build-tfjs-layers', 'build-tfjs-converter', 'build-tfjs-data', 'build-tfjs']
+
+# Lint.
+- name: 'node:10'
+  dir: 'tfjs-node-gpu'
+  entrypoint: 'yarn'
+  id: 'lint-tfjs-node-gpu'
+  args: ['lint']
+  waitFor: ['yarn-tfjs-node-gpu', 'build-tfjs-core', 'build-tfjs-backend-cpu', 'build-tfjs-backend-webgl', 'build-tfjs-layers', 'build-tfjs-converter', 'build-tfjs-data', 'build-tfjs']
+
+# Unit tests.
+- name: 'node:10'
+  dir: 'tfjs-node-gpu'
+  entrypoint: 'yarn'
+  id: 'test-tfjs-node-gpu'
+  args: ['test-ci']
+  waitFor: ['yarn-tfjs-node-gpu', 'build-tfjs-core', 'build-tfjs-backend-cpu', 'build-tfjs-backend-webgl', 'build-tfjs-layers', 'build-tfjs-converter', 'build-tfjs-data', 'build-tfjs', 'lint-tfjs-node-gpu']
+
+# CPU / GPU package alignment.
+- name: 'node:10'
+  dir: 'tfjs-node-gpu'
+  entrypoint: 'yarn'
+  id: 'ensure-cpu-gpu-packages-align-tfjs-node-gpu'
+  args: ['ensure-cpu-gpu-packages-align']
+  waitFor: ['yarn-common', 'prep-gpu-tfjs-node-gpu']
+
+# #####################
+# ### Release Notes ###
+# #####################
+# Release notes test
+- name: 'node:10'
+  id: 'test-monorepo'
+  entrypoint: 'yarn'
+  args: ['test-release-notes']
+  waitFor: ['yarn-common']
+
+# #################
+# ### E2E Tests ###
+# #################
+# Install packages.
+- name: 'gcr.io/learnjs-174218/release'
+  dir: 'e2e'
+  entrypoint: 'yarn'
+  id: 'yarn-e2e'
+  args: ['install']
+
+# Build deps.
+# - name: 'gcr.io/learnjs-174218/release'
+#   dir: 'e2e'
+#   entrypoint: 'yarn'
+#   id: 'build-deps'
+#   args: ['build-deps-ci']
+
+# Test.
+- name: 'gcr.io/learnjs-174218/release'
+  dir: 'e2e'
+  entrypoint: 'yarn'
+  id: 'test'
+  args: ['test-ci']
+  waitFor: ['yarn-e2e', 'build-tfjs-core', 'build-tfjs-backend-cpu', 'build-tfjs-backend-webgl', 'build-tfjs-layers', 'build-tfjs-converter', 'build-tfjs-data', 'build-tfjs', 'build-tfjs-node']
+  env: ['BROWSERSTACK_USERNAME=deeplearnjs1', 'NIGHTLY=$_NIGHTLY']
+  secretEnv: ['BROWSERSTACK_KEY']
+
+# #####################
+# ### Inference API ###
+# #####################
+# Install packages.
+- name: 'node:10'
+  dir: 'tfjs-inference'
+  entrypoint: 'yarn'
+  id: 'yarn-tfjs-inference'
+  args: ['install']
+
+# JS Test.
+- name: 'node:10'
+  dir: 'tfjs-inference'
+  entrypoint: 'yarn'
+  id: 'test-tfjs-inference'
+  args: ['test-ci']
+  waitFor: ['yarn-tfjs-inference']
+
+# Build binaries.
+- name: 'node:10'
+  dir: 'tfjs-inference'
+  entrypoint: 'yarn'
+  id: 'build-binary-tfjs-inference'
+  args: ['build-binary']
+  waitFor: ['test-tfjs-inference']
+
+# Python Test.
+- name: 'node:10'
+  dir: 'tfjs-inference'
+  entrypoint: 'yarn'
+  id: 'test-python-tfjs-inference'
+  args: ['test-python']
+  waitFor: ['build-binary-tfjs-inference']
+
+# General configuration
+secrets:
+- kmsKeyName: projects/learnjs-174218/locations/global/keyRings/tfjs/cryptoKeys/enc
+  secretEnv:
+    BROWSERSTACK_KEY: CiQAkwyoIW0LcnxymzotLwaH4udVTQFBEN4AEA5CA+a3+yflL2ASPQAD8BdZnGARf78MhH5T9rQqyz9HNODwVjVIj64CTkFlUCGrP1B2HX9LXHWHLmtKutEGTeFFX9XhuBzNExA=
+    FIREBASE_KEY: CiQAkwyoIXmET39jOD3ywloCIa6+WUpu3w49twpMmkMqy0vS+YsSUAAD8BdZQGOL8FKEBxr/1jl0G78OigwlNVHjD3usZobNtlOp8tV/9iacb8zPFqy0SwIO1gvz3HRr+VU7c7LS2qqaTCdacZF+dx3VJNewvdZu
+timeout: 3600s
+logsBucket: 'gs://tfjs-build-logs'
+substitutions:
+  _NIGHTLY: ''
+options:
+  logStreamingOption: 'STREAM_ON'
+  machineType: 'N1_HIGHCPU_32'
+  substitution_option: 'ALLOW_LOOSE'
