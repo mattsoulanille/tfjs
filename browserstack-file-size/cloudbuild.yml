@@ -15,11 +15,11 @@ steps:
 
 # Run unit tests.
 - name: 'node:10'
-  dir: 'tfjs-core'
+  dir: 'browserstack-file-size'
   id: 'test'
   entrypoint: 'yarn'
-  args: ['run-browserstack --browsers=bs_chrome_mac']
-  waitFor: ['yarn', 'build-deps-always', 'lint']
+  args: ['test-ci']
+  waitFor: ['yarn']
   env: ['BROWSERSTACK_USERNAME=deeplearnjs1', 'NIGHTLY=$_NIGHTLY']
   secretEnv: ['BROWSERSTACK_KEY']
 

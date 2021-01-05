@@ -64,7 +64,7 @@
     "coverage": "KARMA_COVERAGE=1 karma start --browsers='Chrome' --singleRun",
     "test": "yarn && karma start",
     "test-dev": "karma start",
-    "test-ci": "./scripts/test-ci.sh",
+    "test-ci": "./test-ci.sh",
     "test-webworker": "karma start --worker",
     "run-browserstack": "karma start --browserstack",
     "test-bundle-size": "./scripts/test-bundle-size.js",
