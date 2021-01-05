@@ -6,6 +6,16 @@ async function sha256(buf: ArrayBuffer): Promise<string> {
 }
 
 describe('file size test', () => {
+  let timeout: number;
+  beforeAll(() => {
+    timeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = 600000
+  });
+
+  afterAll(() => {
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = timeout;
+  })
+
   it('loads a large file', async () => {
     const response = await fetch('base/src/random.bin');
     const sha = await sha256(await response.arrayBuffer());
