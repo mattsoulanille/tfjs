@@ -19,3 +19,4 @@ yarn run-browserstack --browsers=bs_chrome_mac
 yarn run-browserstack --browsers=bs_firefox_mac
 yarn run-browserstack --browsers=bs_safari_mac
 yarn run-browserstack --browsers=bs_ios_11
+yarn run-browserstack --browsers=bs_android_9
