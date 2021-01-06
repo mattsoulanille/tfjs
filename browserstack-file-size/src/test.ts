@@ -1,6 +1,7 @@
 import {sha256} from 'js-sha256';
 
-const MEM_BYTES = 10**9;
+const MB = 10**6;
+const MEM_BYTES = 500 * MB;
 
 function randRange(range: number) {
   return Math.floor(Math.random() * range);
