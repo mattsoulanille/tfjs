@@ -82,12 +82,12 @@ module.exports = function(config) {
       tunnelIdentifier:
           `tfjs_union_${Date.now()}_${Math.floor(Math.random() * 1000)}`
     },
-    captureTimeout: 3e5,
+    captureTimeout: 3e4,
     reportSlowerThan: 500,
-    browserNoActivityTimeout: 3e5,
-    browserDisconnectTimeout: 3e5,
-    browserDisconnectTolerance: 3,
-    browserSocketTimeout: 1.2e5,
+    browserNoActivityTimeout: 3e4,
+    browserDisconnectTimeout: 3e4,
+    browserDisconnectTolerance: 0,
+    browserSocketTimeout: 1.2e4,
     customLaunchers: {
       // For browserstack configs see:
       // https://www.browserstack.com/automate/node
