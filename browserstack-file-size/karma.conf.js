@@ -34,12 +34,14 @@ if (coverageEnabled) {
 const devConfig = {
   frameworks: ['jasmine', 'karma-typescript'],
   files: [
-    'src/test.ts',
-    {pattern: 'src/random.bin', watched: false, included: false, served: true}
+    //'src/test.ts',
+    //{pattern: 'src/random.bin', watched: false, included: false, served: true},
+//    'src/simple_test.ts',
+    'src/delay_test.ts',
   ],
   preprocessors: {'**/*.ts': ['karma-typescript']},
   karmaTypescriptConfig,
-  reporters: ['dots', 'karma-typescript']
+  reporters: ['spec', 'karma-typescript']
 };
 
 const browserstackConfig = {
@@ -82,10 +84,10 @@ module.exports = function(config) {
       tunnelIdentifier:
           `tfjs_union_${Date.now()}_${Math.floor(Math.random() * 1000)}`
     },
-    captureTimeout: 3e4,
+    captureTimeout: 6e4,
     reportSlowerThan: 500,
-    browserNoActivityTimeout: 3e4,
-    browserDisconnectTimeout: 3e4,
+    browserNoActivityTimeout: 6e4,
+    browserDisconnectTimeout: 6e4,
     browserDisconnectTolerance: 0,
     browserSocketTimeout: 1.2e4,
     customLaunchers: {

@@ -15,8 +15,13 @@
 # =============================================================================
 
 set -e
-yarn run-browserstack --browsers=bs_chrome_mac
-yarn run-browserstack --browsers=bs_firefox_mac
-yarn run-browserstack --browsers=bs_safari_mac
-yarn run-browserstack --browsers=bs_ios_11
-yarn run-browserstack --browsers=bs_android_9
+# yarn run-browserstack --browsers=bs_chrome_mac
+# yarn run-browserstack --browsers=bs_firefox_mac
+# yarn run-browserstack --browsers=bs_safari_mac
+
+for ((i=0;i<10;i++))
+do
+  echo Run $i
+  yarn run-browserstack --browsers=bs_ios_11
+  yarn run-browserstack --browsers=bs_android_9
+done
