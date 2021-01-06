@@ -4,7 +4,7 @@ function delay(ms: number) {
   });
 }
 
-const TIME = 1e5;
+const TIME = 1e4;
 
 describe('delay test', () => {
   let timeout: number;
