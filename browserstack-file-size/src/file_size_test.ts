@@ -2,7 +2,7 @@ import {sha256} from 'js-sha256';
 
 function timestamp() {
   const date = new Date();
-  return `${date.getHours()}:${date.getMinutes()}:${date.getSeconds}.${date.getMilliseconds()}`;
+  return `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}.${date.getMilliseconds()}`;
 }
 
 describe('file size test', () => {
