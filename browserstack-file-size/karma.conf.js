@@ -34,8 +34,10 @@ if (coverageEnabled) {
 const devConfig = {
   frameworks: ['jasmine', 'karma-typescript'],
   files: [
-    'src/file_size_test.ts',
-    {pattern: 'src/random.bin', watched: false, included: false, served: true},
+    //'src/file_size_test.ts',
+    //{pattern: 'src/random.bin', watched: false, included: false, served: true},
+    'src/multiple_small_files.ts',
+    {pattern: 'src/small_files/*', watched: false, included: false, served: true},
 //    'src/simple_test.ts',
 //    'src/delay_test.ts',
   ],
