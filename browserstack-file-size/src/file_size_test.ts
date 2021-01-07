@@ -9,14 +9,6 @@ function timestamp() {
   return `${hours}:${minutes}:${seconds}.${ms}`;
 }
 
-// async function delay(ms: number): Promise<void> {
-//   await new Promise(fulfill => {
-//     setTimeout(fulfill, ms);
-//   });
-// }
-
-//const TIMEOUT = 60000 * 4; // 4 minutes
-
 async function fetchWithLogs(url: string, logPeriod = 1000,
                              log=console.log): Promise<Uint8Array> {
 
@@ -38,7 +30,6 @@ async function fetchWithLogs(url: string, logPeriod = 1000,
 
     chunks.push(value);
     receivedLength += value.length;
-
   }
 
   clearInterval(logInterval);
