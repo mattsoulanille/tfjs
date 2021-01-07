@@ -1,14 +1,14 @@
 steps:
-# Install browserstack-file-size dependencies.
+# Install browserstack-tests dependencies.
 - name: 'node:10'
-  dir: 'browserstack-file-size'
+  dir: 'browserstack-tests'
   id: 'yarn'
   entrypoint: 'yarn'
   args: ['install']
 
 # Run unit tests.
 - name: 'node:10'
-  dir: 'browserstack-file-size'
+  dir: 'browserstack-tests'
   id: 'test'
   entrypoint: 'yarn'
   args: ['test-ci']
