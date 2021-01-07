@@ -31,16 +31,42 @@ if (coverageEnabled) {
   karmaTypescriptConfig.reports = {html: 'coverage', 'text-summary': ''};
 }
 
+function printHelp() {
+  console.log('Please select a test by setting the environment variable'
+	      + ' TEST to "simple", "delay", "file_size", or'
+	      + ' "multiple_small_files"');
+}
+
+function getFiles() {
+  switch (process.env.TEST) {
+    case 'simple':
+      return ['src/simple_test.ts'];
+    case 'delay':
+      return ['src/delay_test.ts'];
+    case 'file_size':
+      return [
+	'src/file_size_test.ts',
+	{pattern: 'src/random.bin', watched: false, included: false, served: true},
+      ];
+    case 'multiple_small_files':
+      return [
+	'src/multiple_small_files.ts',
+	{pattern: 'src/small_files/*', watched: false, included: false, served: true},
+      ];
+    case undefined:
+      printHelp();
+      process.exit(1);
+    default:
+      console.log(`Unknown test ${process.env.TEST}`);
+      printHelp();
+      process.exit(1);
+  }
+}
+
+
 const devConfig = {
   frameworks: ['jasmine', 'karma-typescript'],
-  files: [
-    //'src/file_size_test.ts',
-    //{pattern: 'src/random.bin', watched: false, included: false, served: true},
-    'src/multiple_small_files.ts',
-    {pattern: 'src/small_files/*', watched: false, included: false, served: true},
-//    'src/simple_test.ts',
-//    'src/delay_test.ts',
-  ],
+  files: getFiles(),
   preprocessors: {'**/*.ts': ['karma-typescript']},
   karmaTypescriptConfig,
   reporters: ['spec', 'karma-typescript']
@@ -50,7 +76,7 @@ const browserstackConfig = {
   ...devConfig,
   hostname: 'bs-local.com',
   singleRun: true,
-  port: 9896
+  port: 9876
 };
 
 module.exports = function(config) {
