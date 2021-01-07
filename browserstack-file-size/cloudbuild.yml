@@ -1,17 +1,10 @@
 steps:
-# Install common dependencies.
-- name: 'node:10'
-  id: 'yarn-common'
-  entrypoint: 'yarn'
-  args: ['install']
-
 # Install browserstack-file-size dependencies.
 - name: 'node:10'
   dir: 'browserstack-file-size'
   id: 'yarn'
   entrypoint: 'yarn'
   args: ['install']
-  waitFor: ['yarn-common']
 
 # Run unit tests.
 - name: 'node:10'
