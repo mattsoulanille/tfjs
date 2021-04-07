@@ -21,6 +21,7 @@ const toCopy = [
   'package.json',
   'karma.conf.js',
   '.nycrc',
+  'scripts/test.sh',
 ];
 
 function runAsync(command: string) {
@@ -38,7 +39,7 @@ function runAsync(command: string) {
 
 async function makeReport(commit: string, yarn: string) {
   const pathPrefix = `/tmp/coverage_${commit}`;
-  debugger;
+
   if (fs.existsSync(pathPrefix)) {
     await runAsync(`rm -rf ${pathPrefix}`);
   }
@@ -88,16 +89,17 @@ function extractCoverage(stdout: string) {
 
   const parts = [start];
   for (const key of keys) {
-    parts.push(`${key} *: *([0-9]+\.[0-9]+)% *\\( *([0-9]+)\/([0-9]+) *\\)\n`);
+    parts.push(`${key} *: *([0-9]+\.?[0-9]*)% *\\( *([0-9]+)\/([0-9]+) *\\)\n`);
   }
 
   parts.push('=*');
   const regexp = new RegExp(parts.join(''));
 
   const matches = stdout.match(regexp);
-  if (matches.length > 0) {
+  if (matches && matches.length > 0) {
     return matches[0];
   } else {
+    console.log(stdout);
     throw new Error('Failed to extract coverage from logs');
   }
 }
