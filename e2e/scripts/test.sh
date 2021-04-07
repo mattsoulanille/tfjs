@@ -62,5 +62,9 @@ if [[ "$TAGS" == *"#REGRESSION"*  ]]; then
 fi
 
 echo "Karma tests."
-yarn karma start --tags $TAGS
+if [[ "${KARMA_COVERAGE}" == 1 ]]; then
+  yarn karma start --tags $TAGS --singleRun
+else
+  yarn karma start --tags $TAGS
+fi
 
