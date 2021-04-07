@@ -1,25 +1,27 @@
 import {ArgumentParser} from 'argparse';
 import * as fs from 'fs';
 import * as path from 'path';
-//import {$} from './release-util';
 import {exec} from 'shelljs';
 
 const packages = [
   'tfjs-core',
   'tfjs-backend-cpu',
+  'tfjs-node',
+  'e2e',
+  'tfjs',
+  'tfjs-vis',
+  'tfjs-layers',
+  'tfjs-backend-webgl',
+  'tfjs-automl',
 ] as const;
 
 type Package = (typeof packages)[number];
 
 const toCopy = [
   'package.json',
+  'karma.conf.js',
   '.nycrc',
 ];
-
-function run(command: string) {
-  console.log(command);
-  return exec(command);
-}
 
 function runAsync(command: string) {
   console.log(command);
@@ -34,16 +36,19 @@ function runAsync(command: string) {
   });
 }
 
-async function makeReport(commit: string) {
+async function makeReport(commit: string, yarn: string) {
   const pathPrefix = `/tmp/coverage_${commit}`;
   debugger;
   if (fs.existsSync(pathPrefix)) {
-    run(`rm -rf ${pathPrefix}`);
+    runAsync(`rm -rf ${pathPrefix}`);
   }
 
-  await runAsync(`git clone git@github.com:tensorflow/tfjs ${pathPrefix}`);
-  await runAsync(`cd ${pathPrefix} && git remote add temp git@github.com:mattsoulanille/tfjs.git && git fetch temp && git checkout --track temp/tfjs-coverage && git checkout ${commit}`);
-
+  try {
+    await runAsync(`git clone git@github.com:tensorflow/tfjs ${pathPrefix}`);
+    await runAsync(`cd ${pathPrefix} && git remote add temp git@github.com:mattsoulanille/tfjs.git && git fetch temp && git checkout --track temp/tfjs-coverage && git checkout ${commit}`);
+  } catch (e) {
+    return [];
+  }
   const results: [Package, string][] = [];
 
   for (const packageName of packages) {
@@ -57,17 +62,18 @@ async function makeReport(commit: string) {
     }
 
     try {
-      await runAsync(`cd ${packagePath} && yarn && yarn build-deps`);
+      await runAsync(`cd ${packagePath} && ${yarn} && ${yarn} build-deps`);
     } catch (e) {
       console.log(e.message);
     }
 
     try {
-      const result = await runAsync(`cd ${packagePath} && yarn coverage`);
+      const result = await runAsync(`cd ${packagePath} && ${yarn} coverage`);
       const coverage = extractCoverage(result);
       results.push([packageName, coverage]);
     } catch (e) {
       console.log(e.message);
+      results.push([packageName, e.message]);
     }
   }
 
@@ -85,20 +91,20 @@ function extractCoverage(stdout: string) {
     parts.push(`${key} *: *([0-9]+\.[0-9]+)% *\\( *([0-9]+)\/([0-9]+) *\\)\n`);
   }
 
-  //parts.push('=*');
+  parts.push('=*');
   const regexp = new RegExp(parts.join(''));
 
-  const matches = stdout.match(regexp)[0];
-  if (matches.length < 0) {
+  const matches = stdout.match(regexp);
+  if (matches.length > 0) {
     return matches[0];
   } else {
     throw new Error('Failed to extract coverage from logs');
   }
 }
 
-async function main({commits}: {commits: string[]}) {
+async function main({commits, yarn}: {commits: string[], yarn: string}) {
   console.log(`Making coverage reports for ${commits}`);
-  const reports = await Promise.all(commits.map(makeReport));
+  const reports = await Promise.all(commits.map(commit => makeReport(commit, yarn)));
 
   const out: string[] = [];
   for (let i = 0; i < reports.length; i++) {
@@ -107,11 +113,12 @@ async function main({commits}: {commits: string[]}) {
     const report = reports[i];
     for (const [packageName, coverage] of report) {
       out.push(packageName);
-      out.push("\n");
       out.push(coverage);
+      out.push("\n");
     }
+    out.push("\n-----------------------\n");
   }
-  console.log(out);
+  console.log(out.join('\n'));
 }
 
 
@@ -124,5 +131,12 @@ parser.addArgument('commits', {
   type: 'string',
   nargs: '+',
 })
+
+parser.addArgument('--yarn', {
+  help: 'Name / path to the yarn command',
+  defaultValue: 'yarn',
+  type: 'string',
+  nargs: '?',
+});
 
 main(parser.parseArgs());
