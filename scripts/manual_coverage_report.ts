@@ -40,7 +40,7 @@ async function makeReport(commit: string, yarn: string) {
   const pathPrefix = `/tmp/coverage_${commit}`;
   debugger;
   if (fs.existsSync(pathPrefix)) {
-    runAsync(`rm -rf ${pathPrefix}`);
+    await runAsync(`rm -rf ${pathPrefix}`);
   }
 
   try {
