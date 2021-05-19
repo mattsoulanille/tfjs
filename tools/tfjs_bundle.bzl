@@ -10,13 +10,13 @@ def tfjs_rollup_bundle(name, deps, entry_point, umd_name=None, es5=False, **kwar
        "@npm//rollup-plugin-sourcemaps",
     ]
 
-    config_file = "@//bundling:rollup.config.js"
+    config_file = "@//tools:rollup.config.js"
     srcs = kwargs.pop('srcs', [])
     if es5:
         rollup_deps += [
             "@npm//@rollup/plugin-babel",
         ]
-        config_file = "@//bundling:rollup.es5.config.js"
+        config_file = "@//tools:rollup.es5.config.js"
         srcs += [
             "@//:babel.config.json",
         ]
@@ -33,23 +33,6 @@ def tfjs_rollup_bundle(name, deps, entry_point, umd_name=None, es5=False, **kwar
         config_file = config_file,
         deps = rollup_deps,
         srcs = srcs,
-        **kwargs,
-    )
-
-def tfjs_ts_project(name, srcs, **kwargs):
-    ts_project(
-        name = name,
-        srcs = srcs,
-        declaration = True,
-        extends = "@//:tsconfig.json",
-        incremental = True,
-        out_dir = "dist",
-        source_map = True,
-        tsconfig = {
-            "compilerOptions": {
-                "target": "es2017",
-            },
-        },
         **kwargs,
     )
 
@@ -90,16 +73,14 @@ def tfjs_bundle(name, deps, entry_point, umd_name, external = [], testonly = Fal
     tfjs_rollup_bundle(
         name = name + ".node",
         testonly = testonly,
-        #deps = [name + "_es5"],
         deps = deps,
-        #entry_point = es5_entry_point,
         entry_point = entry_point,
         format = "cjs",
         es5 = True,
     )
 
     # Minified bundles
-    for extension in ["", ".es2017", ".fesm", ".cjs", ".node"]:
+    for extension in ["", ".es2017", ".fesm", ".node"]:
         src = name + extension
         terser_minified(
             name = src + ".min",

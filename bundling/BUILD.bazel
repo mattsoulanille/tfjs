@@ -1,1 +1,0 @@
-exports_files(["rollup.config.js", "rollup.es5.config.js"], visibility = ["//visibility:public"])
