@@ -17,7 +17,9 @@ load("@build_bazel_rules_nodejs//:index.bzl", "js_library")
 load("@npm//@bazel/concatjs:index.bzl", "karma_web_test")
 load("@npm//@bazel/typescript:index.bzl", "ts_library", "ts_project")
 load("//:esbuild.bzl", "esbuild")
-load("//bundling:tfjs_bundle.bzl", "tfjs_bundle", "tfjs_ts_project")
+load("//tools:tfjs_bundle.bzl", "tfjs_bundle")
+load("//tools:tfjs_web_test.bzl", "tfjs_web_test")
+load("//tools:defaults.bzl", "ts_project")
 load("@build_bazel_rules_nodejs//:index.bzl", "pkg_npm")
 
 
@@ -28,13 +30,14 @@ exports_files(["tsconfig.json"])
 
 TEST_SRCS = ["src/setup_test.ts"]
 
-tfjs_ts_project(
+ts_project(
     name = "tfjs-core_lib",
     srcs = glob(
         ["src/**/*.ts"],
         exclude = TEST_SRCS,
     ),
     root_dir = "src",
+    out_dir = "dist",
     deps = [
         "@npm//@types",
         "@npm//jasmine-core",
@@ -46,7 +49,6 @@ tfjs_bundle(
     name = "tf-core",
     umd_name = "tf",
     entry_point = "dist/index.js",
-    es5_entry_point = "dist_es5/index.js",
     external = [
         "node-fetch",
         "util",
@@ -116,7 +118,7 @@ pkg_npm(
     deps = PKG_DEPS,
 )
 
-karma_web_test(
+tfjs_web_test(
     name = "tfjs-core_test",
     srcs = [
         ":tfjs-core_test_bundle",
@@ -125,29 +127,4 @@ karma_web_test(
         # Listed here so sourcemaps are served
         ":tfjs-core_test_bundle",
     ],
-    tags = ["native"],
-)
-
-karma_web_test(
-    name = "browserstack_tfjs-core_test",
-    srcs = [
-        ":tfjs-core_test_bundle",
-    ],
-    config_file = "//:karma.conf.js",
-    peer_deps = [
-        "@npm//karma",
-        "@npm//karma-jasmine",
-        "@npm//karma-requirejs",
-        "@npm//karma-sourcemap-loader",
-        "@npm//requirejs",
-        # The above dependencies are the default when 'peer_deps' is not
-        # specified. They are manually spefied here so we can append
-        # karma-browserstack-launcher.
-        "@npm//karma-browserstack-launcher",
-    ],
-    static_files = [
-        # Listed here so sourcemaps are served
-        ":tfjs-core_test_bundle",
-    ],
-    tags = ["ci"],
 )
