@@ -23,11 +23,12 @@
  * This script requires hub to be installed: https://hub.github.com/
  */
 
+import * as path from 'path';
 import * as argparse from 'argparse';
 import chalk from 'chalk';
 import * as fs from 'fs';
 import * as shell from 'shelljs';
-import {TMP_DIR, $, question, makeReleaseDir, createPR, TFJS_RELEASE_UNIT, updateTFJSDependencyVersions} from './release-util';
+import { $, question,  TFJS_RELEASE_UNIT, updateTFJSDependencyVersions} from './release-util';
 
 const parser = new argparse.ArgumentParser();
 
@@ -44,11 +45,9 @@ function getMinorUpdateVersion(version: string): string {
 }
 
 async function main() {
-  const args = parser.parseArgs();
-  const urlBase = args.git_protocol ? 'git@github.com:' : 'https://github.com/';
-  const dir = `${TMP_DIR}/tfjs`;
-  makeReleaseDir(dir);
-
+  //makeReleaseDir(dir);
+  const dir = path.normalize(__dirname + "/../");
+  console.log(dir);
   // Guess release version from tfjs-core's latest version, with a minor update.
   const latestVersion = $(`npm view @tensorflow/tfjs-core dist-tags.latest`);
   const minorUpdateVersion = getMinorUpdateVersion(latestVersion);
@@ -60,22 +59,22 @@ async function main() {
   }
 
   // Get release candidate commit.
-  const commit = await question(
-      'Commit of release candidate (the last ' +
-      'successful nightly build): ');
-  if (commit === '') {
-    console.log(chalk.red('Commit cannot be empty.'));
-    process.exit(1);
-  }
+  // const commit = await question(
+  //     'Commit of release candidate (the last ' +
+  //     'successful nightly build): ');
+  // if (commit === '') {
+  //   console.log(chalk.red('Commit cannot be empty.'));
+  //   process.exit(1);
+  // }
 
   // Create a release branch in remote.
-  $(`git clone ${urlBase}tensorflow/tfjs ${dir}`);
-  shell.cd(dir);
-  const releaseBranch = `tfjs_${newVersion}`;
-  console.log(chalk.magenta.bold(
-      `~~~ Creating new release branch ${releaseBranch} ~~~`));
-  $(`git checkout -b ${releaseBranch} ${commit}`);
-  $(`git push origin ${releaseBranch}`);
+  // $(`git clone ${urlBase}tensorflow/tfjs ${dir}`);
+  // shell.cd(dir);
+  // const releaseBranch = `tfjs_${newVersion}`;
+  // console.log(chalk.magenta.bold(
+  //     `~~~ Creating new release branch ${releaseBranch} ~~~`));
+  // $(`git checkout -b ${releaseBranch} ${commit}`);
+  // $(`git push origin ${releaseBranch}`);
 
   // Update version.
   const phases = TFJS_RELEASE_UNIT.phases;
@@ -111,10 +110,10 @@ async function main() {
   }
 
   // Use dev prefix to avoid branch being locked.
-  const devBranchName = `dev_${releaseBranch}`;
+  //const devBranchName = `dev_${releaseBranch}`;
 
-  const message = `Update monorepo to ${newVersion}.`;
-  createPR(devBranchName, releaseBranch, message);
+  //const message = `Update monorepo to ${newVersion}.`;
+  //createPR(devBranchName, releaseBranch, message);
 
   console.log(
       'Done. FYI, this script does not publish to NPM. ' +
