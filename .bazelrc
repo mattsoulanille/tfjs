@@ -14,11 +14,11 @@ build --cxxopt="-fno-exceptions"
 build --cxxopt="-fomit-frame-pointer"
 
 # Remote cache config. Users can add credentials in their .bazelrc.user files.
-build:remote --remote_cache=https://storage.googleapis.com/bazel-remote-cache-tfjs
+#build:remote --remote_cache=https://storage.googleapis.com/bazel-remote-cache-tfjs
 
 # Config for Google Cloud continuous integration that uses default credentials.
-build:ci --config=remote
-build:ci --google_default_credentials
+#build:ci --config=remote
+#build:ci --google_default_credentials
 
 # This flag is needed to prevent the bazel cache from being invalidated when
 # running bazel via `yarn bazel`.
@@ -37,6 +37,86 @@ test --action_env=BROWSERSTACK_USERNAME --action_env=BROWSERSTACK_KEY
 
 # Enable debugging tests with --config=debug
 run:debug --test_arg=--node_options=--inspect-brk --test_output=streamed --test_strategy=exclusive --test_timeout=9999 --nocache_test_results
+
+
+
+
+
+# Copyright 2016 The Bazel Authors. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# https://github.com/bazelbuild/bazel-toolchains/blob/master/bazelrc/bazel-1.0.0.bazelrc
+
+# This .bazelrc file contains all of the flags required for the provided
+# toolchain with Remote Build Execution.
+# Note your WORKSPACE must contain an rbe_autoconfig target with
+# name="rbe_default" to use these flags as-is.
+
+# Depending on how many machines are in the remote execution instance, setting
+# this higher can make builds faster by allowing more jobs to run in parallel.
+# Setting it too high can result in jobs that timeout, however, while waiting
+# for a remote machine to execute them.
+build:remote --jobs=50
+
+# Set several flags related to specifying the platform, toolchain and java
+# properties.
+# These flags should only be used as is for the rbe-ubuntu16-04 container
+# and need to be adapted to work with other toolchain containers.
+build:remote --host_javabase=@rbe_default//java:jdk
+build:remote --javabase=@rbe_default//java:jdk
+build:remote --host_java_toolchain=@bazel_tools//tools/jdk:toolchain_hostjdk8
+build:remote --java_toolchain=@bazel_tools//tools/jdk:toolchain_hostjdk8
+build:remote --crosstool_top=@rbe_default//cc:toolchain
+build:remote --action_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
+# Platform flags:
+# The toolchain container used for execution is defined in the target indicated
+# by "extra_execution_platforms", "host_platform" and "platforms".
+# More about platforms: https://docs.bazel.build/versions/master/platforms.html
+build:remote --extra_toolchains=@rbe_default//config:cc-toolchain
+build:remote --extra_execution_platforms=@rbe_default//config:platform
+build:remote --host_platform=@rbe_default//config:platform
+build:remote --platforms=@rbe_default//config:platform
+
+# Starting with Bazel 0.27.0 strategies do not need to be explicitly
+# defined. See https://github.com/bazelbuild/bazel/issues/7480
+build:remote --define=EXECUTOR=remote
+
+# Enable remote execution so actions are performed on the remote systems.
+build:remote --remote_executor=grpcs://remotebuildexecution.googleapis.com
+
+# Enforce stricter environment rules, which eliminates some non-hermetic
+# behavior and therefore improves both the remote cache hit rate and the
+# correctness and repeatability of the build.
+build:remote --incompatible_strict_action_env=true
+
+# Set a higher timeout value, just in case.
+build:remote --remote_timeout=3600
+
+# Enable authentication. This will pick up application default credentials by
+# default. You can use --google_credentials=some_file.json to use a service
+# account credential instead.
+build:remote --google_default_credentials=true
+
+
+build:remote --remote_instance_name=projects/learnjs-174218/instances/default_instance
+
+build:remote --spawn_strategy=remote,worker,local
+
+#build:remote --bes_backend="buildeventservice.googleapis.com" --bes_timeout=60s --bes_results_url="https://source.cloud.google.com/results/invocations/" --remote_instance_name=projects/learnjs-174218/instances/default_instance --project_id=learnjs-174218
+
+#build:bes --bes_backend="buildeventservice.googleapis.com" --bes_timeout=60s --auth_enabled=true --remote_cache=remotebuildexecution.googleapis.com --remote_timeout=3600 --bes_results_url="https://source.cloud.google.com/results/invocations/" --remote_instance_name=projects/learnjs-174218/instances/default_instance --project_id=learnjs-174218
+
 
 # Load any settings specific to the current user.
 # .bazelrc.user should appear in .gitignore so that settings are not shared with
