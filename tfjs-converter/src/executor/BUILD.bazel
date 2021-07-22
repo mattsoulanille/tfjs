@@ -1,0 +1,67 @@
+load("//tools:defaults.bzl", "ts_library")
+
+package(default_visibility = ["//visibility:public"])
+
+ts_library(
+    name = "datastructures_lib",
+    module_name = "@tensorflow/tfjs-converter/dist/executor",
+    srcs = [
+        "hash_table.ts",
+        "tensor_array.ts",
+        "tensor_utils.ts",
+        "tensor_list.ts",
+    ],
+    deps = [
+        "//tfjs-core/src:tfjs-core_lib",
+        "//tfjs-core/src:tfjs-core_src_lib",
+    ],
+)
+
+ts_library(
+    name = "types_lib",
+    module_name = "@tensorflow/tfjs-converter/dist/executor",
+    srcs = [
+        "types.ts",
+    ],
+    deps = [
+        "//tfjs-converter/src/data:types_lib",
+        "//tfjs-core/src:tfjs-core_lib",
+    ],
+)
+
+ts_library(
+    name = "execution_context_lib",
+    module_name = "@tensorflow/tfjs-converter/dist/executor",
+    srcs = [
+        "execution_context.ts",
+        "resource_manager.ts",
+    ],
+    deps = [
+        ":datastructures_lib",
+        ":types_lib",
+        "//tfjs-converter/src/data:types_lib",
+        "//tfjs-core/src:tfjs-core_lib",
+    ],
+)
+
+ts_library(
+    name = "graph_model_lib",
+    srcs = [
+        "graph_model.ts",
+        "graph_executor.ts",
+        "model_analysis.ts",
+    ],
+    module_name = "@tensorflow/tfjs-converter/dist/executor",
+    deps = [
+        ":types_lib",
+        ":execution_context_lib",
+        "//tfjs-core/src:tfjs-core_lib",
+        "//tfjs-core/src:tfjs-core_src_lib",
+        "//tfjs-converter/src/data:compiled_api_lib",
+        "//tfjs-converter/src/data:types_lib",
+        "//tfjs-converter/src/operations/executors:executors_lib",
+        "//tfjs-converter/src/operations:types_lib",
+        "//tfjs-converter/src/operations:operation_executor_lib",
+        "//tfjs-converter/src/operations:operation_mapper_lib",
+    ],
+)

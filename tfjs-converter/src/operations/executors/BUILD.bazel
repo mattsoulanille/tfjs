@@ -1,0 +1,17 @@
+load("//tools:defaults.bzl", "ts_library")
+
+package(default_visibility = ["//visibility:public"])
+
+ts_library(
+    name = "executors_lib",
+    module_name = "@tensorflow/tfjs-converter/dist/operations/executors",
+    srcs = glob(["*.ts"], exclude = ["*_test.ts"]),
+    deps = [
+        "//tfjs-core/src:tfjs-core_lib",
+        "//tfjs-core/src:tfjs-core_src_lib",
+        "//tfjs-converter/src/data:types_lib",
+        "//tfjs-converter/src/operations:types_lib",
+        "//tfjs-converter/src/executor:execution_context_lib",
+        "//tfjs-converter/src/executor:datastructures_lib",
+    ],
+)

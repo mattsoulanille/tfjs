@@ -1,0 +1,31 @@
+load("//tools:defaults.bzl", "ts_library")
+
+package(default_visibility = ["//visibility:public"])
+
+ts_library(
+    name = "register_lib",
+    module_name = "@tensorflow/tfjs-converter/dist/operations/custom_op",
+    srcs = [
+        "register.ts",
+    ],
+    deps = [
+        "//tfjs-converter/src/operations:types_lib",
+    ],
+)
+
+ts_library(
+    name = "node_value_impl_lib",
+    srcs = [
+        "node_value_impl.ts",
+    ],
+    module_name = "@tensorflow/tfjs-converter/dist/operations/custom_op",
+    deps = [
+        "//tfjs-core/src:tfjs-core_lib",
+        "//tfjs-converter/src/data:types_lib",
+        "//tfjs-converter/src/data:compiled_api_lib",
+        "//tfjs-converter/src/executor:execution_context_lib",
+        "//tfjs-converter/src/operations/executors:executors_lib",
+        "//tfjs-converter/src/operations:types_lib",
+       "//tfjs-converter/src/operations:operation_mapper_lib",
+    ],
+)

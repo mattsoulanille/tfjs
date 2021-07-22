@@ -17,6 +17,7 @@ load("@build_bazel_rules_nodejs//:index.bzl", "js_library", "nodejs_test", "pkg_
 load("//tools:copy_to_dist.bzl", "copy_to_dist")
 load("//tools:tfjs_bundle.bzl", "tfjs_bundle")
 load("//tools:gen_json.bzl", "gen_json")
+load("//tools:ts_library_outputs.bzl", "ts_library_outputs")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -68,35 +69,36 @@ tfjs_bundle(
     umd_name = "tf",
     deps = [
         "//tfjs-converter/src:tfjs-converter_lib",
-        "//tfjs-converter/src:tfjs-converter_src_lib",
     ],
 )
 
-filegroup(
-    name = "es6_sources",
+ts_library_outputs(
+    name = "tfjs-converter_outputs",
     srcs = [
         "//tfjs-converter/src:tfjs-converter_lib",
-        "//tfjs-converter/src:tfjs-converter_src_lib",
+        "//tfjs-converter/src:version_lib",
     ],
-    output_group = "es6_sources",
-)
-
-filegroup(
-    name = "es5_sources",
-    srcs = [
-        "//tfjs-converter/src:tfjs-converter_lib",
-        "//tfjs-converter/src:tfjs-converter_src_lib",
-    ],
-    output_group = "es5_sources",
 )
 
 copy_to_dist(
     name = "copy_src_to_dist",
     srcs = [
-        ":es5_sources",
-        ":es6_sources",
+        ":tfjs-converter_outputs",
         "//tfjs-converter/src:tfjs-converter_lib",
-        "//tfjs-converter/src:tfjs-converter_src_lib",
+        "//tfjs-converter/src:version_lib",
+        "//tfjs-converter/src/data:types_lib",
+        "//tfjs-converter/src/data:compiled_api_lib",
+        "//tfjs-converter/src/executor:datastructures_lib",
+        "//tfjs-converter/src/executor:types_lib",
+        "//tfjs-converter/src/executor:execution_context_lib",
+        "//tfjs-converter/src/executor:graph_model_lib",
+        "//tfjs-converter/src/operations:op_mapper_schema_lib",
+        "//tfjs-converter/src/operations:operation_executor_lib",
+        "//tfjs-converter/src/operations:operation_mapper_lib",
+        "//tfjs-converter/src/operations/custom_op:node_value_impl_lib",
+        "//tfjs-converter/src/operations/custom_op:register_lib",
+        "//tfjs-converter/src/operations/executors:executors_lib",
+        "//tfjs-converter/src/operations/op_list:op_list_lib",
     ],
     root = "src",
 )
@@ -125,6 +127,7 @@ pkg_npm(
 
 js_library(
     name = "package_json",
+    package_name = "tfjs-converter",
     srcs = [
         ":package.json",
     ],
@@ -132,6 +135,7 @@ js_library(
 
 js_library(
     name = "metadata_json",
+    package_name = "tfjs-converter",
     srcs = [
         ":metadata/kernel2op.json",
     ],
@@ -141,5 +145,4 @@ gen_json(
     name = "ts_to_json",
     srcs = ["//tfjs-converter/src:op_list"],
     output_path = "tfjs-converter/python/tensorflowjs/op_list",
-    deps = ["//tfjs-converter/src:tfjs-converter_src_lib"],
 )

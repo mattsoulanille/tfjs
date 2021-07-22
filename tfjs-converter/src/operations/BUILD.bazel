@@ -1,0 +1,58 @@
+load("//tools:defaults.bzl", "ts_library")
+
+package(default_visibility = ["//visibility:public"])
+
+ts_library(
+    name = "types_lib",
+    module_name = "@tensorflow/tfjs-converter/dist/operations",
+    srcs = [
+        "types.ts",
+    ],
+    deps = [
+        "//tfjs-core/src:tfjs-core_lib",
+        "//tfjs-converter/src/data:compiled_api_lib",
+        "//tfjs-converter/src/data:types_lib",
+        "//tfjs-converter/src/executor:execution_context_lib",
+    ],
+)
+
+ts_library(
+    name = "operation_executor_lib",
+    module_name = "@tensorflow/tfjs-converter/dist/operations",
+    srcs = [
+        "operation_executor.ts",
+    ],
+    deps = [
+        ":types_lib",
+        "//tfjs-core/src:tfjs-core_lib",
+        "//tfjs-converter/src/data:types_lib",
+        "//tfjs-converter/src/operations/executors:executors_lib",
+        "//tfjs-converter/src/executor:execution_context_lib",
+        "//tfjs-converter/src/operations/custom_op:register_lib",
+        "//tfjs-converter/src/operations/custom_op:node_value_impl_lib",
+    ],
+)
+
+ts_library(
+    name = "operation_mapper_lib",
+    module_name = "@tensorflow/tfjs-converter/dist/operations",
+    srcs = [
+        "operation_mapper.ts",
+    ],
+    deps = [
+        ":types_lib",
+        "//tfjs-core/src:tfjs-core_lib",
+        "//tfjs-converter/src/data:compiled_api_lib",
+        "//tfjs-converter/src/operations/custom_op:register_lib",
+        "//tfjs-converter/src/operations/executors:executors_lib",
+        "//tfjs-converter/src/operations/op_list:op_list_lib",
+    ],
+)
+
+ts_library(
+    name = "op_mapper_schema_lib",
+    srcs = [
+        "op_mapper_schema.ts",
+    ],
+    module_name = "@tensorflow/tfjs-converter/dist/operations",
+)

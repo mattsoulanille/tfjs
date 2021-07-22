@@ -1,0 +1,23 @@
+load("//tools:defaults.bzl", "ts_library")
+
+package(default_visibility = ["//visibility:public"])
+
+ts_library(
+    name = "types_lib",
+    srcs = [
+        "types.ts",
+    ],
+    module_name = "@tensorflow/tfjs-converter/dist/data",
+    deps = [
+        "//tfjs-core/src:tfjs-core_lib",
+        "//tfjs-converter/src/executor:datastructures_lib",
+    ],
+)
+
+ts_library(
+    name = "compiled_api_lib",
+    module_name = "@tensorflow/tfjs-converter/dist/data",
+    srcs = [
+        "compiled_api.ts",
+    ],
+)

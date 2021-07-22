@@ -29,18 +29,11 @@ filegroup(
 )
 
 ts_library(
-    name = "tfjs-converter_src_lib",
-    srcs = glob(
-        ["**/*.ts"],
-        exclude = TEST_SRCS + ["index.ts"],
-    ),
-    module_name = "@tensorflow/tfjs-converter/dist",
-    deps = [
-        "//tfjs-core/src:tfjs-core_lib",
-        "//tfjs-core/src:tfjs-core_src_lib",
-        "@npm//@types/seedrandom",
-        "@npm//seedrandom",
+    name = "version_lib",
+    srcs = [
+        "version.ts",
     ],
+    module_name = "@tensorflow/tfjs-converter/dist",
 )
 
 ts_library(
@@ -48,7 +41,12 @@ ts_library(
     srcs = ["index.ts"],
     module_name = "@tensorflow/tfjs-converter",
     deps = [
-        ":tfjs-converter_src_lib",
+        ":version_lib",
+        "//tfjs-core/src:tfjs-core_lib",
+        "//tfjs-core/src:tfjs-core_src_lib",
+        "//tfjs-converter/src/executor:graph_model_lib",
+        "//tfjs-converter/src/operations/custom_op:register_lib",
+        "//tfjs-converter/src/operations:types_lib",
     ],
 )
 
@@ -59,7 +57,7 @@ ts_library(
     module_name = "@tensorflow/tfjs-converter/dist",
     deps = [
         ":tfjs-converter_lib",
-        ":tfjs-converter_src_lib",
+        #":tfjs-converter_src_lib",
         "//tfjs-backend-cpu/src:tfjs-backend-cpu_lib",
         "//tfjs-core/src:tfjs-core_lib",
         "//tfjs-core/src:tfjs-core_src_lib",

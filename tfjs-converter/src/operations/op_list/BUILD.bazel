@@ -1,0 +1,12 @@
+load("//tools:defaults.bzl", "ts_library")
+
+package(default_visibility = ["//visibility:public"])
+
+ts_library(
+    name = "op_list_lib",
+    srcs = glob(["*.ts"], exclude = ["*_test.ts"]),
+    module_name = "@tensorflow/tfjs-converter/dist/operations/op_list",
+    deps = [
+        "//tfjs-converter/src/operations:types_lib",
+    ]
+)
