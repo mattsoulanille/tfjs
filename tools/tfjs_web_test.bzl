@@ -94,6 +94,7 @@ def tfjs_web_test(name, ci = True, **kwargs):
                 # specified. They are manually spefied here so we can append
                 # karma-browserstack-launcher.
                 "@npm//karma-browserstack-launcher",
+                "@npm//@bazel/concatjs",
             ],
             tags = ["ci"] + tags,  # Tag to be run in ci
             **kwargs

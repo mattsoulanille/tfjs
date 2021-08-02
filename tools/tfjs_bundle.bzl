@@ -80,7 +80,9 @@ def tfjs_rollup_bundle(name, deps, entry_point, minify = False, umd_name = None,
         "@npm//rollup-plugin-sourcemaps",
         "@npm//rollup-plugin-terser",
         "@npm//rollup-plugin-visualizer",
+        # The following two imports are for es5 downleveling
         "@npm//typescript",
+        "@npm//tslib",
     ]
 
     rollup_args = []

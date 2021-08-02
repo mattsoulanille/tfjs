@@ -85,5 +85,7 @@ esbuild(
         ":tfjs-core_test_lib",
         "//tfjs-backend-cpu/src:tfjs-backend-cpu_lib",
         "//tfjs-core:package_json",
+        "@npm//long",
+        "@npm//jasmine",
     ],
 )

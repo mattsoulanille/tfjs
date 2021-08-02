@@ -41,6 +41,7 @@ tfjs_bundle(
     deps = [
         "//tfjs-backend-cpu/src:tfjs-backend-cpu_lib",
         "//tfjs-backend-cpu/src:tfjs-backend-cpu_src_lib",
+        "@npm//long",
     ],
 )
 

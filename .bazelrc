@@ -115,7 +115,7 @@ build:remote --spawn_strategy=remote,worker,local
 
 #build:remote --bes_backend="buildeventservice.googleapis.com" --bes_timeout=60s --bes_results_url="https://source.cloud.google.com/results/invocations/" --remote_instance_name=projects/learnjs-174218/instances/default_instance --project_id=learnjs-174218
 
-#build:bes --bes_backend="buildeventservice.googleapis.com" --bes_timeout=60s --auth_enabled=true --remote_cache=remotebuildexecution.googleapis.com --remote_timeout=3600 --bes_results_url="https://source.cloud.google.com/results/invocations/" --remote_instance_name=projects/learnjs-174218/instances/default_instance --project_id=learnjs-174218
+build:bes --bes_backend="buildeventservice.googleapis.com" --bes_timeout=60s --auth_enabled=true --remote_cache=remotebuildexecution.googleapis.com --remote_timeout=3600 --bes_results_url="https://source.cloud.google.com/results/invocations/" --remote_instance_name=projects/learnjs-174218/instances/default_instance --project_id=learnjs-174218
 
 
 # Load any settings specific to the current user.
