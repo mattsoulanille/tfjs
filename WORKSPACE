@@ -272,7 +272,10 @@ filegroup(
     urls = ["https://www.python.org/ftp/python/2.7.13/Python-2.7.13.tgz"],
 )
 
-register_toolchains("//tfjs-converter/python:tfjs_py_toolchain")
+register_toolchains(
+    "//tfjs-converter/python:native_py_toolchain",
+    "//tfjs-converter/python:tfjs_py_toolchain",
+)
 
 http_archive(
     name = "rules_python",
@@ -286,12 +289,10 @@ load("@rules_python//python:pip.bzl", "pip_install")
 # third-party packages specified in the requirements.txt file.
 pip_install(
     name = "tensorflowjs_dev_deps",
-    python_interpreter_target = "@python3_interpreter//:python3_bin",
     requirements = "//tfjs-converter/python:requirements-dev.txt",
 )
 
 pip_install(
     name = "tensorflowjs_deps",
-    python_interpreter_target = "@python3_interpreter//:python3_bin",
     requirements = "//tfjs-converter/python:requirements.txt",
 )

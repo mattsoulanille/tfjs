@@ -31,6 +31,65 @@ toolchain(
     toolchain_type = "@bazel_tools//tools/python:toolchain_type",
 )
 
+constraint_value(
+    name = "usr_bin_python2",
+    constraint_setting = "@bazel_tools//tools/python:py2_interpreter_path",
+)
+
+constraint_value(
+    name = "usr_bin_python3",
+    constraint_setting = "@bazel_tools//tools/python:py3_interpreter_path",
+)
+
+platform(
+    name = "native_python",
+    constraint_values = [
+        ":usr_bin_python2",
+        ":usr_bin_python3",
+    ],
+)
+
+py_runtime(
+    name = "native_python2_runtime",
+    interpreter_path = "/usr/bin/python2",
+    python_version = "PY2",
+)
+
+py_runtime(
+    name = "native_python3_runtime",
+    interpreter_path = "/usr/bin/python3",
+    python_version = "PY3",
+)
+
+py_runtime_pair(
+    name = "native_py_runtime_pair",
+    py2_runtime = ":native_python2_runtime",
+    py3_runtime = ":native_python3_runtime",
+)
+
+toolchain(
+    name = "native_py_toolchain",
+    target_compatible_with = [
+        # Make sure this toolchain is only selected for a target platform that
+        # advertises that it has interpreters available under /usr/bin.
+        ":usr_bin_python2",
+        ":usr_bin_python3",
+    ],
+    toolchain = ":native_py_runtime_pair",
+    toolchain_type = "@bazel_tools//tools/python:toolchain_type",
+)
+
+# Used for CI
+platform(
+    name = "native_python_platform",
+    constraint_values = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+        ":usr_bin_python2",
+        ":usr_bin_python3",
+    ],
+)
+
 licenses(["notice"])  # Apache 2.0
 
 CONSOLE_SCRIPTS = {
