@@ -114,6 +114,11 @@ export const AUTOML_PHASE: Phase = {
   deps: ['tfjs-core', 'tfjs-backend-webgl', 'tfjs-converter']
 };
 
+export const WEBGPU_PHASE: Phase = {
+  packages: ['tfjs-backend-webgpu'],
+  deps: ['tfjs-core', 'tfjs-backend-cpu'],
+};
+
 export const WEBSITE_PHASE: Phase = {
   packages: ['tfjs-website'],
   deps: [
@@ -153,6 +158,11 @@ export const AUTOML_RELEASE_UNIT: ReleaseUnit = {
   phases: [AUTOML_PHASE]
 };
 
+export const WEBGPU_RELEASE_UNIT: ReleaseUnit = {
+  name: 'webgpu',
+  phases: [WEBGPU_PHASE]
+};
+
 export const WEBSITE_RELEASE_UNIT: ReleaseUnit = {
   name: 'website',
   phases: [WEBSITE_PHASE],
@@ -161,7 +171,8 @@ export const WEBSITE_RELEASE_UNIT: ReleaseUnit = {
 
 export const RELEASE_UNITS: ReleaseUnit[] = [
   TFJS_RELEASE_UNIT, VIS_RELEASE_UNIT, REACT_NATIVE_RELEASE_UNIT,
-  TFLITE_RELEASE_UNIT, AUTOML_RELEASE_UNIT, WEBSITE_RELEASE_UNIT
+  TFLITE_RELEASE_UNIT, AUTOML_RELEASE_UNIT, WEBGPU_RELEASE_UNIT,
+  WEBSITE_RELEASE_UNIT,
 ];
 
 export const TMP_DIR = '/tmp/tfjs-release';
