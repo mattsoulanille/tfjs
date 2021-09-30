@@ -213,7 +213,7 @@ filegroup(
     patch_cmds = [
         "mkdir $(pwd)/bazel_install_py3",
         _py3_configure,
-        "make",
+        "make -j",
         "make install",
         "ln -s bazel_install_py3/bin/python3 python3_bin",
     ],
@@ -235,7 +235,7 @@ filegroup(
     patch_cmds = [
         "mkdir $(pwd)/bazel_install_py2",
         _py2_configure,
-        "make",
+        "make -j",
         "make install",
         "ln -s bazel_install_py2/bin/python python_bin",
     ],
@@ -266,4 +266,16 @@ pip_install(
     name = "tensorflowjs_deps",
     python_interpreter_target = "@python3_interpreter//:python3_bin",
     requirements = "//tfjs-converter/python:requirements.txt",
+)
+
+# Set up web testing, choose browsers we can test on
+load("@io_bazel_rules_webtesting//web:repositories.bzl", "web_test_repositories")
+
+web_test_repositories()
+
+load("@io_bazel_rules_webtesting//web/versioned:browsers-0.3.2.bzl", "browser_repositories")
+
+browser_repositories(
+    chromium = True,
+    firefox = True,
 )
