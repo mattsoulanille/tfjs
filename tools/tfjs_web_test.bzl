@@ -13,7 +13,7 @@
 # limitations under the License.
 # =============================================================================
 
-load("@npm//@bazel/concatjs:index.bzl", "karma_web_test")
+load("@npm//@bazel/concatjs:index.bzl", "karma_web_test", "karma_web_test_suite")
 
 def _make_karma_config_impl(ctx):
     output_file_path = ctx.label.name + ".js"
@@ -79,13 +79,16 @@ def tfjs_web_test(name, ci = True, args = [], **kwargs):
         args = args,
     )
 
-    karma_web_test(
+    karma_web_test_suite(
+        name = name,
         size = size,
         timeout = timeout,
-        name = name,
         config_file = config_file,
         tags = ["native"] + tags,
-        **kwargs
+        browsers = [
+            "@io_bazel_rules_webtesting//browsers:chromium-local",
+        ],
+        **kwargs,
     )
 
     # Create a 'karma_web_test' target for each browser
