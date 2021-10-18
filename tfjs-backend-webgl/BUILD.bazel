@@ -111,6 +111,7 @@ tfjs_web_test(
         "bs_android_9",
         "win_10_chrome",
     ],
+    configuration_env_vars = ["DISPLAY"], # Not a headless browser
     static_files = STATIC_FILES,
 )
 
@@ -127,6 +128,7 @@ tfjs_web_test(
         "bs_safari_mac",
         "bs_ios_11",
     ],
+    configuration_env_vars = ["DISPLAY"], # Not a headless browser
     static_files = STATIC_FILES,
 )
 
