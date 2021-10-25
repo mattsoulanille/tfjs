@@ -15,6 +15,7 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@npm//@bazel/rollup:index.bzl", "rollup_bundle")
+load("//tools:defaults.bzl", "esbuild")
 
 def _make_rollup_config_impl(ctx):
     output_file = ctx.actions.declare_file(ctx.label.name + ".js")
@@ -138,17 +139,31 @@ def tfjs_bundle(
         dot_min = ".min" if minify else ""
 
         # UMD ES2017
-        tfjs_rollup_bundle(
+        esbuild(
             name = name + ".es2017" + dot_min,
             testonly = testonly,
             deps = deps,
             entry_point = entry_point,
-            umd_name = umd_name,
-            format = "umd",
+            #umd_name = umd_name,
+            #format = "umd",
+            format = "cjs",
             minify = minify,
-            external = external,
-            globals = globals,
+            external = external,  # + globals,
+            sources_content = True,
+            target = "es2017",
+            #globals = globals,
         )
+        # tfjs_rollup_bundle(
+        #     name = name + ".es2017" + dot_min,
+        #     testonly = testonly,
+        #     deps = deps,
+        #     entry_point = entry_point,
+        #     umd_name = umd_name,
+        #     format = "umd",
+        #     minify = minify,
+        #     external = external,
+        #     globals = globals,
+        # )
 
         # UMD es5
         tfjs_rollup_bundle(
@@ -167,15 +182,29 @@ def tfjs_bundle(
         # FESM ES2017
         # TODO(mattsoulanille): Check that this is actually
         # generating flat esm modules.
-        tfjs_rollup_bundle(
+        # tfjs_rollup_bundle(
+        #     name = name + ".fesm" + dot_min,
+        #     testonly = testonly,
+        #     deps = deps,
+        #     entry_point = entry_point,
+        #     format = "esm",
+        #     minify = minify,
+        #     external = external,
+        #     globals = globals,
+        # )
+        esbuild(
             name = name + ".fesm" + dot_min,
             testonly = testonly,
             deps = deps,
             entry_point = entry_point,
+            #umd_name = umd_name,
+            #format = "umd",
             format = "esm",
             minify = minify,
-            external = external,
-            globals = globals,
+            external = external,  # + globals,
+            sources_content = True,
+            target = "es2017",
+            #globals = globals,
         )
 
         # cjs es5 node bundle
