@@ -28,6 +28,10 @@
         "./dist/bin/*"
       ]
     },
+    "typeRoots": [
+      "./node_modules/@types",
+      "./node_modules/@webgpu"
+    ],
     "plugins": [
       {
         "name": "@bazel/tsetse",

@@ -93,12 +93,10 @@ esbuild(
         "@tensorflow/tfjs",
         "worker_threads",
         "util",
-        "@webgpu/types",
     ],
     sources_content = True,
     deps = [
         ":tfjs-backend-webgpu_lib",
         ":tfjs-backend-webgpu_test_lib",
-        "@npm//@webgpu/types",
     ],
 )
