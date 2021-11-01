@@ -48,6 +48,22 @@ copy_ts_library_to_dist(
     root = "src",
 )
 
+filegroup(
+    name = "custom_module_commonjs",
+    srcs = [
+        "//tfjs/tools/custom_module:custom_module_lib",
+    ],
+    output_group = "es5_sources",
+)
+
+copy_to_dist(
+    name = "copy_custom_module",
+    srcs = [
+        ":custom_module_commonjs",
+        "//tfjs/tools/custom_module:custom_module_lib",
+    ],
+)
+
 copy_to_dist(
     name = "copy_bundles",
     srcs = [
@@ -73,16 +89,23 @@ copy_file(
     out = "dist/miniprogram/index.js.map",
 )
 
+copy_file(
+    name = "copy_root_readme",
+    src = "//:README.md",
+    out = "README.md",
+)
+
 pkg_npm(
     name = "tfjs_pkg",
     package_name = "@tensorflow/tfjs",
     srcs = [
-        "README.md",
         "package.json",
     ],
     tags = ["ci"],
     deps = [
+        ":copy_root_readme",
         ":copy_bundles",
+        ":copy_custom_module",
         ":copy_miniprogram",
         ":copy_miniprogram_map",
         ":copy_src_to_dist",
