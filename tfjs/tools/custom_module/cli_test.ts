@@ -19,20 +19,14 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 describe('CLI binary', () => {
-  it('should be present and executable', () => {
+  it('should be listed in package.json', () => {
     const packageJsonPath = path.resolve(
         __dirname,
         '../../package.json',
     );
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
     const binEntry = packageJson.bin;
-    expect(binEntry['tfjs-custom-module']).toBeDefined();
-
-    const toolPath = path.resolve(
-        path.dirname(packageJsonPath), binEntry['tfjs-custom-module']);
-
-    expect(() => {
-      fs.accessSync(toolPath, fs.constants.X_OK);
-    }).not.toThrow();
+    expect(binEntry['tfjs-custom-module'])
+      .toEqual("dist/tools/custom_module/cli.js");
   });
 });

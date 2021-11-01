@@ -1,0 +1,67 @@
+# Copyright 2021 Google LLC. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# =============================================================================
+
+load("//tools:defaults.bzl", "esbuild", "ts_library")
+load("@build_bazel_rules_nodejs//:index.bzl", "nodejs_binary")
+load("@npm//@bazel/jasmine:index.bzl", "jasmine_node_test")
+
+package(default_visibility = ["//visibility:public"])
+
+ts_library(
+    name = "custom_module_lib",
+    module_name = "@tensorflow/tfjs/dist/tools/custom_module",
+    srcs = glob(["*.ts"], exclude = ["*_test.ts"]),
+    deps = [
+        "@//tfjs-core/src:tfjs-core_lib",
+        "@//tfjs-converter/src:tfjs-converter_src_lib",
+        "@npm//@types/node",
+        "@npm//chalk",
+        "@npm//yargs",
+        "@npm//@types/yargs",
+    ]
+)
+
+ts_library(
+    name = "custom_module_test_lib",
+    testonly = True,
+    srcs = glob(["*_test.ts"]),
+    deps = [
+        ":custom_module_lib",
+        "@//tfjs:package_json",
+        "@//tfjs-converter/src:tfjs-converter_src_lib",
+        "@//tfjs-core/src:tfjs-core_lib",
+        "@npm//@types/node",
+    ],
+)
+
+jasmine_node_test(
+    name = "custom_module_test",
+    srcs = [
+        ":custom_module_test_lib",
+    ],
+    data = [
+        "@//tfjs-converter/metadata:kernels_to_ops",
+    ],
+)
+
+nodejs_binary(
+    name = "custom_module",
+    data = [
+        ":custom_module_lib",
+        "@//tfjs-converter/metadata:kernels_to_ops",
+    ],
+    entry_point = "cli.ts",
+    link_workspace_root = True,
+)

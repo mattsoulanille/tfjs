@@ -54,8 +54,6 @@ const argParser = yargs.options({
 
 const args = argParser.argv;
 
-
-
 function validateArgs(): CustomTFJSBundleConfig {
   let configFilePath = args.config;
   if (configFilePath == null) {

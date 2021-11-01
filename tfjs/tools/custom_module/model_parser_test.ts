@@ -255,8 +255,9 @@ describe('Model parse', () => {
   // tslint:disable-next-line: no-any
   let kernelToOps: any;
   beforeAll(() => {
+    const runfiles = require(process.env['BAZEL_NODE_RUNFILES_HELPER']);
     const mappingPath =
-        require.resolve('@tensorflow/tfjs-converter/metadata/kernel2op.json');
+        runfiles.resolve('tfjs/tfjs-converter/metadata/kernel2op.json');
     kernelToOps = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
   });
 
