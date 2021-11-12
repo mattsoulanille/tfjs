@@ -17,6 +17,7 @@
 
 load("@npm//@bazel/esbuild:index.bzl", _esbuild = "esbuild")
 load("@npm//@bazel/typescript:index.bzl", _ts_library = "ts_library")
+load("@npm//esbuild-visualizer:index.bzl", _visualizer = "esbuild_visualizer")
 
 def ts_library(**kwargs):
     # Use the ts_library tsconfig by default. The ts_library tsconfig does not
@@ -47,12 +48,51 @@ def ts_library(**kwargs):
         **kwargs
     )
 
-def esbuild(**kwargs):
+def _json_impl(ctx):
+    json_files = [f for f in ctx.files.srcs if f.extension == "json"]
+    return [DefaultInfo(files = depset(json_files))]
+
+_json = rule(
+    implementation = _json_impl,
+    attrs = {
+        "srcs": attr.label_list(
+            allow_files = True,
+            mandatory = True,
+        )
+    }
+)
+
+def esbuild(name, **kwargs):
     # Make sure esbuild always resolve the module (.mjs) files before .js files.
     args = kwargs.pop("args", {})
     args["resolveExtensions"] = [".mjs", ".js"]
 
     _esbuild(
+        name = name,
         args = args,
         **kwargs
+    )
+
+    metadata = name + "_metadata_file"
+    _json(
+        name = metadata,
+        srcs = [
+            name
+        ],
+    )
+
+    vis_name = name + "_stats"
+    _visualizer(
+        name = vis_name,
+        data = [
+            metadata,
+        ],
+        args = [
+            "--filename", "$@",
+            "--template", "sunburst",
+            "--metadata", "$(locations :%s)" % metadata,
+        ],
+        outs = [
+            vis_name + ".html",
+        ],
     )

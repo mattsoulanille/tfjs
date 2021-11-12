@@ -30,6 +30,7 @@
     "copyfiles": "~1.2.0",
     "core-js": "3",
     "deep-equal": "^1.0.1",
+    "esbuild-visualizer": "^0.3.1",
     "jasmine": "~3.1.0",
     "jasmine-core": "~3.1.0",
     "js-yaml": "^3.14.0",
