@@ -101,7 +101,11 @@ describe('benchmark models', () => {
           JSON.stringify({timeInfo, memoryInfo})}</tfjs_benchmark>`;
       console.log(resultStr);
     } catch (error) {
-      console.log(`<tfjs_error>${error}</tfjs_error>`);
+      let message = error;
+      if (error instanceof Error) {
+        message = error.stack;
+      }
+      console.log(`<tfjs_error>${message}</tfjs_error>`);
     }
   });
 });

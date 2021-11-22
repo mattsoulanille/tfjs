@@ -256,7 +256,7 @@ function runBrowserStackBenchmark(tabId) {
         return reject(new Error(`Failed to run ${command}:\n${error}`));
       }
 
-      const errorReg = /.*\<tfjs_error\>(.*)\<\/tfjs_error\>/;
+      const errorReg = /.*\<tfjs_error\>([\s\S]*)\<\/tfjs_error\>/;
       const matchedError = stdout.match(errorReg);
       if (matchedError != null) {
         if (!cliArgs.cloud) {
