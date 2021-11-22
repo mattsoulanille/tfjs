@@ -124,7 +124,9 @@ async function benchmarkAll(config) {
     }
   }
   console.log('\nAll benchmarks complete!');
-  endFirebaseInstance();
+  if (cliArgs.firestore) {
+    endFirebaseInstance();
+  }
   return allResults;
 }
 
@@ -214,11 +216,12 @@ async function getOneBenchmarkResult(
     return result;
   } catch (err) {
     // Retries benchmark until resolved or until no retries left
+    console.log(`${tabId} benchmark failed with error:`);
+    console.log(err);
     if (triesLeft > 0) {
       console.log(`Retrying ${tabId} benchmark. ${triesLeft} tries left...`);
       return await getOneBenchmarkResult(tabId, triesLeft, runOneBenchmark);
     } else {
-      console.log(`${tabId} benchmark failed.`);
       throw err;
     }
   }
@@ -250,7 +253,7 @@ function runBrowserStackBenchmark(tabId) {
               'benchmarkComplete',
               {tabId, error: `Failed to run ${command}:\n${error}`});
         }
-        return reject(`Failed to run ${command}:\n${error}`);
+        return reject(new Error(`Failed to run ${command}:\n${error}`));
       }
 
       const errorReg = /.*\<tfjs_error\>(.*)\<\/tfjs_error\>/;
@@ -259,7 +262,7 @@ function runBrowserStackBenchmark(tabId) {
         if (!cliArgs.cloud) {
           io.emit('benchmarkComplete', {tabId, error: matchedError[1]});
         }
-        return reject(matchedError[1]);
+        return reject(new Error(matchedError[1]));
       }
 
       const resultReg = /.*\<tfjs_benchmark\>(.*)\<\/tfjs_benchmark\>/;
@@ -278,7 +281,7 @@ function runBrowserStackBenchmark(tabId) {
       if (!cliArgs.cloud) {
         io.emit('benchmarkComplete', {error: errorMessage})
       };
-      return reject(errorMessage);
+      return reject(new Error(errorMessage));
     });
   });
 }
