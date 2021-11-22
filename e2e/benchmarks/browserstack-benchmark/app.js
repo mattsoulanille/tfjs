@@ -157,8 +157,9 @@ async function benchmark(config, runOneBenchmark = getOneBenchmarkResult) {
   console.log('Preparing configuration files for the test runner.\n');
   setupBenchmarkEnv(config);
   if (require.main === module) {
+    const webDeps = cliArgs ? cliArgs.webDeps : false;
     console.log(
-        `Starting benchmarks using ${cliArgs?.webDeps ? 'cdn' : 'local'} ` +
+        `Starting benchmarks using ${webDeps ? 'cdn' : 'local'} ` +
         `dependencies...`);
   }
 
@@ -167,14 +168,16 @@ async function benchmark(config, runOneBenchmark = getOneBenchmarkResult) {
   // Runs and gets result of each queued benchmark
   for (const tabId in config.browsers) {
     numActiveBenchmarks++;
-    results.push(runOneBenchmark(tabId, cliArgs?.maxTries).then((value) => {
+    const maxTries = cliArgs ? cliArgs.maxTries : 3;
+    results.push(runOneBenchmark(tabId, maxTries).then((value) => {
       value.deviceInfo = config.browsers[tabId];
       value.modelInfo = config.benchmark;
       return value;
     }));
 
     // Waits for specified # of benchmarks to complete before running more
-    if (cliArgs?.maxBenchmarks && numActiveBenchmarks >= cliArgs.maxBenchmarks) {
+    let maxBenchmarks = cliArgs ? cliArgs.maxBenchmarks : 4;
+    if (maxBenchmarks && numActiveBenchmarks >= cliArgs.maxBenchmarks) {
       numActiveBenchmarks = 0;
       await Promise.allSettled(results);
     }
@@ -183,12 +186,12 @@ async function benchmark(config, runOneBenchmark = getOneBenchmarkResult) {
   // Optionally written to an outfile or pushed to a database once all
   // benchmarks return results
   const fulfilled = await Promise.allSettled(results);
-  if (cliArgs?.outfile) {
+  if (cliArgs && cliArgs.outfile) {
     await write('./benchmark_results.json', fulfilled);
   } else {
     console.log('\Benchmarks complete.\n');
   }
-  if (cliArgs?.firestore) {
+  if (cliArgs && cliArgs.firestore) {
     await pushToFirestore(fulfilled);
   }
   return fulfilled;
@@ -238,17 +241,18 @@ async function getOneBenchmarkResult(
 function runBrowserStackBenchmark(tabId) {
   return new Promise((resolve, reject) => {
     const args = ['test', '--browserstack', `--browsers=${tabId}`];
-    if (cliArgs.webDeps) {
+    if (cliArgs && cliArgs.webDeps) {
       args.push('--cdn')
     };
     const command = `yarn ${args.join(' ')}`;
     console.log(`Running: ${command}`);
 
+    const useCloud = cliArgs && cliArgs.cloud;
     execFile('yarn', args, (error, stdout, stderr) => {
       if (error) {
         console.log(`\n${error}`);
         console.log(`stdout: ${stdout}`);
-        if (!cliArgs.cloud) {
+        if (!useCloud) {
           io.emit(
               'benchmarkComplete',
               {tabId, error: `Failed to run ${command}:\n${error}`});
@@ -259,7 +263,7 @@ function runBrowserStackBenchmark(tabId) {
       const errorReg = /.*\<tfjs_error\>([\s\S]*)\<\/tfjs_error\>/;
       const matchedError = stdout.match(errorReg);
       if (matchedError != null) {
-        if (!cliArgs.cloud) {
+        if (!useCloud) {
           io.emit('benchmarkComplete', {tabId, error: matchedError[1]});
         }
         return reject(new Error(matchedError[1]));
@@ -270,7 +274,7 @@ function runBrowserStackBenchmark(tabId) {
       if (matchedResult != null) {
         const benchmarkResult = JSON.parse(matchedResult[1]);
         benchmarkResult.tabId = tabId;
-        if (!cliArgs.cloud) {
+        if (!useCloud) {
           io.emit('benchmarkComplete', benchmarkResult)
         };
         return resolve(benchmarkResult);
@@ -278,7 +282,7 @@ function runBrowserStackBenchmark(tabId) {
 
       const errorMessage = 'Did not find benchmark results from the logs ' +
           'of the benchmark test (benchmark_models.js).';
-      if (!cliArgs.cloud) {
+      if (!useCloud) {
         io.emit('benchmarkComplete', {error: errorMessage})
       };
       return reject(new Error(errorMessage));
