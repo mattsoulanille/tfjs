@@ -301,10 +301,8 @@ const benchmarks = {
       return tf.loadGraphModel(url, {fromTFHub: true});
     },
     predictFunc: (inputResolution = 128) => {
-      return async (model) => {
-        const input = tf.randomNormal([1, inputResolution, inputResolution, 3]);
-        return predictFunction(model, input);
-      }
+      const input = tf.randomNormal([1, inputResolution, inputResolution, 3]);
+      return predictFunction(model, input);
     },
   },
   'speech-commands': {
