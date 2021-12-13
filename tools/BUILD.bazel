@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # =============================================================================
-load("@build_bazel_rules_nodejs//:index.bzl", "nodejs_binary")
+load("@build_bazel_rules_nodejs//:index.bzl", "nodejs_binary", "js_library")
+load("@npm//@bazel/esbuild:esbuild_config.bzl", "esbuild_config")
 load("//tools:defaults.bzl", "ts_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -63,4 +64,23 @@ nodejs_binary(
         ":make_version_test_file_lib",
     ],
     entry_point = "make_version_test_file.ts",
+)
+
+
+js_library(
+    name = "esbuild_es5_plugin",
+    srcs = [
+        "esbuild_es5.js",
+    ],
+    deps = [
+        "@npm//typescript",
+    ]
+)
+
+esbuild_config(
+    name = "esbuild_es5_config",
+    config_file = "esbuild_es5.config.mjs",
+    deps = [
+        ":esbuild_es5_plugin",
+    ],
 )

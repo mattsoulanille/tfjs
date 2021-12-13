@@ -15,7 +15,7 @@
 
 """Re-export of some bazel rules with repository-wide defaults."""
 
-load("@npm//@bazel/esbuild:index.bzl", _esbuild = "esbuild")
+load("@npm//@bazel/esbuild:index.bzl", _esbuild = "esbuild", "esbuild_config")
 load("@npm//@bazel/typescript:index.bzl", _ts_library = "ts_library")
 load("@npm//esbuild-visualizer:index.bzl", _visualizer = "esbuild_visualizer")
 
@@ -34,6 +34,7 @@ def ts_library(**kwargs):
     # https://github.com/bazelbuild/rules_nodejs/issues/2094
     devmode_target = kwargs.pop("devmode_target", "es5")
     prodmode_target = kwargs.pop("prodmode_target", "es2017")
+    #prodmode_target = kwargs.pop("prodmode_target", "es5")
 
     # By default, set package_name based on module_name to mimic pre-4.0 behavior
     # of automatically linking the ts_library.
@@ -66,16 +67,34 @@ def esbuild(name, **kwargs):
     # Make sure esbuild always resolve the module (.mjs) files before .js files.
     args = kwargs.pop("args", {})
     args["resolveExtensions"] = [".mjs", ".js"]
+    sources_content = kwargs.pop("sources_content", True)
+    testonly = kwargs["testonly"] if "testonly" in kwargs else False
 
+    es5 = kwargs.pop("es5", False)
+    target = kwargs.pop("target", None)
+    if es5:
+        if "config" in kwargs:
+            fail("'config' is not supported in es5 mode")
+        if target != None and target != "es5":
+            fail("target must be 'es5' if speficied in es5 mode")
+        config = "@//tools:esbuild_es5_config"
+        target = "es5"
+    else:
+        config = kwargs.pop("config", None)
+        
     _esbuild(
         name = name,
         args = args,
+        sources_content = sources_content,
+        config = config,
+        target = target,
         **kwargs
     )
 
     metadata = name + "_metadata_file"
     _json(
         name = metadata,
+        testonly = testonly,
         srcs = [
             name
         ],
@@ -84,6 +103,7 @@ def esbuild(name, **kwargs):
     vis_name = name + "_stats"
     _visualizer(
         name = vis_name,
+        testonly = testonly,
         data = [
             metadata,
         ],
