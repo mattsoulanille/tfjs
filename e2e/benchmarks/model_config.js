@@ -74,7 +74,7 @@ const sentences = [
   'what is the forecast for here at tea time',
 ];
 
-function predictFunction(model, input) {
+function predictFunction(input) {
   let debug = false;
   try {
     debug = tf.env().getBool('KEEP_INTERMEDIATE_TENSORS');
@@ -103,10 +103,10 @@ const benchmarks = {
     },
     predictFunc: () => {
       const input = tf.randomNormal([1, 224, 224, 3]);
-      if (isTflite()) {
+      if (typeof isTflite !== 'undefined' && isTflite()) {
         return () => tfliteModel.predict(input);
       } else {
-        return predictFunction(model, input);
+        return predictFunction(input);
       }
     },
   },
@@ -119,7 +119,7 @@ const benchmarks = {
     },
     predictFunc: () => {
       const input = tf.zeros([1, 128, 128, 3]);
-      return predictFunction(model, input);
+      return predictFunction(input);
     },
   },
   'face_detector': {
@@ -131,7 +131,7 @@ const benchmarks = {
     },
     predictFunc: () => {
       const input = tf.zeros([1, 128, 128, 3]);
-      return predictFunction(model, input);
+      return predictFunction(input);
     },
   },
   'hand_detector': {
@@ -142,7 +142,7 @@ const benchmarks = {
     },
     predictFunc: () => {
       const input = tf.zeros([1, 256, 256, 3]);
-      return predictFunction(model, input);
+      return predictFunction(input);
     },
   },
   'hand_skeleton': {
@@ -153,7 +153,7 @@ const benchmarks = {
     },
     predictFunc: () => {
       const input = tf.zeros([1, 256, 256, 3]);
-      return predictFunction(model, input);
+      return predictFunction(input);
     },
   },
   'AutoML Image': {
@@ -302,7 +302,7 @@ const benchmarks = {
     },
     predictFunc: (inputResolution = 128) => {
       const input = tf.randomNormal([1, inputResolution, inputResolution, 3]);
-      return predictFunction(model, input);
+      return predictFunction(input);
     },
   },
   'speech-commands': {
@@ -413,7 +413,7 @@ const benchmarks = {
           inferenceInput = customInput ||
               generateInputFromDef(
                                state.inputs, model instanceof tf.GraphModel);
-          if (isTflite()) {
+          if (typeof isTflite !== 'undefined' && isTflite()) {
             return await tfliteModel.predict(inferenceInput);
           } else {
             const predict = getPredictFnForModel(model, inferenceInput);
