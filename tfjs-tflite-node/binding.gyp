@@ -35,17 +35,18 @@
         '<(tflite_include_dir)',
         "<!@(node -p \"require('node-addon-api').include\")"
     ],
-    # 'conditions' : [
-    #   [
-    #     'OS=="linux"', {
-    #       'libraries' : [
-    #         '-Wl,-rpath,\$$ORIGIN/../../deps/lib',
-    #         '-ltflite',
-    #         '-ltflite_framework',
-    #       ],
-    #       'library_dirs' : ['<(module_root_dir)/deps/lib'],
-    #     }
-    #   ],
+    'conditions' : [
+      [
+        'OS=="linux"', {
+          'libraries' : [
+            '<(module_root_dir)/deps/lib/libtensorflowlite_c.so',
+            '-Wl,-rpath,\$$ORIGIN/../../deps/lib'
+            #'-ltensorflowlite',
+            #'-ltflite_framework',
+          ]
+#          'library_dirs' : ['<(module_root_dir)/deps/lib'],
+        }
+      ]
     #   [
     #     'OS=="mac"', {
     #       'libraries' : [
@@ -92,7 +93,7 @@
     #       ]
     #     },
     #   ],
-    # ],
+    ],
     "defines" : [
         "NAPI_DISABLE_CPP_EXCEPTIONS"
     ]

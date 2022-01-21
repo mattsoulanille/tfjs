@@ -15,8 +15,18 @@
  * =============================================================================
  */
 
+import { TFLiteWebModelRunner, TFLiteWebModelRunnerTensorInfo} from '@tensorflow/tfjs-tflite';
+
 const addon = require('bindings')('node_tflite_binding');
 
-console.log(addon.hello());
-export const foo = "foo test";
-export const world = addon.hello();
+interface InterpreterOptions {
+  threads: number;
+}
+
+export const Interpreter = addon.Interpreter as {
+  new(model: Uint8Array, options: InterpreterOptions): TFLiteWebModelRunner
+};
+
+export const TensorInfo = addon.TensorInfo as {
+  new(): TFLiteWebModelRunnerTensorInfo
+};

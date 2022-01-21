@@ -15,10 +15,64 @@
  * =============================================================================
  */
 
-import {foo} from './index';
+import {Interpreter} from './index';
+import * as fs from 'fs';
+import { TFLiteWebModelRunner } from '@tensorflow/tfjs-tflite';
 
-describe('tfjs-tflite-node index', () => {
-  it('has foo', () => {
-    expect(foo).toEqual('foo test');
+describe('interpreter', () => {
+  let model: Uint8Array;
+  let interpreter: TFLiteWebModelRunner;
+  beforeEach(() => {
+    model = fs.readFileSync('./mobilenet_v1_1.0_224_quant.tflite');
+    interpreter = new Interpreter(model, { threads: 4 });
+  });
+
+  it('has input tensors', () => {
+    const inputs = interpreter.getInputs();
+    expect(inputs.length).toEqual(1);
+  });
+
+  it('gets data from input tensor', () => {
+    const input = interpreter.getInputs()[0];
+    const data = input.data();
+    expect(data).toBeDefined();
+  });
+
+  it('sets input tensor data', () => {
+    const input = interpreter.getInputs()[0];
+
+    const data = input.data();
+    data.set([1,2,3]);
+  });
+
+  it('runs infer', () => {
+    let outputs = interpreter.getOutputs();
+    interpreter.infer();
+    expect(outputs[0].data()).toBeDefined();
+  });
+
+  it('returns the same reference for each TensorInfo data() call', () => {
+    const input = interpreter.getInputs()[0];
+    const output = interpreter.getOutputs()[0];
+    expect(input.data()).toEqual(input.data());
+    expect(output.data()).toEqual(output.data());
   });
 });
+
+//console.log(tf)
+
+// describe('model', () => {
+//   let model: Uint8Array;
+//   let interpreter: TFLiteWebModelRunner;
+//   let tfliteModel: TFLiteModel;
+//   beforeEach(() => {
+//     model = fs.readFileSync('./mobilenet_v1_1.0_224_quant.tflite');
+//     interpreter = new Interpreter(model, { threads: 4 });
+//     tfliteModel = new TFLiteModel(interpreter);
+//   });
+
+//   it('runs a model', () => {
+//     const input = tf.tensor1d([1,2,3,4,5,6,7,8]);
+//     console.log(tfliteModel.predict([input as any]));
+//   });
+// });
