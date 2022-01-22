@@ -85,6 +85,36 @@ git_repository(
     shallow_since = "1617056836 -0700",
 )
 
+git_repository(
+    name = "org_tensorflow",
+    commit = "c256c071bb26e1e13b4666d1b3e229e110bc914a",
+    remote = "https://github.com/tensorflow/tensorflow.git",
+    shallow_since = "1635730264 -0700",
+)
+
+# Initialize the TensorFlow repository and all dependencies.
+#
+# The cascade of load() statements and tf_workspace?() calls works around the
+# restriction that load() statements need to be at the top of .bzl files.
+# E.g. we can not retrieve a new repository with http_archive and then load()
+# a macro from that repository in the same file.
+load("@org_tensorflow//tensorflow:workspace3.bzl", "tf_workspace3")
+
+tf_workspace3()
+
+load("@org_tensorflow//tensorflow:workspace2.bzl", "tf_workspace2")
+
+tf_workspace2()
+
+# load("@org_tensorflow//tensorflow:workspace1.bzl", "tf_workspace1")
+
+# tf_workspace1()
+
+#load("@org_tensorflow//tensorflow:workspace0.bzl", "tf_workspace0")
+
+#tf_workspace0()
+
+
 # The libraries below are transitive dependencies of XNNPACK that we need to
 # explicitly enumerate here. See https://docs.bazel.build/versions/master/external.html#transitive-dependencies
 
@@ -182,12 +212,12 @@ load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
 
 bazel_skylib_workspace()
 
-http_archive(
-    name = "rules_python",
-    sha256 = "934c9ceb552e84577b0faf1e5a2f0450314985b4d8712b2b70717dc679fdc01b",
-    url = "https://github.com/bazelbuild/rules_python/releases/download/0.3.0/rules_python-0.3.0.tar.gz",
-)
+# http_archive(
+#     name = "rules_python",
+#     sha256 = "934c9ceb552e84577b0faf1e5a2f0450314985b4d8712b2b70717dc679fdc01b",
+#     url = "https://github.com/bazelbuild/rules_python/releases/download/0.3.0/rules_python-0.3.0.tar.gz",
+# )
 
-load("//:python_repositories.bzl", "python_repositories")
+# load("//:python_repositories.bzl", "python_repositories")
 
-python_repositories()
+# python_repositories()
