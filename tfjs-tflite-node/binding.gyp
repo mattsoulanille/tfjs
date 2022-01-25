@@ -17,7 +17,7 @@
 # Node.js TensorFlow Binding config:
 {
   'variables' : {
-    'tflite_include_dir' : '<(module_root_dir)/deps/include',
+    'tflite_include_dir' : '<(module_root_dir)/cc_deps/include',
     'tflite_headers' : [
       '<@(tflite_include_dir)/tflite/c/c_api.h',
       '<@(tflite_include_dir)/tflite/c/eager/c_api.h',
@@ -39,19 +39,19 @@
       [
         'OS=="linux"', {
           'libraries' : [
-            '<(module_root_dir)/deps/lib/libtensorflowlite_c.so',
-            '-Wl,-rpath,\$$ORIGIN/../../deps/lib'
+            '<(module_root_dir)/cc_deps/lib/libtensorflowlite_c.so',
+            '-Wl,-rpath,\$$ORIGIN/../../cc_deps/lib'
             #'-ltensorflowlite',
             #'-ltflite_framework',
           ]
-#          'library_dirs' : ['<(module_root_dir)/deps/lib'],
+#          'library_dirs' : ['<(module_root_dir)/cc_deps/lib'],
         }
       ]
     #   [
     #     'OS=="mac"', {
     #       'libraries' : [
-    #         '<(module_root_dir)/deps/lib/libtflite.2.dylib',
-    #         '<(module_root_dir)/deps/lib/libtflite_framework.2.dylib',
+    #         '<(module_root_dir)/cc_deps/lib/libtflite.2.dylib',
+    #         '<(module_root_dir)/cc_deps/lib/libtflite_framework.2.dylib',
     #       ],
     #       'postbuilds': [
     #         {
@@ -60,7 +60,7 @@
     #             'install_name_tool',
     #             "-change",
     #             "@rpath/libtflite.2.dylib",
-    #             "@loader_path/../../deps/lib/libtflite.2.dylib",
+    #             "@loader_path/../../cc_deps/lib/libtflite.2.dylib",
     #             "<(PRODUCT_DIR)/node_tflite_binding.node"
     #           ]
     #         },
@@ -70,7 +70,7 @@
     #             'install_name_tool',
     #             "-change",
     #             "@rpath/libtflite_framework.2.dylib",
-    #             "@loader_path/../../deps/lib/libtflite_framework.2.dylib",
+    #             "@loader_path/../../cc_deps/lib/libtflite_framework.2.dylib",
     #             "<(PRODUCT_DIR)/node_tflite_binding.node"
     #           ]
     #         }
@@ -81,7 +81,7 @@
     #     'OS=="win"', {
     #       'defines': ['COMPILER_MSVC'],
     #       'libraries': ['tflite'],
-    #       'library_dirs' : ['<(module_root_dir)/deps/lib'],
+    #       'library_dirs' : ['<(module_root_dir)/cc_deps/lib'],
     #       'variables': {
     #         'tflite-library-target': 'windows'
     #       },
