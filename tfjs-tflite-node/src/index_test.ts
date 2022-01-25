@@ -15,64 +15,96 @@
  * =============================================================================
  */
 
-import {Interpreter} from './index';
+import {TFLiteNodeModelRunner} from './index';
 import * as fs from 'fs';
-import { TFLiteWebModelRunner } from '@tensorflow/tfjs-tflite';
+import { TFLiteWebModelRunner } from '@tensorflow/tfjs-tflite/cjs/types/tflite_web_model_runner';
+import '@tensorflow/tfjs-backend-cpu';
+import * as jpeg from 'jpeg-js';
 
 describe('interpreter', () => {
   let model: Uint8Array;
-  let interpreter: TFLiteWebModelRunner;
+  let modelRunner: TFLiteWebModelRunner;
   beforeEach(() => {
-    model = fs.readFileSync('./mobilenet_v1_1.0_224_quant.tflite');
-    interpreter = new Interpreter(model, { threads: 4 });
+    model = fs.readFileSync('./test_data/mobilenet_v2_1.0_224_inat_bird_quant.tflite');
+    modelRunner = new TFLiteNodeModelRunner(model, { threads: 4 });
   });
 
   it('has input tensors', () => {
-    const inputs = interpreter.getInputs();
+    const inputs = modelRunner.getInputs();
     expect(inputs.length).toEqual(1);
   });
 
   it('gets data from input tensor', () => {
-    const input = interpreter.getInputs()[0];
+    const input = modelRunner.getInputs()[0];
     const data = input.data();
     expect(data).toBeDefined();
   });
 
   it('sets input tensor data', () => {
-    const input = interpreter.getInputs()[0];
+    const input = modelRunner.getInputs()[0];
 
     const data = input.data();
     data.set([1,2,3]);
   });
 
   it('runs infer', () => {
-    let outputs = interpreter.getOutputs();
-    interpreter.infer();
+    let outputs = modelRunner.getOutputs();
+    modelRunner.infer();
     expect(outputs[0].data()).toBeDefined();
   });
 
   it('returns the same reference for each TensorInfo data() call', () => {
-    const input = interpreter.getInputs()[0];
-    const output = interpreter.getOutputs()[0];
+    const input = modelRunner.getInputs()[0];
+    const output = modelRunner.getOutputs()[0];
     expect(input.data()).toEqual(input.data());
     expect(output.data()).toEqual(output.data());
   });
 });
 
-//console.log(tf)
+describe('model', () => {
+  let model: Uint8Array;
+  let modelRunner: TFLiteWebModelRunner;
+  let parrot: Uint8Array;
+  let labels: string[];
 
-// describe('model', () => {
-//   let model: Uint8Array;
-//   let interpreter: TFLiteWebModelRunner;
-//   let tfliteModel: TFLiteModel;
-//   beforeEach(() => {
-//     model = fs.readFileSync('./mobilenet_v1_1.0_224_quant.tflite');
-//     interpreter = new Interpreter(model, { threads: 4 });
-//     tfliteModel = new TFLiteModel(interpreter);
-//   });
+  beforeEach(() => {
+    model = fs.readFileSync('./test_data/mobilenet_v2_1.0_224_inat_bird_quant.tflite');
+    modelRunner = new TFLiteNodeModelRunner(model, { threads: 4 });
+    const parrotJpeg = jpeg.decode(
+      fs.readFileSync('./test_data/parrot-small.jpg'));
 
-//   it('runs a model', () => {
-//     const input = tf.tensor1d([1,2,3,4,5,6,7,8]);
-//     console.log(tfliteModel.predict([input as any]));
-//   });
-// });
+    const {width, height, data} = parrotJpeg;
+    parrot = new Uint8Array(width * height * 3);
+    let offset = 0;  // offset into original data
+    for (let i = 0; i < parrot.length; i += 3) {
+      parrot[i] = data[offset];
+      parrot[i + 1] = data[offset + 1];
+      parrot[i + 2] = data[offset + 2];
+
+      offset += 4;
+    }
+
+    labels = fs.readFileSync('./test_data/inat_bird_labels.txt', 'utf-8').split('\n');
+  });
+
+  it('runs a model', () => {
+    const input = modelRunner.getInputs()[0];
+    input.data().set(parrot);
+    modelRunner.infer();
+    const output = modelRunner.getOutputs()[0];
+
+    let max = 0;
+    let maxIndex = 0;
+    const data = output.data();
+    for (let i = 0; i < data.length; i++) {
+      if (data[i] > max) {
+        max = data[i];
+        maxIndex = i;
+      }
+    }
+
+    const label = labels[maxIndex];
+    console.log(label);
+    expect(label).toEqual('Ara macao (Scarlet Macaw)');
+  });
+});

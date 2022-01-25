@@ -23,6 +23,10 @@
     mkdirp "^1.0.4"
     rimraf "^3.0.2"
 
+"@tensorflow/tfjs-backend-cpu@link:../link-package/node_modules/@tensorflow/tfjs-backend-cpu":
+  version "0.0.0"
+  uid ""
+
 "@tensorflow/tfjs-core@link:../link-package/node_modules/@tensorflow/tfjs-core":
   version "0.0.0"
   uid ""
@@ -361,6 +365,11 @@ jasmine@^4.0.2:
   dependencies:
     glob "^7.1.6"
     jasmine-core "^4.0.0"
+
+jpeg-js@^0.4.3:
+  version "0.4.3"
+  resolved "https://registry.yarnpkg.com/jpeg-js/-/jpeg-js-0.4.3.tgz#6158e09f1983ad773813704be80680550eff977b"
+  integrity sha512-ru1HWKek8octvUHFHvE5ZzQ1yAsJmIvRdGWvSoKV52XKyuyYA437QWDttXT8eZXDSbuMpHlLzPDZUPd6idIz+Q==
 
 long@4.0.0:
   version "4.0.0"

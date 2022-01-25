@@ -23,7 +23,7 @@ interface InterpreterOptions {
   threads: number;
 }
 
-export const Interpreter = addon.Interpreter as {
+export const TFLiteNodeModelRunner = addon.Interpreter as {
   new(model: Uint8Array, options: InterpreterOptions): TFLiteWebModelRunner
 };
 
