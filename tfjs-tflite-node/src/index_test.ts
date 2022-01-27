@@ -21,6 +21,9 @@ import { TFLiteWebModelRunner } from '@tensorflow/tfjs-tflite/cjs/types/tflite_w
 import '@tensorflow/tfjs-backend-cpu';
 import * as jpeg from 'jpeg-js';
 
+import * as SegfaultHandler from 'segfault-handler';
+SegfaultHandler.registerHandler('crash.log');
+
 describe('interpreter', () => {
   let model: Uint8Array;
   let modelRunner: TFLiteWebModelRunner;

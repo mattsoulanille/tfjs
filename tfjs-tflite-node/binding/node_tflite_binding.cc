@@ -258,8 +258,9 @@ class Interpreter : public Napi::ObjectWrap<Interpreter> {
     }
 
     // Create a model from the model buffer.
-    auto modelData = std::vector<uint8_t>(
+    modelData = std::vector<uint8_t>(
         buffer.Data(), buffer.Data() + buffer.ByteLength());
+
     auto model = TfLiteModelCreate(modelData.data(), modelData.size());
     if (!model) {
       Napi::Error::New(env, "Failed to create tflite model").ThrowAsJavaScriptException();
@@ -355,10 +356,10 @@ class Interpreter : public Napi::ObjectWrap<Interpreter> {
   TfLiteInterpreter *interpreter = nullptr;
   Napi::Value inputTensorInfos;
   Napi::Value outputTensorInfos;
+  std::vector<uint8_t> modelData;
 
   Napi::Value Infer(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
-
     throwIfError(env, "Failed to invoke interpreter", TfLiteInterpreterInvoke(interpreter));
 
     return Napi::Boolean::New(env, true);
