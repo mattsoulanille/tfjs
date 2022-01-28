@@ -39,8 +39,8 @@
       [
         'OS=="linux"', {
           'libraries' : [
-            '<(module_root_dir)/cc_deps/lib/libtensorflowlite_c.so',
-            '-Wl,-rpath,\$$ORIGIN/../../cc_deps/lib'
+            '<(module_root_dir)/cc_deps/linux_amd64/libtensorflowlite_c.so',
+            '-Wl,-rpath,\$$ORIGIN/../../cc_deps/linux_amd64'
             #'-ltensorflowlite',
             #'-ltflite_framework',
           ]
