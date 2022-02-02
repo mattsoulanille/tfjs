@@ -14,6 +14,7 @@
 # =============================================================================
 
 load("//tools:defaults.bzl", "ts_library")
+load("@build_bazel_rules_nodejs//:index.bzl", "nodejs_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -37,21 +38,12 @@ ts_library(
 )
 
 ts_library(
-    name = "tfjs-backend-cpu_lib",
-    srcs = ["index.ts"],
-    module_name = "@tensorflow/tfjs-backend-cpu",
-    deps = [
-        ":tfjs-backend-cpu_src_lib",
-    ],
-)
-
-ts_library(
     name = "tfjs-backend-cpu_test_lib",
     testonly = True,
     srcs = glob(TEST_SRCS),
     module_name = "@tensorflow/tfjs-backend-cpu/dist",
     deps = [
-        ":tfjs-backend-cpu_lib",
+        "//tfjs-backend-cpu:tfjs-backend-cpu_lib",
         ":tfjs-backend-cpu_src_lib",
         "//tfjs-core:tfjs-core_lib",
         "//tfjs-core/src:tfjs-core_src_lib",

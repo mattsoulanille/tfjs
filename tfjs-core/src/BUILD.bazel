@@ -103,7 +103,7 @@ ts_library(
     deps = [
         ":tfjs-core_src_lib",
         ":tfjs-core_test_lib",
-        "//tfjs-backend-cpu/src:tfjs-backend-cpu_lib",
+        "//tfjs-backend-cpu:tfjs-backend-cpu_lib",
     ],
 )
 
@@ -117,7 +117,7 @@ ts_library(
         # so it is not listed here (it is listed in the nodejs_test, instead).
         ":tfjs-core_src_lib",
         ":tfjs-core_test_lib",
-        "//tfjs-backend-cpu/src:tfjs-backend-cpu_lib",
+        "//tfjs-backend-cpu:tfjs-backend-cpu_lib",
     ],
 )
 
@@ -138,7 +138,7 @@ esbuild(
         ":setup_test_lib",
         "//tfjs-core:tfjs-core_lib",
         ":tfjs-core_test_lib",
-        "//tfjs-backend-cpu/src:tfjs-backend-cpu_lib",
+        "//tfjs-backend-cpu:tfjs-backend-cpu_lib",
     ],
 )
 
@@ -149,7 +149,7 @@ ts_library(
     ],
     deps = [
         ":tfjs-core_src_lib",
-        "//tfjs-backend-cpu/src:tfjs-backend-cpu_lib",
+        "//tfjs-backend-cpu:tfjs-backend-cpu_lib",
     ],
 )
 
@@ -172,7 +172,7 @@ ts_library(
     deps = [
         "//tfjs-core:tfjs-core_lib",
         ":tfjs-core_src_lib",
-        "//tfjs-backend-cpu/src:tfjs-backend-cpu_lib",
+        "//tfjs-backend-cpu:tfjs-backend-cpu_lib",
     ],
 )
 
@@ -208,7 +208,7 @@ ts_library(
     deps = [
         "//tfjs-core:tfjs-core_lib",
         ":tfjs-core_src_lib",
-        "//tfjs-backend-cpu/src:tfjs-backend-cpu_lib",
+        "//tfjs-backend-cpu:tfjs-backend-cpu_lib",
     ],
 )
 

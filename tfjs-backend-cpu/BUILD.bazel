@@ -16,8 +16,18 @@
 load("@build_bazel_rules_nodejs//:index.bzl", "nodejs_test", "pkg_npm")
 load("//tools:copy_to_dist.bzl", "copy_to_dist", "copy_ts_library_to_dist")
 load("//tools:tfjs_bundle.bzl", "tfjs_bundle")
+load("//tools:defaults.bzl", "ts_library")
 
 package(default_visibility = ["//visibility:public"])
+
+ts_library(
+    name = "tfjs-backend-cpu_lib",
+    srcs = ["index.ts"],
+    module_name = "@tensorflow/tfjs-backend-cpu",
+    deps = [
+        "//tfjs-backend-cpu/src:tfjs-backend-cpu_src_lib",
+    ],
+)
 
 nodejs_test(
     name = "tfjs-backend-cpu_test",
@@ -25,13 +35,13 @@ nodejs_test(
         "//tfjs-backend-cpu/src:tfjs-backend-cpu_test_lib",
     ],
     entry_point = "//tfjs-backend-cpu/src:run_tests.ts",
-    link_workspace_root = True,
+    #templated_args = ["--bazel_patch_module_resolver"],
     tags = ["ci"],
 )
 
 tfjs_bundle(
     name = "tf-backend-cpu",
-    entry_point = "//tfjs-backend-cpu/src:index.ts",
+    entry_point = "index.ts",
     external = [
         "@tensorflow/tfjs-core",
         "crypto",
@@ -45,7 +55,7 @@ tfjs_bundle(
     },
     umd_name = "tf",
     deps = [
-        "//tfjs-backend-cpu/src:tfjs-backend-cpu_lib",
+        ":tfjs-backend-cpu_lib",
         "//tfjs-backend-cpu/src:tfjs-backend-cpu_src_lib",
     ],
 )
@@ -53,7 +63,7 @@ tfjs_bundle(
 copy_ts_library_to_dist(
     name = "copy_src_to_dist",
     srcs = [
-        "//tfjs-backend-cpu/src:tfjs-backend-cpu_lib",
+        ":tfjs-backend-cpu_lib",
         "//tfjs-backend-cpu/src:tfjs-backend-cpu_src_lib",
     ],
     root = "src",
