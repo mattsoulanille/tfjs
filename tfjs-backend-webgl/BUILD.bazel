@@ -18,12 +18,23 @@ load("@build_bazel_rules_nodejs//:index.bzl", "js_library", "pkg_npm")
 load("//tools:copy_to_dist.bzl", "copy_to_dist", "copy_ts_library_to_dist")
 load("//tools:tfjs_bundle.bzl", "tfjs_bundle")
 load("//tools:tfjs_web_test.bzl", "tfjs_web_test")
+load("//tools:defaults.bzl", "ts_library")
 
 package(default_visibility = ["//visibility:public"])
 
+
+ts_library(
+    name = "tfjs-backend-webgl_lib",
+    srcs = ["index.ts"],
+    module_name = "@tensorflow/tfjs-backend-webgl",
+    deps = [
+        "//tfjs-backend-webgl/src:tfjs-backend-webgl_src_lib",
+    ],
+)
+
 tfjs_bundle(
     name = "tf-backend-webgl",
-    entry_point = "//tfjs-backend-webgl/src:index.ts",
+    entry_point = ":index.ts",
     external = [
         "crypto",
         "@tensorflow/tfjs-core",
