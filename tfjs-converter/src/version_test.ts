@@ -8,7 +8,7 @@
  * =============================================================================
  */
 
-import {version_converter} from './index';
+import { version_converter } from '../index';
 
 describe('tfjs-core version consistency', () => {
   it('dev-peer match', () => {
