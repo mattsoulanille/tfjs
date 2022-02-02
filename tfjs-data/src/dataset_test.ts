@@ -19,7 +19,7 @@
 import * as tf from '@tensorflow/tfjs-core';
 import {TensorContainerObject} from '@tensorflow/tfjs-core';
 import {array, DatasetContainer} from './dataset';
-import * as tfd from './index';
+import * as tfd from '../index';
 import {iteratorFromItems, LazyIterator} from './iterators/lazy_iterator';
 import {describeAllEnvs} from './util/test_utils';
 
