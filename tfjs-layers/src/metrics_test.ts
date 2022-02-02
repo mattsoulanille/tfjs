@@ -15,7 +15,7 @@
 import {scalar, Tensor, tensor, tensor1d, tensor2d} from '@tensorflow/tfjs-core';
 
 import {setEpsilon} from './backend/common';
-import * as tfl from './index';
+import * as tfl from '../index';
 import {binaryAccuracy, categoricalAccuracy, get, getLossOrMetricName} from './metrics';
 import {LossOrMetricFn} from './types';
 import {describeMathCPUAndGPU, describeMathCPUAndWebGL2, expectTensorsClose} from './utils/test_utils';

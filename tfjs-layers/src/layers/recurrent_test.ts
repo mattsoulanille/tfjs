@@ -18,7 +18,7 @@ import {io, randomNormal, scalar, Tensor, tensor1d, tensor2d, tensor3d, tensor4d
 import {serializeActivation, Tanh} from '../activations';
 import * as K from '../backend/tfjs_backend';
 import {NonNeg, serializeConstraint, UnitNorm} from '../constraints';
-import * as tfl from '../index';
+import * as tfl from '../../index';
 import {GlorotUniform, HeUniform, Ones, serializeInitializer} from '../initializers';
 import {ActivationIdentifier} from '../keras_format/activation_config';
 import {ModelAndWeightsConfig, modelFromJSON} from '../models';

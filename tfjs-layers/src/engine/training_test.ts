@@ -17,7 +17,7 @@ import {abs, mean, memory, mul, NamedTensorMap, ones, Scalar, scalar, SGDOptimiz
 
 import * as K from '../backend/tfjs_backend';
 import {CustomCallback, CustomCallbackArgs, DEFAULT_YIELD_EVERY_MS, Params} from '../base_callbacks';
-import * as tfl from '../index';
+import * as tfl from '../../index';
 import * as logs from '../logs';
 import {Logs, UnresolvedLogs} from '../logs';
 import {Regularizer} from '../regularizers';

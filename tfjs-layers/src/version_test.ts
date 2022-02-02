@@ -10,7 +10,7 @@
 
 // tslint:disable-next-line:no-require-imports
 const packageJSON = require('../package.json');
-import {version_layers} from './index';
+import { version_layers } from '../index';
 
 describe('tfjs-core version consistency', () => {
   it('dev-peer match', () => {

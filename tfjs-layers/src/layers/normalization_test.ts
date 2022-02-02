@@ -15,7 +15,7 @@
 import {dispose, div, memory, onesLike, scalar, sub, Tensor, tensor1d, tensor2d, tensor3d, tensor4d, test_util, train, zeros, zerosLike} from '@tensorflow/tfjs-core';
 
 import {SymbolicTensor} from '../engine/topology';
-import * as tfl from '../index';
+import * as tfl from '../../index';
 import {convertPythonicToTs, convertTsToPythonic} from '../utils/serialization_utils';
 import {describeMathCPU, describeMathCPUAndGPU, describeMathCPUAndWebGL2, expectTensorsClose} from '../utils/test_utils';
 

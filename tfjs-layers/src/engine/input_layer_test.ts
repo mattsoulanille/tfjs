@@ -10,7 +10,7 @@
 
 import {ones} from '@tensorflow/tfjs-core';
 
-import * as tfl from '../index';
+import * as tfl from '../../index';
 import {describeMathCPU} from '../utils/test_utils';
 
 import {Input} from './input_layer';

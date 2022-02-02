@@ -10,7 +10,7 @@
 
 import {tensor2d} from '@tensorflow/tfjs-core';
 
-import * as tfl from './index';
+import * as tfl from '../index';
 import {describeMathCPUAndGPU} from './utils/test_utils';
 
 describe('EarlyStopping', () => {

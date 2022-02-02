@@ -18,6 +18,7 @@ load("@build_bazel_rules_nodejs//:index.bzl", "js_library", "nodejs_test", "pkg_
 load("//tools:copy_to_dist.bzl", "copy_to_dist", "copy_ts_library_to_dist")
 load("//tools:tfjs_bundle.bzl", "tfjs_bundle")
 load("//tools:tfjs_web_test.bzl", "tfjs_web_test")
+load("//tools:defaults.bzl", "ts_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -26,6 +27,17 @@ exports_files([
     "package.json",
     "README.md",
 ])
+
+ts_library(
+    name = "tfjs-layers_lib",
+    srcs = ["index.ts"],
+    module_name = "@tensorflow/tfjs-layers",
+    deps = [
+        "//tfjs-layers/src:tfjs-layers_src_lib",
+        "//tfjs-core:tfjs-core_lib",
+        "//tfjs-core/src:tfjs-core_src_lib",
+    ],
+)
 
 # Defined here because chdir must be a subdirectory of the directory the rule is
 # defined in.
@@ -92,7 +104,7 @@ tfjs_bundle(
     },
     umd_name = "tf",
     deps = [
-        "//tfjs-layers/src:tfjs-layers_lib",
+        ":tfjs-layers_lib",
         "//tfjs-layers/src:tfjs-layers_src_lib",
     ],
 )
@@ -100,7 +112,7 @@ tfjs_bundle(
 copy_ts_library_to_dist(
     name = "copy_src_to_dist",
     srcs = [
-        "//tfjs-layers/src:tfjs-layers_lib",
+        ":tfjs-layers_lib",
         "//tfjs-layers/src:tfjs-layers_src_lib",
     ],
     root = "src",

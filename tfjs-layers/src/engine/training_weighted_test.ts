@@ -12,7 +12,7 @@
 
 import {memory, ones, Tensor, tensor2d, train, zeros} from '@tensorflow/tfjs-core';
 
-import * as tfl from '../index';
+import * as tfl from '../../index';
 
 import {describeMathCPUAndWebGL2, expectTensorsClose} from '../utils/test_utils';
 import {FakeNumericDataset} from './dataset_fakes';

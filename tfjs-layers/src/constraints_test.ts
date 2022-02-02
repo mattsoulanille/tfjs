@@ -13,7 +13,7 @@
 import {serialization, Tensor1D, tensor1d} from '@tensorflow/tfjs-core';
 
 import {ConstraintIdentifier, deserializeConstraint, getConstraint, serializeConstraint} from './constraints';
-import * as tfl from './index';
+import * as tfl from '../index';
 import {describeMathCPU, expectNoLeakedTensors, expectTensorsClose} from './utils/test_utils';
 
 describeMathCPU('Built-in Constraints', () => {

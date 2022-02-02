@@ -14,7 +14,7 @@
 
 import {eye, randomNormal, serialization, Tensor, Tensor2D, tensor2d} from '@tensorflow/tfjs-core';
 
-import * as tfl from './index';
+import * as tfl from '../index';
 import {checkDistribution, checkFanMode, getInitializer, serializeInitializer, VarianceScaling} from './initializers';
 import {VALID_DISTRIBUTION_VALUES, VALID_FAN_MODE_VALUES} from './keras_format/initializer_config';
 import {PyJsonDict} from './keras_format/types';

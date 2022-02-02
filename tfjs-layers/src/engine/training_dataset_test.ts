@@ -16,7 +16,7 @@
 import * as tfc from '@tensorflow/tfjs-core';
 
 import {CustomCallback, DEFAULT_YIELD_EVERY_MS} from '../base_callbacks';
-import * as tfl from '../index';
+import * as tfl from '../../index';
 import {Logs} from '../logs';
 import {describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 

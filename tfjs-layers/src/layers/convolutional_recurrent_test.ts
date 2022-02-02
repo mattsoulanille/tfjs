@@ -15,7 +15,7 @@ import {Tensor} from '@tensorflow/tfjs-core';
 import {serializeActivation, Tanh} from '../activations';
 import {NonNeg, serializeConstraint, UnitNorm} from '../constraints';
 import {sequential} from '../exports';
-import * as tfl from '../index';
+import * as tfl from '../../index';
 import {GlorotUniform, HeUniform, Ones, serializeInitializer} from '../initializers';
 import {DataFormat, PaddingMode} from '../keras_format/common';
 import {modelFromJSON} from '../models';

@@ -14,7 +14,7 @@
 
 import {DataType, Tensor, tensor2d, tensor3d, test_util} from '@tensorflow/tfjs-core';
 
-import * as tfl from '../index';
+import * as tfl from '../../index';
 import {describeMathCPU, expectTensorsClose} from '../utils/test_utils';
 
 const expectArraysClose = test_util.expectArraysClose;

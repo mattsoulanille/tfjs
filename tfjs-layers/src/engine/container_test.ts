@@ -10,7 +10,7 @@
 
 import {memory, ones, scalar, Tensor, zeros} from '@tensorflow/tfjs-core';
 
-import * as tfl from '../index';
+import * as tfl from '../../index';
 import {Kwargs} from '../types';
 import {describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 

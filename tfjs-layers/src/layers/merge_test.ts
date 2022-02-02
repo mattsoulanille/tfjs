@@ -15,7 +15,7 @@
 import {cast, ones, serialization, Tensor, tensor1d, Tensor2D, tensor2d, tensor3d} from '@tensorflow/tfjs-core';
 
 import {SymbolicTensor} from '../engine/topology';
-import * as tfl from '../index';
+import * as tfl from '../../index';
 import {Shape} from '../keras_format/common';
 import {deserialize} from '../layers/serialization';
 import {convertPythonicToTs, convertTsToPythonic} from '../utils/serialization_utils';
