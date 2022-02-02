@@ -16,7 +16,7 @@
  */
 
 import {add, ScopeFn} from './engine';
-import * as tf from './index';
+import * as tf from '../index';
 import {ALL_ENVS, describeWithFlags} from './jasmine_util';
 import {zerosLike} from './ops/ops';
 import {backpropagateGradients, getFilteredNodesXToY, TapeNode} from './tape';

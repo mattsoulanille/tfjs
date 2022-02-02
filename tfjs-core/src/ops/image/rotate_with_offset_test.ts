@@ -15,7 +15,7 @@
  * =============================================================================
  */
 import {getTestImageAsTensor4d} from '../../image_test_util';
-import * as tf from '../../index';
+import * as tf from '../../../index';
 import {BROWSER_ENVS, describeWithFlags} from '../../jasmine_util';
 import {expectArraysClose} from '../../test_util';
 

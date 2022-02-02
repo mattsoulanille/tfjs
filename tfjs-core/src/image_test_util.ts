@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import * as tf from './index';
+import * as tf from '../index';
 
 /**
  * Returns an image used in various image related tests as a 4d tensor.

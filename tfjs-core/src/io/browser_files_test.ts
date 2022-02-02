@@ -19,7 +19,7 @@
  * Unit tests for file-related IOHandlers.
  */
 
-import * as tf from '../index';
+import * as tf from '../../index';
 import {BROWSER_ENVS, describeWithFlags} from '../jasmine_util';
 import {browserDownloads, BrowserDownloads, browserDownloadsRouter} from './browser_files';
 import {WeightsManifestConfig, WeightsManifestEntry} from './types';

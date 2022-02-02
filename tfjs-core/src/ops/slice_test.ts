@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import * as tf from '../index';
+import * as tf from '../../index';
 import {ALL_ENVS, describeWithFlags, SYNC_BACKEND_ENVS} from '../jasmine_util';
 import {encodeStrings, expectArraysClose} from '../test_util';
 import {TensorLike1D} from '../types';

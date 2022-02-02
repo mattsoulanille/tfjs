@@ -15,8 +15,8 @@
  * =============================================================================
  */
 
-import * as tf from './index';
-import {KernelBackend} from './index';
+import * as tf from '../index';
+import { KernelBackend } from '../index';
 import {ALL_ENVS, describeWithFlags} from './jasmine_util';
 import {KernelFunc, TensorInfo} from './kernel_registry';
 import {expectArraysClose} from './test_util';

@@ -19,7 +19,7 @@
  * Unit tests for passthrough IOHandlers.
  */
 
-import * as tf from '../index';
+import * as tf from '../../index';
 import {BROWSER_ENVS, describeWithFlags} from '../jasmine_util';
 
 const modelTopology1: {} = {

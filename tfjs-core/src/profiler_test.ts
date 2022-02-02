@@ -16,7 +16,7 @@
  */
 
 import {BackendTimer, BackendTimingInfo} from './backends/backend';
-import * as tf from './index';
+import * as tf from '../index';
 import {ALL_ENVS, describeWithFlags, SYNC_BACKEND_ENVS} from './jasmine_util';
 import {checkComputationForErrors, KernelProfile, Logger, Profiler} from './profiler';
 import {Tensor} from './tensor';

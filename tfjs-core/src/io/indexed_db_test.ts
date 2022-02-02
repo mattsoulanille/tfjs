@@ -19,7 +19,7 @@
  * Unit tests for indexed_db.ts.
  */
 
-import * as tf from '../index';
+import * as tf from '../../index';
 import {BROWSER_ENVS, describeWithFlags, runWithLock} from '../jasmine_util';
 import {expectArrayBuffersEqual} from '../test_util';
 import {browserIndexedDB, BrowserIndexedDB, BrowserIndexedDBManager, deleteDatabase, indexedDBRouter} from './indexed_db';

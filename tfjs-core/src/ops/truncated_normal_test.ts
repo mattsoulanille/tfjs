@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import * as tf from '../index';
+import * as tf from '../../index';
 import {ALL_ENVS, describeWithFlags} from '../jasmine_util';
 import {TypedArray} from '../types';
 import {expectArrayInMeanStdRange} from './rand_util';

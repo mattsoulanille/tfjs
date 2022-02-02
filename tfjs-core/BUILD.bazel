@@ -18,6 +18,8 @@ load("@build_bazel_rules_nodejs//:index.bzl", "nodejs_test", "pkg_npm")
 load("//tools:copy_to_dist.bzl", "copy_to_dist", "copy_ts_library_to_dist")
 load("//tools:tfjs_bundle.bzl", "tfjs_bundle")
 load("//tools:tfjs_web_test.bzl", "tfjs_web_test")
+load("//tools:defaults.bzl", "ts_library")
+load("//tools:tfjs_package.bzl", "tfjs_package")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -27,9 +29,21 @@ exports_files([
     "package.json",
 ])
 
+# Compiles the `index.ts` entrypoint of tfjs-core separately from the rest of
+# the sources in order to use the `@tensorflow/tfjs-core` module name instead
+# of `@tensorflow/tfjs-core/dist`,
+ts_library(
+    name = "tfjs-core_lib",
+    srcs = ["index.ts"],
+    module_name = "@tensorflow/tfjs-core",
+    deps = [
+        "//tfjs-core/src:tfjs-core_src_lib",
+    ],
+)
+
 tfjs_bundle(
     name = "tf-core",
-    entry_point = "//tfjs-core/src:index.ts",
+    entry_point = ":index.ts",
     external = [
         "crypto",
     ],
@@ -40,54 +54,63 @@ tfjs_bundle(
     ],
     umd_name = "tf",
     deps = [
-        "//tfjs-core/src:tfjs-core_lib",
+        ":tfjs-core_lib",
     ],
 )
 
-copy_ts_library_to_dist(
-    name = "copy_src_to_dist",
-    srcs = [
-        "//tfjs-core/src:tfjs-core_lib",
-        "//tfjs-core/src:tfjs-core_src_lib",
-        "//tfjs-core/src:tfjs-core_test_lib",
-    ],
-    root = "src",
-)
+# copy_ts_library_to_dist(
+#     name = "copy_index_to_dist",
+#     srcs = [
+#         ":tfjs-core_lib",
+#     ],
+#     root = ".",
+#     dest_dir = ".",
+# )
 
-copy_to_dist(
-    name = "copy_bundles",
-    srcs = [
-        ":tf-core",
-        ":tf-core.es2017",
-        ":tf-core.es2017.min",
-        ":tf-core.fesm",
-        ":tf-core.fesm.min",
-        ":tf-core.min",
-        ":tf-core.node",
-    ],
-)
+# copy_ts_library_to_dist(
+#     name = "copy_src_to_dist",
+#     srcs = [
+#         "//tfjs-core/src:tfjs-core_src_lib",
+#         "//tfjs-core/src:tfjs-core_test_lib",
+#     ],
+#     root = "src",
+# )
 
-copy_ts_library_to_dist(
-    name = "copy_test_snippets",
-    srcs = [
-        "//tfjs-core/scripts/test_snippets:test_snippets_util_lib",
-    ],
-    root = ".",
-)
+# copy_to_dist(
+#     name = "copy_bundles",
+#     srcs = [
+#         ":tf-core",
+#         ":tf-core.es2017",
+#         ":tf-core.es2017.min",
+#         ":tf-core.fesm",
+#         ":tf-core.fesm.min",
+#         ":tf-core.min",
+#         ":tf-core.node",
+#     ],
+# )
 
-copy_file(
-    name = "copy_miniprogram",
-    src = ":tf-core.min.js",
-    out = "dist/miniprogram/index.js",
-)
+# copy_ts_library_to_dist(
+#     name = "copy_test_snippets",
+#     srcs = [
+#         "//tfjs-core/scripts/test_snippets:test_snippets_util_lib",
+#     ],
+#     root = ".",
+# )
 
-copy_file(
-    name = "copy_miniprogram_map",
-    src = ":tf-core.min.js.map",
-    out = "dist/miniprogram/index.js.map",
-)
+# copy_file(
+#     name = "copy_miniprogram",
+#     src = ":tf-core.min.js",
+#     out = "dist/miniprogram/index.js",
+# )
+
+# copy_file(
+#     name = "copy_miniprogram_map",
+#     src = ":tf-core.min.js.map",
+#     out = "dist/miniprogram/index.js.map",
+# )
 
 pkg_npm(
+#tfjs_package(
     name = "tfjs-core_pkg",
     package_name = "@tensorflow/tfjs-core",
     srcs = [
@@ -96,11 +119,13 @@ pkg_npm(
     ],
     tags = ["ci"],
     deps = [
-        ":copy_bundles",
-        ":copy_miniprogram",
-        ":copy_miniprogram_map",
-        ":copy_src_to_dist",
-        ":copy_test_snippets",
+        #":copy_bundles",
+        #":copy_miniprogram",
+        #":copy_miniprogram_map",
+        #":copy_index_to_dist",
+        #":copy_src_to_dist",
+        ":tfjs-core_lib",
+        #":copy_test_snippets",
     ],
 )
 
@@ -146,7 +171,7 @@ nodejs_test(
         "//tfjs-backend-cpu/src:tfjs-backend-cpu_lib",
         "//tfjs-core/src:setup_test_lib",
         "//tfjs-core/src:test_node_lib",
-        "//tfjs-core/src:tfjs-core_lib",
+        ":tfjs-core_lib",
         "//tfjs-core/src:tfjs-core_src_lib",
         "//tfjs-core/src:tfjs-core_test_lib",
     ],
