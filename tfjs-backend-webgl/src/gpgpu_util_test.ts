@@ -16,7 +16,7 @@
  */
 
 // tslint:disable-next-line: no-imports-from-dist
-import {describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
+import {describeWithFlags} from '@tensorflow/tfjs-core/src/jasmine_util';
 import {WEBGL_ENVS} from './backend_webgl_test_registry';
 import {GPGPUContext} from './gpgpu_context';
 import * as gpgpu_util from './gpgpu_util';

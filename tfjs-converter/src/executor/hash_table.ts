@@ -16,7 +16,7 @@
  */
 import {DataType, keep, scalar, stack, Tensor, tidy, unstack, util} from '@tensorflow/tfjs-core';
 // tslint:disable-next-line: no-imports-from-dist
-import * as tfOps from '@tensorflow/tfjs-core/dist/ops/ops_for_converter';
+import * as tfOps from '@tensorflow/tfjs-core/src/ops/ops_for_converter';
 
 /**
  * Hashtable contains a set of tensors, which can be accessed by key.

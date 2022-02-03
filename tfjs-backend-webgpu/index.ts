@@ -15,14 +15,14 @@
  * =============================================================================
  */
 
-import './flags_webgpu';
-import './register_all_kernels';
+import './src/flags_webgpu';
+import './src/register_all_kernels';
 
-import {device_util, env, registerBackend} from '@tensorflow/tfjs-core';
+import { device_util, env, registerBackend } from '@tensorflow/tfjs-core';
 
-import {WebGPUBackend} from './backend_webgpu';
-import * as webgpu from './webgpu';
-import {isWebGPUSupported} from './webgpu_util';
+import { WebGPUBackend } from './src/backend_webgpu';
+import * as webgpu from './src/webgpu';
+import { isWebGPUSupported } from './src/webgpu_util';
 
 if (device_util.isBrowser() && isWebGPUSupported()) {
   registerBackend('webgpu', async () => {

@@ -18,7 +18,7 @@
 import * as tf from '@tensorflow/tfjs-core';
 import {engine, GPUData, test_util, util} from '@tensorflow/tfjs-core';
 // tslint:disable-next-line: no-imports-from-dist
-import {describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
+import {describeWithFlags} from '@tensorflow/tfjs-core/src/jasmine_util';
 
 const {expectArraysClose, expectArraysEqual} = test_util;
 const {decodeString} = util;

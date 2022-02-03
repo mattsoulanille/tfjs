@@ -17,7 +17,7 @@
 
 import {DataType, Tensor, Tensor1D} from '@tensorflow/tfjs-core';
 // tslint:disable-next-line: no-imports-from-dist
-import * as tfOps from '@tensorflow/tfjs-core/dist/ops/ops_for_converter';
+import * as tfOps from '@tensorflow/tfjs-core/src/ops/ops_for_converter';
 
 import {NamedTensorsMap} from '../../data/types';
 import {ExecutionContext} from '../../executor/execution_context';

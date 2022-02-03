@@ -31,18 +31,9 @@ ts_library(
     ),
     module_name = "@tensorflow/tfjs-tflite/dist",
     deps = [
-        "//tfjs-core/src:tfjs-core_lib",
+        "//tfjs-core:tfjs-core_lib",
         "@npm//@types/seedrandom",
         "@npm//seedrandom",
-    ],
-)
-
-ts_library(
-    name = "tfjs-tflite_lib",
-    srcs = ["index.ts"],
-    module_name = "@tensorflow/tfjs-tflite",
-    deps = [
-        ":tfjs-tflite_src_lib",
     ],
 )
 
@@ -58,9 +49,9 @@ ts_library(
     srcs = glob(TEST_SRCS),
     module_name = "@tensorflow/tfjs-tflite/dist",
     deps = [
-        ":tfjs-tflite_lib",
+        "//tfjs-tflite:tfjs-tflite_lib",
         ":tfjs-tflite_src_lib",
-        "//tfjs-core/src:tfjs-core_lib",
+        "//tfjs-core:tfjs-core_lib",
     ],
 )
 
@@ -75,9 +66,9 @@ esbuild(
     ],
     sources_content = True,
     deps = [
-        ":tfjs-tflite_lib",
+        "//tfjs-tflite:tfjs-tflite_lib",
         ":tfjs-tflite_test_lib",
-        "//tfjs-backend-cpu/src:tfjs-backend-cpu_lib",
-        "//tfjs-core/src:tfjs-core_lib",
+        "//tfjs-backend-cpu:tfjs-backend-cpu_lib",
+        "//tfjs-core:tfjs-core_lib",
     ],
 )

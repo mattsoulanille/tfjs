@@ -18,9 +18,9 @@
 // Use the CPU backend for running tests.
 import '@tensorflow/tfjs-backend-cpu';
 // tslint:disable-next-line: no-imports-from-dist
-import '@tensorflow/tfjs-core/dist/public/chained_ops/register_all_chained_ops';
+import '@tensorflow/tfjs-core/src/public/chained_ops/register_all_chained_ops';
 // tslint:disable-next-line:no-imports-from-dist
-import {setTestEnvs} from '@tensorflow/tfjs-core/dist/jasmine_util';
+import {setTestEnvs} from '@tensorflow/tfjs-core/src/jasmine_util';
 
 // tslint:disable-next-line:no-require-imports
 const jasmineCtor = require('jasmine');

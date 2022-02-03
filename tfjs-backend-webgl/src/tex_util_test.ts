@@ -18,7 +18,7 @@
 // tslint:disable-next-line: no-imports-from-dist
 import {test_util} from '@tensorflow/tfjs-core';
 // tslint:disable-next-line: no-imports-from-dist
-import {describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
+import {describeWithFlags} from '@tensorflow/tfjs-core/src/jasmine_util';
 
 const {expectArraysClose} = test_util;
 import {WEBGL_ENVS} from './backend_webgl_test_registry';

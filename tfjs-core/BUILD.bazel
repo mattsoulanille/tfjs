@@ -58,59 +58,19 @@ tfjs_bundle(
     ],
 )
 
-# copy_ts_library_to_dist(
-#     name = "copy_index_to_dist",
-#     srcs = [
-#         ":tfjs-core_lib",
-#     ],
-#     root = ".",
-#     dest_dir = ".",
-# )
+copy_file(
+    name = "copy_miniprogram",
+    src = ":tf-core.min.js",
+    out = "miniprogram/index.js",
+)
 
-# copy_ts_library_to_dist(
-#     name = "copy_src_to_dist",
-#     srcs = [
-#         "//tfjs-core/src:tfjs-core_src_lib",
-#         "//tfjs-core/src:tfjs-core_test_lib",
-#     ],
-#     root = "src",
-# )
-
-# copy_to_dist(
-#     name = "copy_bundles",
-#     srcs = [
-#         ":tf-core",
-#         ":tf-core.es2017",
-#         ":tf-core.es2017.min",
-#         ":tf-core.fesm",
-#         ":tf-core.fesm.min",
-#         ":tf-core.min",
-#         ":tf-core.node",
-#     ],
-# )
-
-# copy_ts_library_to_dist(
-#     name = "copy_test_snippets",
-#     srcs = [
-#         "//tfjs-core/scripts/test_snippets:test_snippets_util_lib",
-#     ],
-#     root = ".",
-# )
-
-# copy_file(
-#     name = "copy_miniprogram",
-#     src = ":tf-core.min.js",
-#     out = "dist/miniprogram/index.js",
-# )
-
-# copy_file(
-#     name = "copy_miniprogram_map",
-#     src = ":tf-core.min.js.map",
-#     out = "dist/miniprogram/index.js.map",
-# )
+copy_file(
+    name = "copy_miniprogram_map",
+    src = ":tf-core.min.js.map",
+    out = "miniprogram/index.js.map",
+)
 
 pkg_npm(
-#tfjs_package(
     name = "tfjs-core_pkg",
     package_name = "@tensorflow/tfjs-core",
     srcs = [
@@ -119,13 +79,17 @@ pkg_npm(
     ],
     tags = ["ci"],
     deps = [
-        #":copy_bundles",
-        #":copy_miniprogram",
-        #":copy_miniprogram_map",
-        #":copy_index_to_dist",
-        #":copy_src_to_dist",
+        ":copy_miniprogram",
+        ":copy_miniprogram_map",
+        ":tf-core",
+        ":tf-core.es2017",
+        ":tf-core.es2017.min",
+        ":tf-core.fesm",
+        ":tf-core.fesm.min",
+        ":tf-core.min",
+        ":tf-core.node",
         ":tfjs-core_lib",
-        #":copy_test_snippets",
+        "//tfjs-core/scripts/test_snippets:test_snippets_util_lib",
     ],
 )
 

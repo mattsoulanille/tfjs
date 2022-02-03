@@ -45,7 +45,7 @@ ts_library(
         ["**/*.ts"],
         exclude = TEST_SRCS + ["index.ts"],
     ),
-    module_name = "@tensorflow/tfjs-backend-webgl/dist",
+    module_name = "@tensorflow/tfjs-backend-webgl/src",
     deps = [
         "//tfjs-backend-cpu:tfjs-backend-cpu_lib",
         "//tfjs-backend-cpu/src:tfjs-backend-cpu_src_lib",
@@ -64,7 +64,7 @@ ts_library(
     # https://github.com/bazelbuild/rules_nodejs/pull/2984
     # testonly = True,
     srcs = glob(TEST_SRCS) + [":tests"],
-    module_name = "@tensorflow/tfjs-backend-webgl/dist",
+    module_name = "@tensorflow/tfjs-backend-webgl/src",
     deps = [
         "//tfjs-backend-webgl:tfjs-backend-webgl_lib",
         ":tfjs-backend-webgl_src_lib",

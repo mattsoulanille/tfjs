@@ -62,7 +62,7 @@ enumerate_tests(
     root_path = "tfjs-core/src",
 )
 
-# Compiles the majority of tfjs-core using the `@tensorflow/tfjs-core/dist`
+# Compiles the majority of tfjs-core using the `@tensorflow/tfjs-core/src`
 # module name.
 ts_library(
     name = "tfjs-core_src_lib",
@@ -70,7 +70,7 @@ ts_library(
         ["**/*.ts"],
         exclude = TEST_SRCS + TEST_ENTRYPOINTS + ["index.ts"],
     ),
-    module_name = "@tensorflow/tfjs-core/dist",
+    module_name = "@tensorflow/tfjs-core/src",
     deps = [
         "@npm//@types",
         "@npm//seedrandom",
@@ -88,7 +88,7 @@ ts_library(
     ],
     # TODO(msoulanille): Mark this as testonly once it's no longer needed in the
     # npm package (for other downstream packages' tests).
-    module_name = "@tensorflow/tfjs-core/dist",
+    module_name = "@tensorflow/tfjs-core/src",
     deps = [
         "//tfjs-core:tfjs-core_lib",
         ":tfjs-core_src_lib",

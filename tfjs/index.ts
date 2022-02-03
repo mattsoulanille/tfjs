@@ -17,9 +17,9 @@
 
 import '@tensorflow/tfjs-core';
 // tslint:disable-next-line: no-imports-from-dist
-import '@tensorflow/tfjs-core/dist/register_all_gradients';
+import '@tensorflow/tfjs-core/src/register_all_gradients';
 // tslint:disable-next-line: no-imports-from-dist
-import '@tensorflow/tfjs-core/dist/public/chained_ops/register_all_chained_ops';
+import '@tensorflow/tfjs-core/src/public/chained_ops/register_all_chained_ops';
 
 export * from '@tensorflow/tfjs-core';
 export * from '@tensorflow/tfjs-layers';
@@ -40,7 +40,7 @@ import {version_webgl} from '@tensorflow/tfjs-backend-webgl';
 import {version_data} from '@tensorflow/tfjs-data';
 import {version_layers} from '@tensorflow/tfjs-layers';
 import {version_converter} from '@tensorflow/tfjs-converter';
-import {version as version_union} from './version';
+import { version as version_union } from './src/version';
 
 export const version = {
   'tfjs-core': version_core,

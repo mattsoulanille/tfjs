@@ -20,7 +20,7 @@ import {test_util} from '@tensorflow/tfjs-core';
 
 const {expectArraysClose} = test_util;
 // tslint:disable-next-line: no-imports-from-dist
-import {ALL_ENVS, describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
+import {ALL_ENVS, describeWithFlags} from '@tensorflow/tfjs-core/src/jasmine_util';
 
 describeWithFlags('Mean.', ALL_ENVS, () => {
   it('does not have memory leak and works for large dimensions.', async () => {

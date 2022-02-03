@@ -16,7 +16,7 @@
  */
 import {scalar} from '@tensorflow/tfjs-core';
 // tslint:disable-next-line: no-imports-from-dist
-import * as tfOps from '@tensorflow/tfjs-core/dist/ops/ops_for_converter';
+import * as tfOps from '@tensorflow/tfjs-core/src/ops/ops_for_converter';
 
 import {ExecutionContext} from '../../executor/execution_context';
 import * as basic_math from '../op_list/basic_math';

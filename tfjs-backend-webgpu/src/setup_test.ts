@@ -16,14 +16,14 @@
  */
 
 // Register the backend.
-import './index';
+import '../index';
 // tslint:disable-next-line: no-imports-from-dist
-import '@tensorflow/tfjs-core/dist/public/chained_ops/register_all_chained_ops';
+import '@tensorflow/tfjs-core/src/public/chained_ops/register_all_chained_ops';
 // tslint:disable-next-line: no-imports-from-dist
-import '@tensorflow/tfjs-core/dist/register_all_gradients';
+import '@tensorflow/tfjs-core/src/register_all_gradients';
 import './backend_webgpu_test_registry';
 // tslint:disable-next-line: no-imports-from-dist
-import {parseTestEnvFromKarmaFlags, setTestEnvs, setupTestFilters, TEST_ENVS, TestFilter} from '@tensorflow/tfjs-core/dist/jasmine_util';
+import {parseTestEnvFromKarmaFlags, setTestEnvs, setupTestFilters, TEST_ENVS, TestFilter} from '@tensorflow/tfjs-core/src/jasmine_util';
 
 const TEST_FILTERS: TestFilter[] = [
   // skip test cases include 5D, 6D, gradients webgpu
@@ -377,7 +377,7 @@ if (typeof __karma__ !== 'undefined') {
 // Import and run tests from core.
 // tslint:disable-next-line:no-imports-from-dist
 // tslint:disable-next-line:no-require-imports
-require('@tensorflow/tfjs-core/dist/tests');
+require('@tensorflow/tfjs-core/src/tests');
 // Import and run tests from webgl.
 // tslint:disable-next-line:no-imports-from-dist
 // tslint:disable-next-line:no-require-imports

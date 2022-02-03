@@ -17,13 +17,23 @@ load("@build_bazel_rules_nodejs//:index.bzl", "pkg_npm")
 load("//tools:copy_to_dist.bzl", "copy_to_dist", "copy_ts_library_to_dist")
 load("//tools:tfjs_bundle.bzl", "tfjs_bundle")
 load("//tools:tfjs_web_test.bzl", "tfjs_web_test")
+load("//tools:defaults.bzl", "ts_library")
 
 package(default_visibility = ["//visibility:public"])
+
+ts_library(
+    name = "tfjs-tflite_lib",
+    srcs = ["index.ts"],
+    module_name = "@tensorflow/tfjs-tflite",
+    deps = [
+        "//tfjs-tflite/src:tfjs-tflite_src_lib",
+    ],
+)
 
 # Run rollup to bundle the compiled files for different execution environments.
 tfjs_bundle(
     name = "tf-tflite",
-    entry_point = "//tfjs-tflite/src:index.ts",
+    entry_point = ":index.ts",
     external = [
         "crypto",
         "@tensorflow/tfjs-core",
@@ -35,45 +45,21 @@ tfjs_bundle(
     },
     umd_name = "tflite",
     deps = [
-        "//tfjs-tflite/src:tfjs-tflite_lib",
+        ":tfjs-tflite_lib",
         "//tfjs-tflite/src:tfjs-tflite_src_lib",
         "//tfjs-tflite/src:tflite_web_api_client_js",
         "//tfjs-tflite/wasm:wasm_files",
     ],
 )
 
-# Copy ouput files to dist/.
-copy_ts_library_to_dist(
-    name = "copy_src_to_dist",
-    srcs = [
-        "//tfjs-tflite/src:tfjs-tflite_lib",
-        "//tfjs-tflite/src:tfjs-tflite_src_lib",
-    ],
-    root = "src",
-)
-
-# Copy bundled files to dist/.
-copy_to_dist(
-    name = "copy_bundles",
-    srcs = [
-        ":tf-tflite",
-        ":tf-tflite.es2017",
-        ":tf-tflite.es2017.min",
-        ":tf-tflite.fesm",
-        ":tf-tflite.fesm.min",
-        ":tf-tflite.min",
-        ":tf-tflite.node",
-    ],
-)
-
 # Copy wasm related files to dist/.
-copy_to_dist(
-    name = "copy_wasm_files",
-    srcs = [
-        "//tfjs-tflite/wasm:wasm_files",
-    ],
-    root = "wasm",
-)
+# copy_to_dist(
+#     name = "copy_wasm_files",
+#     srcs = [
+#         "//tfjs-tflite/wasm:wasm_files",
+#     ],
+#     root = "wasm",
+# )
 
 # Package for npm.
 pkg_npm(
@@ -85,9 +71,16 @@ pkg_npm(
     ],
     tags = ["ci"],
     deps = [
-        ":copy_bundles",
-        ":copy_src_to_dist",
-        ":copy_wasm_files",
+        ":tfjs-tflite_lib",
+        ":tf-tflite",
+        ":tf-tflite.es2017",
+        ":tf-tflite.es2017.min",
+        ":tf-tflite.fesm",
+        ":tf-tflite.fesm.min",
+        ":tf-tflite.min",
+        ":tf-tflite.node",
+        "//tfjs-tflite/wasm:wasm_files",
+        #":copy_wasm_files",
     ],
 )
 

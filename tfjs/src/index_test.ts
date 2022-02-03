@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import * as tf from './index';
+import * as tf from '../index';
 
 describe('Union package', () => {
   it('has core ops', () => {

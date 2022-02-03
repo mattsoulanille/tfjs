@@ -43,7 +43,7 @@ enumerate_tests(
     root_path = "tfjs-data/src",
 )
 
-# Compiles the majority of tfjs-data using the `@tensorflow/tfjs-data/dist`
+# Compiles the majority of tfjs-data using the `@tensorflow/tfjs-data/src`
 # module name.
 ts_library(
     name = "tfjs-data_src_lib",
@@ -51,7 +51,7 @@ ts_library(
         ["**/*.ts"],
         exclude = TEST_SRCS + ["index.ts"],
     ),
-    module_name = "@tensorflow/tfjs-data/dist",
+    module_name = "@tensorflow/tfjs-data/src",
     deps = [
         "//tfjs-backend-cpu:tfjs-backend-cpu_lib",
         "//tfjs-backend-cpu/src:tfjs-backend-cpu_src_lib",
@@ -68,7 +68,7 @@ ts_library(
     # https://github.com/bazelbuild/rules_nodejs/pull/2984
     #testonly = True,
     srcs = glob(TEST_SRCS) + [":tests"],
-    module_name = "@tensorflow/tfjs-data/dist",
+    module_name = "@tensorflow/tfjs-data/src",
     deps = [
         "//tfjs-data:tfjs-data_lib",
         ":tfjs-data_src_lib",

@@ -16,7 +16,7 @@
  */
 
 // tslint:disable-next-line: no-imports-from-dist
-import {ALL_ENVS, describeWithFlags, TestEnv} from '@tensorflow/tfjs-core/dist/jasmine_util';
+import {ALL_ENVS, describeWithFlags, TestEnv} from '@tensorflow/tfjs-core/src/jasmine_util';
 
 export function describeWebGPU(name: string, tests: (env: TestEnv) => void) {
   describeWithFlags('webgpu ' + name, ALL_ENVS, tests);

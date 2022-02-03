@@ -13,6 +13,7 @@
 # limitations under the License.
 # =============================================================================
 
+load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
 load("@build_bazel_rules_nodejs//:index.bzl", "nodejs_test", "pkg_npm")
 load("//tools:copy_to_dist.bzl", "copy_to_dist", "copy_ts_library_to_dist")
 load("//tools:tfjs_bundle.bzl", "tfjs_bundle")
@@ -60,26 +61,16 @@ tfjs_bundle(
     ],
 )
 
-copy_ts_library_to_dist(
-    name = "copy_src_to_dist",
-    srcs = [
-        ":tfjs-backend-cpu_lib",
-        "//tfjs-backend-cpu/src:tfjs-backend-cpu_src_lib",
-    ],
-    root = "src",
+copy_file(
+    name = "copy_miniprogram",
+    src = ":tf-backend-cpu.min.js",
+    out = "miniprogram/index.js",
 )
 
-copy_to_dist(
-    name = "copy_bundles",
-    srcs = [
-        ":tf-backend-cpu",
-        ":tf-backend-cpu.es2017",
-        ":tf-backend-cpu.es2017.min",
-        ":tf-backend-cpu.fesm",
-        ":tf-backend-cpu.fesm.min",
-        ":tf-backend-cpu.min",
-        ":tf-backend-cpu.node",
-    ],
+copy_file(
+    name = "copy_miniprogram_map",
+    src = ":tf-backend-cpu.min.js.map",
+    out = "miniprogram/index.js.map",
 )
 
 pkg_npm(
@@ -91,7 +82,15 @@ pkg_npm(
     ],
     tags = ["ci"],
     deps = [
-        ":copy_bundles",
-        ":copy_src_to_dist",
+        ":tf-backend-cpu",
+        ":tf-backend-cpu.es2017",
+        ":tf-backend-cpu.es2017.min",
+        ":tf-backend-cpu.fesm",
+        ":tf-backend-cpu.fesm.min",
+        ":tf-backend-cpu.min",
+        ":tf-backend-cpu.node",
+        ":copy_miniprogram",
+        ":copy_miniprogram_map",
+        ":tfjs-backend-cpu_lib",
     ],
 )

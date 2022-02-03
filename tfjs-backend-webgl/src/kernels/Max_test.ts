@@ -17,7 +17,7 @@
 
 import * as tf from '@tensorflow/tfjs-core';
 // tslint:disable-next-line: no-imports-from-dist
-import {ALL_ENVS, describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
+import {ALL_ENVS, describeWithFlags} from '@tensorflow/tfjs-core/src/jasmine_util';
 
 describeWithFlags('Max', ALL_ENVS, () => {
   it('does not have memory leak when calling reduce multiple times.',

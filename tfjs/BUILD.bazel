@@ -1,0 +1,157 @@
+# Copyright 2021 Google LLC. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# =============================================================================
+
+load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
+load("@build_bazel_rules_nodejs//:index.bzl", "js_library", "pkg_npm")
+load("//tools:copy_to_dist.bzl", "copy_to_dist", "copy_ts_library_to_dist")
+load("//tools:tfjs_bundle.bzl", "tfjs_bundle")
+load("//tools:tfjs_web_test.bzl", "tfjs_web_test")
+load("//tools:defaults.bzl", "ts_library")
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files(["package.json"])
+
+ts_library(
+    name = "tfjs_lib",
+    srcs = [
+        "index.ts",
+    ],
+    module_name = "@tensorflow/tfjs",
+    deps = [
+        "//tfjs/src:tfjs_src_lib",
+        "//tfjs-backend-cpu:tfjs-backend-cpu_lib",
+        "//tfjs-backend-webgl:tfjs-backend-webgl_lib",
+        "//tfjs-converter:tfjs-converter_lib",
+        "//tfjs-core:tfjs-core_lib",
+        "//tfjs-core/src:tfjs-core_src_lib",
+        "//tfjs-data:tfjs-data_lib",
+        "//tfjs-layers:tfjs-layers_lib",
+    ],
+)
+
+ts_library(
+    name = "tfjs_polyfill_lib",
+    srcs = [
+        "index_with_polyfills.ts",
+    ],
+    deps = [
+        ":tfjs_lib",
+    ],
+)
+
+tfjs_bundle(
+    name = "tf",
+    entry_point = ":index.ts",
+    external = [
+        "crypto",
+        "node-fetch",
+        "util",
+        "fs",
+        "buffer",
+    ],
+    umd_name = "tf",
+    deps = [
+        ":tfjs_lib",
+    ],
+)
+
+# filegroup(
+#     name = "custom_module_commonjs",
+#     srcs = [
+#         "//tfjs/tools/custom_module:custom_module_lib",
+#     ],
+#     output_group = "es5_sources",
+# )
+
+# copy_to_dist(
+#     name = "copy_custom_module",
+#     srcs = [
+#         ":custom_module_commonjs",
+#         "//tfjs/tools/custom_module:custom_module_lib",
+#     ],
+# )
+
+copy_to_dist(
+    name = "copy_bundles",
+    srcs = [
+        ":tf",
+        ":tf.es2017",
+        ":tf.es2017.min",
+        ":tf.fesm",
+        ":tf.fesm.min",
+        ":tf.min",
+        ":tf.node",
+    ],
+)
+
+copy_file(
+    name = "copy_miniprogram",
+    src = ":tf.min.js",
+    out = "miniprogram/index.js",
+)
+
+copy_file(
+    name = "copy_miniprogram_map",
+    src = ":tf.min.js.map",
+    out = "miniprogram/index.js.map",
+)
+
+copy_file(
+    name = "copy_root_readme",
+    src = "//:README.md",
+    out = "README.md",
+)
+
+pkg_npm(
+    name = "tfjs_pkg",
+    package_name = "@tensorflow/tfjs",
+    srcs = [
+        "package.json",
+    ],
+    tags = ["ci"],
+    deps = [
+        ":tfjs_lib",
+        ":copy_root_readme",
+        ":tf",
+        ":tf.es2017",
+        ":tf.es2017.min",
+        ":tf.fesm",
+        ":tf.fesm.min",
+        ":tf.min",
+        ":tf.node",
+        #":copy_custom_module",
+        "//tfjs/tools/custom_module:custom_module_lib",
+        ":copy_miniprogram",
+        ":copy_miniprogram_map",
+    ],
+)
+
+js_library(
+    name = "package_json",
+    srcs = [
+        "package.json",
+    ],
+)
+
+tfjs_web_test(
+    name = "tfjs_test",
+    srcs = [
+        "//tfjs/src:tfjs_test_bundle",
+    ],
+    static_files = [
+        "//tfjs/src:tfjs_test_bundle",
+    ],
+)

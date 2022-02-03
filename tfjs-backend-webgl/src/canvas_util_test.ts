@@ -16,7 +16,7 @@
  */
 import * as tf from '@tensorflow/tfjs-core';
 // tslint:disable-next-line: no-imports-from-dist
-import {BROWSER_ENVS, describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
+import {BROWSER_ENVS, describeWithFlags} from '@tensorflow/tfjs-core/src/jasmine_util';
 
 import {clearWebGLContext, getWebGLContext} from './canvas_util';
 

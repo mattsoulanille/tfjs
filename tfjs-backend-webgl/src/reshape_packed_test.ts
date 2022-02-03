@@ -19,7 +19,7 @@ import * as tf from '@tensorflow/tfjs-core';
 import {test_util} from '@tensorflow/tfjs-core';
 const {expectArraysClose} = test_util;
 // tslint:disable-next-line: no-imports-from-dist
-import {describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
+import {describeWithFlags} from '@tensorflow/tfjs-core/src/jasmine_util';
 import {PACKED_ENVS} from './backend_webgl_test_registry';
 
 describeWithFlags('expensive reshape', PACKED_ENVS, () => {

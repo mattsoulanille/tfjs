@@ -16,7 +16,7 @@
  */
 
 // tslint:disable-next-line: no-imports-from-dist
-import {registerTestEnv} from '@tensorflow/tfjs-core/dist/jasmine_util';
+import {registerTestEnv} from '@tensorflow/tfjs-core/src/jasmine_util';
 
 registerTestEnv({
   name: 'webgpu',
