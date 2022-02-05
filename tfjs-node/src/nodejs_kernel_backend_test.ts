@@ -17,7 +17,7 @@
 
 import * as tf from '@tensorflow/tfjs';
 // tslint:disable-next-line: no-imports-from-dist
-import {TestKernelBackend} from '@tensorflow/tfjs-core/dist/jasmine_util';
+import {TestKernelBackend} from '@tensorflow/tfjs-core/src/jasmine_util';
 
 import {createTensorsTypeOpAttr, ensureTensorflowBackend, getTFDType, nodeBackend, NodeJSKernelBackend} from './nodejs_kernel_backend';
 

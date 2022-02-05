@@ -18,13 +18,13 @@
 // We import index.ts so that the Node backend gets registered.
 import './index';
 // tslint:disable-next-line: no-imports-from-dist
-import '@tensorflow/tfjs-core/dist/public/chained_ops/register_all_chained_ops';
+import '@tensorflow/tfjs-core/src/public/chained_ops/register_all_chained_ops';
 // tslint:disable-next-line: no-imports-from-dist
-import '@tensorflow/tfjs-core/dist/register_all_gradients';
+import '@tensorflow/tfjs-core/src/register_all_gradients';
 
 import * as tf from '@tensorflow/tfjs';
 // tslint:disable-next-line:no-imports-from-dist
-import * as jasmine_util from '@tensorflow/tfjs-core/dist/jasmine_util';
+import * as jasmine_util from '@tensorflow/tfjs-core/src/jasmine_util';
 import {argv} from 'yargs';
 
 import {NodeJSKernelBackend} from './nodejs_kernel_backend';
@@ -180,7 +180,7 @@ const runner = new jasmineCtor();
 runner.loadConfig({spec_files: ['src/**/*_test.ts'], random: false});
 // Also import tests from core.
 // tslint:disable-next-line: no-imports-from-dist
-import '@tensorflow/tfjs-core/dist/tests';
+import '@tensorflow/tfjs-core/src/tests';
 
 if (process.env.JASMINE_SEED) {
   runner.seed(process.env.JASMINE_SEED);

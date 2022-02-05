@@ -16,7 +16,7 @@
  */
 import {memory, registerBackend, setBackend, test_util} from '@tensorflow/tfjs';
 // tslint:disable-next-line: no-imports-from-dist
-import {TestKernelBackend} from '@tensorflow/tfjs-core/dist/jasmine_util';
+import {TestKernelBackend} from '@tensorflow/tfjs-core/src/jasmine_util';
 import * as fs from 'fs';
 import {promisify} from 'util';
 
