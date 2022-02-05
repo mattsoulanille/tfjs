@@ -20,7 +20,7 @@ import '@tensorflow/tfjs-backend-webgl';
 
 import * as tfc from '@tensorflow/tfjs-core';
 // tslint:disable-next-line: no-imports-from-dist
-import {ALL_ENVS, describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
+import {ALL_ENVS, describeWithFlags} from '@tensorflow/tfjs-core/src/jasmine_util';
 import * as tfl from '@tensorflow/tfjs-layers';
 
 import {KARMA_SERVER, LAYERS_MODELS, REGRESSION} from './constants';

@@ -15,7 +15,7 @@
  * =============================================================================
  */
 // tslint:disable-next-line: no-imports-from-dist
-import {CHROME_ENVS, Constraints, describeWithFlags, HAS_WORKER} from '@tensorflow/tfjs-core/dist/jasmine_util';
+import {CHROME_ENVS, Constraints, describeWithFlags, HAS_WORKER} from '@tensorflow/tfjs-core/src/jasmine_util';
 
 import {REGRESSION} from './constants';
 
@@ -27,7 +27,7 @@ const CHROME_ENVS_WITH_WORKER: Constraints =
 
 function getBundleUrl(folder: string, custom: boolean, bundler: string) {
   const distFolder = custom ? 'custom' : 'full';
-  return `./base/custom_module/${folder}/dist/${distFolder}/app_${bundler}.js`;
+  return `./base/custom_module/${folder}/src/${distFolder}/app_${bundler}.js`;
 }
 
 const DEBUG_WORKER_SCRIPT = true;

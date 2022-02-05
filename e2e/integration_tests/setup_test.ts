@@ -18,9 +18,9 @@
 // Import core for side effects (e.g. flag registration)
 import '@tensorflow/tfjs-core';
 // tslint:disable-next-line: no-imports-from-dist
-import '@tensorflow/tfjs-core/dist/public/chained_ops/register_all_chained_ops';
+import '@tensorflow/tfjs-core/src/public/chained_ops/register_all_chained_ops';
 // tslint:disable-next-line: no-imports-from-dist
-import {parseTestEnvFromKarmaFlags, registerTestEnv, setTestEnvs, TEST_ENVS} from '@tensorflow/tfjs-core/dist/jasmine_util';
+import {parseTestEnvFromKarmaFlags, registerTestEnv, setTestEnvs, TEST_ENVS} from '@tensorflow/tfjs-core/src/jasmine_util';
 
 import {TAGS} from './constants';
 

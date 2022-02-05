@@ -20,9 +20,9 @@ import '@tensorflow/tfjs-backend-webgl';
 
 import * as tfc from '@tensorflow/tfjs-core';
 // tslint:disable-next-line: no-imports-from-dist
-import '@tensorflow/tfjs-core/dist/register_all_gradients';
+import '@tensorflow/tfjs-core/src/register_all_gradients';
 // tslint:disable-next-line: no-imports-from-dist
-import {ALL_ENVS, describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
+import {ALL_ENVS, describeWithFlags} from '@tensorflow/tfjs-core/src/jasmine_util';
 import * as tfl from '@tensorflow/tfjs-layers';
 
 import {SMOKE} from './constants';
