@@ -16,7 +16,7 @@
  */
 
 // tslint:disable-next-line: no-imports-from-dist
-import * as tensorflow from '@tensorflow/tfjs-converter/dist/data/compiled_api';
+import * as tensorflow from '@tensorflow/tfjs-converter/src/data/compiled_api';
 import {io} from '@tensorflow/tfjs-core';
 import * as fs from 'fs';
 

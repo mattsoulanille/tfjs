@@ -82,14 +82,14 @@ class ESMModuleProvider implements ModuleProvider {
 export const esmImportProvider: ImportProvider = {
   importCoreStr(forwardModeOnly: boolean) {
     const importLines = [
-      `import {registerKernel} from '@tensorflow/tfjs-core/dist/base';`,
-      `import '@tensorflow/tfjs-core/dist/base_side_effects';`,
-      `export * from '@tensorflow/tfjs-core/dist/base';`
+      `import {registerKernel} from '@tensorflow/tfjs-core/src/base';`,
+      `import '@tensorflow/tfjs-core/src/base_side_effects';`,
+      `export * from '@tensorflow/tfjs-core/src/base';`
     ];
 
     if (!forwardModeOnly) {
       importLines.push(
-          `import {registerGradient} from '@tensorflow/tfjs-core/dist/base';`);
+          `import {registerGradient} from '@tensorflow/tfjs-core/src/base';`);
     }
     return importLines.join('\n');
   },
@@ -100,13 +100,13 @@ export const esmImportProvider: ImportProvider = {
 
   importBackendStr(backend: SupportedBackend) {
     const backendPkg = getBackendPath(backend);
-    return `export * from '${backendPkg}/dist/base';`;
+    return `export * from '${backendPkg}/src/base';`;
   },
 
   importKernelStr(kernelName: string, backend: SupportedBackend) {
     const backendPkg = getBackendPath(backend);
     const kernelConfigId = `${kernelName}_${backend}`;
-    const importPath = `${backendPkg}/dist/kernels/${kernelName}`;
+    const importPath = `${backendPkg}/src/kernels/${kernelName}`;
     const importStatement =
         `import {${kernelNameToVariableName(kernelName)}Config as ${
             kernelConfigId}} from '${importPath}';`;
@@ -116,14 +116,14 @@ export const esmImportProvider: ImportProvider = {
   importGradientConfigStr(kernelName: string) {
     const gradConfigId = `${kernelNameToVariableName(kernelName)}GradConfig`;
     const importPath =
-        `@tensorflow/tfjs-core/dist/gradients/${kernelName}_grad`;
+        `@tensorflow/tfjs-core/src/gradients/${kernelName}_grad`;
     const importStatement = `import {${gradConfigId}} from '${importPath}';`;
     return {importPath, importStatement, gradConfigId};
   },
 
   importOpForConverterStr(opSymbol) {
     const opFileName = opNameToFileName(opSymbol);
-    return `export {${opSymbol}} from '@tensorflow/tfjs-core/dist/ops/${
+    return `export {${opSymbol}} from '@tensorflow/tfjs-core/src/ops/${
         opFileName}';`;
   },
 
@@ -134,7 +134,7 @@ export const esmImportProvider: ImportProvider = {
       const opFileName = opNameToFileName(opSymbol);
       const opAlias = `${opSymbol}_${namespace}`;
       result.push(`import {${opSymbol} as ${
-          opAlias}} from '@tensorflow/tfjs-core/dist/ops/${namespace}/${
+          opAlias}} from '@tensorflow/tfjs-core/src/ops/${namespace}/${
           opFileName}';`);
     }
 
