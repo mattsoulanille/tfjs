@@ -46,37 +46,38 @@
           ]
 #          'library_dirs' : ['<(module_root_dir)/cc_deps/lib'],
         }
+      ],
+      [
+        'OS=="mac"', {
+          'libraries' : [
+            '<(module_root_dir)/cc_deps/darwin_arm64/libtensorflowlite_c.dylib',
+              #'-Wl,-rpath,@loader_path'
+              #'-Wl,-rpath,\$$ORIGIN/../../cc_deps/darwin_arm64'
+          ],
+          'postbuilds': [
+            {
+              'postbuild_name': 'Adjust libtflite load path',
+              'action': [
+                'install_name_tool',
+                "-change",
+                "@rpath/libtensorflowlite_c.dylib",
+                "@loader_path/../../cc_deps/darwin_arm64/libtensorflowlite_c.dylib",
+                "<(PRODUCT_DIR)/node_tflite_binding.node"
+              ]
+            }
+            # {
+            #   'postbuild_name': 'Adjust libtflite_framework load path',
+            #   'action': [
+            #     'install_name_tool',
+            #     "-change",
+            #     "@rpath/libtflite_framework.2.dylib",
+            #     "@loader_path/../../cc_deps/lib/libtflite_framework.2.dylib",
+            #     "<(PRODUCT_DIR)/node_tflite_binding.node"
+            #   ]
+            # }
+          ],
+        }
       ]
-    #   [
-    #     'OS=="mac"', {
-    #       'libraries' : [
-    #         '<(module_root_dir)/cc_deps/lib/libtflite.2.dylib',
-    #         '<(module_root_dir)/cc_deps/lib/libtflite_framework.2.dylib',
-    #       ],
-    #       'postbuilds': [
-    #         {
-    #           'postbuild_name': 'Adjust libtflite load path',
-    #           'action': [
-    #             'install_name_tool',
-    #             "-change",
-    #             "@rpath/libtflite.2.dylib",
-    #             "@loader_path/../../cc_deps/lib/libtflite.2.dylib",
-    #             "<(PRODUCT_DIR)/node_tflite_binding.node"
-    #           ]
-    #         },
-    #         {
-    #           'postbuild_name': 'Adjust libtflite_framework load path',
-    #           'action': [
-    #             'install_name_tool',
-    #             "-change",
-    #             "@rpath/libtflite_framework.2.dylib",
-    #             "@loader_path/../../cc_deps/lib/libtflite_framework.2.dylib",
-    #             "<(PRODUCT_DIR)/node_tflite_binding.node"
-    #           ]
-    #         }
-    #       ],
-    #     }
-    #   ],
     #   [
     #     'OS=="win"', {
     #       'defines': ['COMPILER_MSVC'],
