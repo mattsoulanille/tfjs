@@ -46,11 +46,14 @@ class TensorInfo : public Napi::ObjectWrap<TensorInfo> {
   TensorInfo(const Napi::CallbackInfo& info)
       : Napi::ObjectWrap<TensorInfo>(info) { }
 
+  ~TensorInfo() {
+    dataBuffer.Unref();
+  }
+
  private:
   friend class Interpreter;
   const TfLiteTensor *tensor = nullptr;
   int id = -1;
-  //Napi::Buffer<uint8_t> dataBuffer;
   Napi::Reference<Napi::Buffer<uint8_t>> dataBuffer;
 
   void setTensor(Napi::Env env, const TfLiteTensor *t, int i) {
@@ -64,15 +67,10 @@ class TensorInfo : public Napi::ObjectWrap<TensorInfo> {
     TfLiteType tensorType = TfLiteTensorType(tensor);
     size_t length = getLength();
     size_t byteSize = TfLiteTensorByteSize(tensor);
-    //auto buffer = Napi::ArrayBuffer::New(
-    //env, data, byteSize); // TODO: Finalizer?
     auto buffer = Napi::Buffer<uint8_t>::New(
         env, (uint8_t*)data, byteSize); // TODO: Finalizer?
 
-    dataBuffer = Napi::Reference<Napi::Buffer<uint8_t>>::New(buffer);
-
-    //auto array = Napi::TypedArrayOf<uint8_t>(env, buffer);
-
+    dataBuffer = Napi::Reference<Napi::Buffer<uint8_t>>::New(buffer, 1);
   }
 
   Napi::Value GetId(const Napi::CallbackInfo &info) {
@@ -82,12 +80,9 @@ class TensorInfo : public Napi::ObjectWrap<TensorInfo> {
 
   Napi::Value GetName(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
-    // TODO
     if (tensor != nullptr) {
-      //printf("tensor is defined");
-      //printf("Tensor is %s", TfLiteTensorName(tensor));
-      //std::string name(TfLiteTensorName(tensor));
-      //return Napi::String::New(env, name);
+      std::string name(TfLiteTensorName(tensor));
+      return Napi::String::New(env, name);
     }
     return Napi::String::New(env, "unknown tensor");
   }
@@ -191,22 +186,6 @@ class TensorInfo : public Napi::ObjectWrap<TensorInfo> {
 
   Napi::Value GetData(const Napi::CallbackInfo &info) {
     return dataBuffer.Value();
-    // Napi::Env env = info.Env();
-    // void* data = TfLiteTensorData(tensor);
-    // if (!data) {
-    //   Napi::Error::New(env, "Failed to get tensor data").ThrowAsJavaScriptException();
-    // }
-
-    // TfLiteType tensorType = TfLiteTensorType(tensor);
-    // size_t length = getLength();
-    // size_t byteSize = TfLiteTensorByteSize(tensor);
-    // //auto buffer = Napi::ArrayBuffer::New(
-    // //env, data, byteSize); // TODO: Finalizer?
-    // auto buffer = Napi::Buffer<uint8_t>::New(
-    //     env, (uint8_t*)data, byteSize); // TODO: Finalizer?
-
-    // //auto array = Napi::TypedArrayOf<uint8_t>(env, buffer);
-    // return buffer;
   }
 };
 
@@ -283,37 +262,7 @@ class Interpreter : public Napi::ObjectWrap<Interpreter> {
     TfLiteModelDelete(model);
     TfLiteInterpreterOptionsDelete(interpreterOptions);
 
-    // // Construct input tensor objects
-    // int inputTensorCount = TfLiteInterpreterGetInputTensorCount(interpreter);
-    // Napi::Array inputTensorArray = Napi::Array::New(env, inputTensorCount);
-    // for (int id = 0; id < inputTensorCount; id++) {
-    //   const TfLiteTensor* tensor = TfLiteInterpreterGetInputTensor(interpreter, id);
-    //   auto wrappedTensorInfo = TensorInfo::constructor.New({});
-    //   auto tensorInfo = TensorInfo::Unwrap(wrappedTensorInfo);
-    //   tensorInfo->id = id;
-    //   tensorInfo->tensor = tensor;
-
-    //   inputTensorArray[id] = wrappedTensorInfo;
-    // }
-    // inputTensorInfos = inputTensorArray;
-
-    // // Construct output tensor objects
-    // int outputTensorCount = TfLiteInterpreterGetOutputTensorCount(interpreter);
-    // Napi::Array outputTensorArray = Napi::Array::New(env, outputTensorCount);
-    // for (int id = 0; id < outputTensorCount; id++) {
-    //   const TfLiteTensor* tensor = TfLiteInterpreterGetOutputTensor(interpreter, id);
-    //   auto wrappedTensorInfo = TensorInfo::constructor.New({});
-    //   auto tensorInfo = TensorInfo::Unwrap(wrappedTensorInfo);
-    //   tensorInfo->id = id;
-    //   tensorInfo->tensor = tensor;
-
-    //   outputTensorArray[id] = wrappedTensorInfo;
-    // }
-    // outputTensorInfos = outputTensorArray;
-  }
-
-  Napi::Value GetInputs(const Napi::CallbackInfo& info) {
-    Napi::Env env = info.Env();
+    // Construct input tensor objects
     int inputTensorCount = TfLiteInterpreterGetInputTensorCount(interpreter);
     Napi::Array inputTensorArray = Napi::Array::New(info.Env(), inputTensorCount);
     for (int id = 0; id < inputTensorCount; id++) {
@@ -325,12 +274,9 @@ class Interpreter : public Napi::ObjectWrap<Interpreter> {
       // tensorInfo->tensor = tensor;
       inputTensorArray[id] = wrappedTensorInfo;
     }
-    return inputTensorArray;
-    //    return inputTensorInfos;
-  }
+    inputTensorRef = Napi::Reference<Napi::Array>::New(inputTensorArray, 1);
 
-  Napi::Value GetOutputs(const Napi::CallbackInfo& info) {
-    Napi::Env env = info.Env();
+    // Construct output tensor objects
     int outputTensorCount = TfLiteInterpreterGetOutputTensorCount(interpreter);
     Napi::Array outputTensorArray = Napi::Array::New(info.Env(), outputTensorCount);
     for (int id = 0; id < outputTensorCount; id++) {
@@ -343,19 +289,55 @@ class Interpreter : public Napi::ObjectWrap<Interpreter> {
 
       outputTensorArray[id] = wrappedTensorInfo;
     }
-    return outputTensorArray;
+    outputTensorRef = Napi::Reference<Napi::Array>::New(outputTensorArray, 1);
+  }
 
-    // return outputTensorInfos;
+  Napi::Value GetInputs(const Napi::CallbackInfo& info) {
+    // Napi::Env env = info.Env();
+    // int inputTensorCount = TfLiteInterpreterGetInputTensorCount(interpreter);
+    // Napi::Array inputTensorArray = Napi::Array::New(info.Env(), inputTensorCount);
+    // for (int id = 0; id < inputTensorCount; id++) {
+    //   const TfLiteTensor* tensor = TfLiteInterpreterGetInputTensor(interpreter, id);
+    //   auto wrappedTensorInfo = TensorInfo::constructor.New({});
+    //   auto tensorInfo = TensorInfo::Unwrap(wrappedTensorInfo);
+    //   tensorInfo->setTensor(env, tensor, id);
+    //   // tensorInfo->id = id;
+    //   // tensorInfo->tensor = tensor;
+    //   inputTensorArray[id] = wrappedTensorInfo;
+    // }
+    // return inputTensorArray;
+    return inputTensorRef.Value();
+  }
+
+  Napi::Value GetOutputs(const Napi::CallbackInfo& info) {
+    // Napi::Env env = info.Env();
+    // int outputTensorCount = TfLiteInterpreterGetOutputTensorCount(interpreter);
+    // Napi::Array outputTensorArray = Napi::Array::New(info.Env(), outputTensorCount);
+    // for (int id = 0; id < outputTensorCount; id++) {
+    //   const TfLiteTensor* tensor = TfLiteInterpreterGetOutputTensor(interpreter, id);
+    //   auto wrappedTensorInfo = TensorInfo::constructor.New({});
+    //   auto tensorInfo = TensorInfo::Unwrap(wrappedTensorInfo);
+    //   tensorInfo->setTensor(env, tensor, id);
+    //   //tensorInfo->id = id;
+    //   //tensorInfo->tensor = tensor;
+
+    //   outputTensorArray[id] = wrappedTensorInfo;
+    // }
+    // return outputTensorArray;
+
+    return outputTensorRef.Value();
   }
 
   ~Interpreter() {
+    inputTensorRef.Unref();
+    outputTensorRef.Unref();
     TfLiteInterpreterDelete(interpreter);
   }
 
  private:
   TfLiteInterpreter *interpreter = nullptr;
-  Napi::Value inputTensorInfos;
-  Napi::Value outputTensorInfos;
+  Napi::Reference<Napi::Array> inputTensorRef;
+  Napi::Reference<Napi::Array> outputTensorRef;
   std::vector<uint8_t> modelData;
 
   Napi::Value Infer(const Napi::CallbackInfo &info) {

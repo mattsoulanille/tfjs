@@ -17,7 +17,7 @@
 
 import {TFLiteNodeModelRunner} from './index';
 import * as fs from 'fs';
-import { TFLiteWebModelRunner } from '@tensorflow/tfjs-tflite/cjs/types/tflite_web_model_runner';
+import { TFLiteWebModelRunner } from '@tensorflow/tfjs-tflite/dist/types/tflite_web_model_runner';
 import '@tensorflow/tfjs-backend-cpu';
 import * as jpeg from 'jpeg-js';
 
@@ -56,11 +56,34 @@ describe('interpreter', () => {
     expect(outputs[0].data()).toBeDefined();
   });
 
+  it('returns the same reference for each getInputs() call', () => {
+    expect(modelRunner.getInputs()).toEqual(modelRunner.getInputs());
+  });
+
+  it('returns the same reference for each getOutputs() call', () => {
+    expect(modelRunner.getOutputs()).toEqual(modelRunner.getOutputs());
+  });
+
   it('returns the same reference for each TensorInfo data() call', () => {
     const input = modelRunner.getInputs()[0];
     const output = modelRunner.getOutputs()[0];
     expect(input.data()).toEqual(input.data());
     expect(output.data()).toEqual(output.data());
+  });
+
+  it('gets input tensor name', () => {
+    const input = modelRunner.getInputs()[0];
+    expect(input.name).toEqual('map/TensorArrayStack/TensorArrayGatherV3');
+  });
+
+  it('gets output tensor name', () => {
+    const output = modelRunner.getOutputs()[0];
+    expect(output.name).toEqual('prediction');
+  });
+
+  it('gets input tensor id', () => {
+    const input = modelRunner.getInputs()[0];
+    expect(input.id).toEqual(0);
   });
 });
 
@@ -107,7 +130,6 @@ describe('model', () => {
     }
 
     const label = labels[maxIndex];
-    console.log(label);
     expect(label).toEqual('Ara macao (Scarlet Macaw)');
   });
 });
