@@ -20,13 +20,16 @@ import { TFLiteWebModelRunner, TFLiteWebModelRunnerTensorInfo} from '@tensorflow
 const addon = require('bindings')('node_tflite_binding');
 
 interface InterpreterOptions {
-  threads: number;
+  threads?: number;
+  delegate?: {
+    path: string;
+  }
 }
 
 export const TFLiteNodeModelRunner = addon.Interpreter as {
-  new(model: Uint8Array, options: InterpreterOptions): TFLiteWebModelRunner
+  new(model: Uint8Array, options: InterpreterOptions): TFLiteWebModelRunner;
 };
 
 export const TensorInfo = addon.TensorInfo as {
-  new(): TFLiteWebModelRunnerTensorInfo
+  new(): TFLiteWebModelRunnerTensorInfo;
 };

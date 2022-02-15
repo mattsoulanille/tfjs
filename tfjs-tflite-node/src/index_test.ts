@@ -21,8 +21,8 @@ import { TFLiteWebModelRunner } from '@tensorflow/tfjs-tflite/dist/types/tflite_
 import '@tensorflow/tfjs-backend-cpu';
 import * as jpeg from 'jpeg-js';
 
-import * as SegfaultHandler from 'segfault-handler';
-SegfaultHandler.registerHandler('crash.log');
+//import * as SegfaultHandler from 'segfault-handler';
+//SegfaultHandler.registerHandler('crash.log');
 
 describe('interpreter', () => {
   let model: Uint8Array;
@@ -87,6 +87,35 @@ describe('interpreter', () => {
   });
 });
 
+function getParrot(): Uint8Array {
+  const parrotJpeg = jpeg.decode(
+    fs.readFileSync('./test_data/parrot-small.jpg'));
+
+  const {width, height, data} = parrotJpeg;
+  const parrot = new Uint8Array(width * height * 3);
+  let offset = 0;  // offset into original data
+  for (let i = 0; i < parrot.length; i += 3) {
+    parrot[i] = data[offset];
+    parrot[i + 1] = data[offset + 1];
+    parrot[i + 2] = data[offset + 2];
+
+    offset += 4;
+  }
+  return parrot;
+}
+
+function getMaxIndex(data: ArrayLike<number>) {
+  let max = 0;
+  let maxIndex = 0;
+  for (let i = 0; i < data.length; i++) {
+    if (data[i] > max) {
+      max = data[i];
+      maxIndex = i;
+    }
+  }
+  return maxIndex;
+}
+
 describe('model', () => {
   let model: Uint8Array;
   let modelRunner: TFLiteWebModelRunner;
@@ -96,20 +125,7 @@ describe('model', () => {
   beforeEach(() => {
     model = fs.readFileSync('./test_data/mobilenet_v2_1.0_224_inat_bird_quant.tflite');
     modelRunner = new TFLiteNodeModelRunner(model, { threads: 4 });
-    const parrotJpeg = jpeg.decode(
-      fs.readFileSync('./test_data/parrot-small.jpg'));
-
-    const {width, height, data} = parrotJpeg;
-    parrot = new Uint8Array(width * height * 3);
-    let offset = 0;  // offset into original data
-    for (let i = 0; i < parrot.length; i += 3) {
-      parrot[i] = data[offset];
-      parrot[i + 1] = data[offset + 1];
-      parrot[i + 2] = data[offset + 2];
-
-      offset += 4;
-    }
-
+    parrot = getParrot();
     labels = fs.readFileSync('./test_data/inat_bird_labels.txt', 'utf-8').split('\n');
   });
 
@@ -118,18 +134,40 @@ describe('model', () => {
     input.data().set(parrot);
     modelRunner.infer();
     const output = modelRunner.getOutputs()[0];
-
-    let max = 0;
-    let maxIndex = 0;
-    const data = output.data();
-    for (let i = 0; i < data.length; i++) {
-      if (data[i] > max) {
-        max = data[i];
-        maxIndex = i;
-      }
-    }
-
+    const maxIndex = getMaxIndex(output.data());
     const label = labels[maxIndex];
+    expect(label).toEqual('Ara macao (Scarlet Macaw)');
+  });
+});
+
+describe('delegate support', () => {
+  let model: Uint8Array;
+  let modelRunner: TFLiteWebModelRunner;
+  let parrot: Uint8Array;
+  let labels: string[];
+
+  beforeEach(() => {
+    model = fs.readFileSync('./test_data/mobilenet_v2_1.0_224_inat_bird_quant_edgetpu.tflite');
+    modelRunner = new TFLiteNodeModelRunner(model, {
+      threads: 4,
+      delegate: {
+        //path: './tmp_delegate_dlls/libedgetpu.1.dylib',
+        path: '/Users/matthew/Projects/tfjs/tfjs-tflite-node/tmp_delegate_dlls/libedgetpu.1.dylib',
+      },
+    });
+
+    parrot = getParrot();
+    labels = fs.readFileSync('./test_data/inat_bird_labels.txt', 'utf-8').split('\n');
+  });
+
+  it('runs a model with the coral delegate', () => {
+    const input = modelRunner.getInputs()[0];
+    input.data().set(parrot);
+    modelRunner.infer();
+    const output = modelRunner.getOutputs()[0];
+    const maxIndex = getMaxIndex(output.data());
+    const label = labels[maxIndex];
+    console.log(`Label from coral is ${label}`);
     expect(label).toEqual('Ara macao (Scarlet Macaw)');
   });
 });

@@ -51,6 +51,7 @@
         'OS=="mac"', {
           'libraries' : [
             '<(module_root_dir)/cc_deps/darwin_arm64/libtensorflowlite_c.dylib',
+            '<(module_root_dir)/cc_deps/darwin_arm64/libexternal_delegate_obj.dylib',
               #'-Wl,-rpath,@loader_path'
               #'-Wl,-rpath,\$$ORIGIN/../../cc_deps/darwin_arm64'
           ],
@@ -62,6 +63,16 @@
                 "-change",
                 "@rpath/libtensorflowlite_c.dylib",
                 "@loader_path/../../cc_deps/darwin_arm64/libtensorflowlite_c.dylib",
+                "<(PRODUCT_DIR)/node_tflite_binding.node"
+              ]
+            },
+            {
+              'postbuild_name': 'Adjust external delegate lib load path',
+              'action': [
+                'install_name_tool',
+                "-change",
+                "@rpath/libexternal_delegate_obj.dylib",
+                "@loader_path/../../cc_deps/darwin_arm64/libexternal_delegate_obj.dylib",
                 "<(PRODUCT_DIR)/node_tflite_binding.node"
               ]
             }

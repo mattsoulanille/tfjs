@@ -20,6 +20,7 @@
 #include <sstream>
 #include "tensorflow/lite/c/c_api.h"
 #include "tensorflow/lite/c/c_api_types.h"
+#include "tensorflow/lite/delegates/external/external_delegate.h"
 
 class TensorInfo : public Napi::ObjectWrap<TensorInfo> {
  public:
@@ -236,6 +237,16 @@ class Interpreter : public Napi::ObjectWrap<Interpreter> {
       TfLiteInterpreterOptionsSetNumThreads(interpreterOptions, threads);
     }
 
+    if (options.Has("delegate")) {
+      auto delegateConfig = options.Get("delegate").As<Napi::Object>();
+      delegate_path = delegateConfig.Get("path").As<Napi::String>().Utf8Value();
+
+      TfLiteExternalDelegateOptions delegateOptions = TfLiteExternalDelegateOptionsDefault(delegate_path.c_str());
+      TfLiteDelegate* delegate = TfLiteExternalDelegateCreate(&delegateOptions);
+
+      TfLiteInterpreterOptionsAddDelegate(interpreterOptions, delegate);
+    }
+
     // Create a model from the model buffer.
     modelData = std::vector<uint8_t>(
         buffer.Data(), buffer.Data() + buffer.ByteLength());
@@ -293,38 +304,10 @@ class Interpreter : public Napi::ObjectWrap<Interpreter> {
   }
 
   Napi::Value GetInputs(const Napi::CallbackInfo& info) {
-    // Napi::Env env = info.Env();
-    // int inputTensorCount = TfLiteInterpreterGetInputTensorCount(interpreter);
-    // Napi::Array inputTensorArray = Napi::Array::New(info.Env(), inputTensorCount);
-    // for (int id = 0; id < inputTensorCount; id++) {
-    //   const TfLiteTensor* tensor = TfLiteInterpreterGetInputTensor(interpreter, id);
-    //   auto wrappedTensorInfo = TensorInfo::constructor.New({});
-    //   auto tensorInfo = TensorInfo::Unwrap(wrappedTensorInfo);
-    //   tensorInfo->setTensor(env, tensor, id);
-    //   // tensorInfo->id = id;
-    //   // tensorInfo->tensor = tensor;
-    //   inputTensorArray[id] = wrappedTensorInfo;
-    // }
-    // return inputTensorArray;
     return inputTensorRef.Value();
   }
 
   Napi::Value GetOutputs(const Napi::CallbackInfo& info) {
-    // Napi::Env env = info.Env();
-    // int outputTensorCount = TfLiteInterpreterGetOutputTensorCount(interpreter);
-    // Napi::Array outputTensorArray = Napi::Array::New(info.Env(), outputTensorCount);
-    // for (int id = 0; id < outputTensorCount; id++) {
-    //   const TfLiteTensor* tensor = TfLiteInterpreterGetOutputTensor(interpreter, id);
-    //   auto wrappedTensorInfo = TensorInfo::constructor.New({});
-    //   auto tensorInfo = TensorInfo::Unwrap(wrappedTensorInfo);
-    //   tensorInfo->setTensor(env, tensor, id);
-    //   //tensorInfo->id = id;
-    //   //tensorInfo->tensor = tensor;
-
-    //   outputTensorArray[id] = wrappedTensorInfo;
-    // }
-    // return outputTensorArray;
-
     return outputTensorRef.Value();
   }
 
@@ -339,6 +322,7 @@ class Interpreter : public Napi::ObjectWrap<Interpreter> {
   Napi::Reference<Napi::Array> inputTensorRef;
   Napi::Reference<Napi::Array> outputTensorRef;
   std::vector<uint8_t> modelData;
+  std::string delegate_path;
 
   Napi::Value Infer(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
