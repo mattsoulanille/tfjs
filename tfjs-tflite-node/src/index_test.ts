@@ -140,6 +140,46 @@ describe('model', () => {
   });
 });
 
+describe('float32 support', () => {
+  let model: Uint8Array;
+  let modelRunner: TFLiteWebModelRunner;
+  let red: Float32Array;
+  let labels: string[];
+
+  beforeEach(() => {
+    model = fs.readFileSync('./test_data/teachable_machine_float.tflite');
+    modelRunner = new TFLiteNodeModelRunner(model, {});
+    labels = ['class1', 'class2'];
+
+    red = new Float32Array(224 * 224 * 3);
+    for (let i = 0; i < red.length; i++) {
+      if (i % 3 === 0) {
+        red[i] = 255;
+      }
+    }
+  });
+
+  it('model input is a Float32Array', () => {
+    const input = modelRunner.getInputs()[0];
+    expect(input.data() instanceof Float32Array).toBeTruthy();
+  });
+
+  it('model output is a Float32Array', () => {
+    const output = modelRunner.getOutputs()[0];
+    expect(output.data() instanceof Float32Array).toBeTruthy();
+  });
+
+  it('runs a model with float32 input', () => {
+    const input = modelRunner.getInputs()[0];
+    input.data().set(red);
+    modelRunner.infer();
+    const output = modelRunner.getOutputs()[0];
+    const maxIndex = getMaxIndex(output.data());
+    const label = labels[maxIndex];
+    expect(label).toEqual('class2');
+  });
+});
+
 describe('delegate support', () => {
   let model: Uint8Array;
   let modelRunner: TFLiteWebModelRunner;
@@ -167,7 +207,6 @@ describe('delegate support', () => {
     const output = modelRunner.getOutputs()[0];
     const maxIndex = getMaxIndex(output.data());
     const label = labels[maxIndex];
-    console.log(`Label from coral is ${label}`);
     expect(label).toEqual('Ara macao (Scarlet Macaw)');
   });
 });

@@ -48,14 +48,14 @@ class TensorInfo : public Napi::ObjectWrap<TensorInfo> {
       : Napi::ObjectWrap<TensorInfo>(info) { }
 
   ~TensorInfo() {
-    dataBuffer.Unref();
+    dataArray.Unref();
   }
 
  private:
   friend class Interpreter;
   const TfLiteTensor *tensor = nullptr;
   int id = -1;
-  Napi::Reference<Napi::Buffer<uint8_t>> dataBuffer;
+  Napi::Reference<Napi::TypedArray> dataArray;
 
   void setTensor(Napi::Env env, const TfLiteTensor *t, int i) {
     tensor = t;
@@ -68,10 +68,71 @@ class TensorInfo : public Napi::ObjectWrap<TensorInfo> {
     TfLiteType tensorType = TfLiteTensorType(tensor);
     size_t length = getLength();
     size_t byteSize = TfLiteTensorByteSize(tensor);
-    auto buffer = Napi::Buffer<uint8_t>::New(
+    auto buffer = Napi::ArrayBuffer::New(
         env, (uint8_t*)data, byteSize); // TODO: Finalizer?
 
-    dataBuffer = Napi::Reference<Napi::Buffer<uint8_t>>::New(buffer, 1);
+    Napi::TypedArray typedArray;
+    switch (tensorType) {
+    case kTfLiteNoType:
+      typedArray = Napi::Uint8Array::New(env, getLength(), buffer, 0);
+      break;
+    case kTfLiteFloat32:
+      typedArray = Napi::Float32Array::New(env, getLength(), buffer, 0);
+      break;
+    case kTfLiteInt32:
+      typedArray = Napi::Int32Array::New(env, getLength(), buffer, 0);
+      break;
+    case kTfLiteUInt8:
+      typedArray = Napi::Uint8Array::New(env, getLength(), buffer, 0);
+      break;
+    case kTfLiteInt64:
+      typedArray = Napi::BigInt64Array::New(env, getLength(), buffer, 0);
+      break;
+    case kTfLiteString:
+      Napi::Error::New(env, "'kTfLiteString' is not yet supported")
+          .ThrowAsJavaScriptException();
+      break;
+    case kTfLiteBool:
+      typedArray = Napi::Uint8Array::New(env, getLength(), buffer, 0);
+      break;
+    case kTfLiteInt16:
+      typedArray = Napi::Int16Array::New(env, getLength(), buffer, 0);
+      break;
+    case kTfLiteComplex64:
+      Napi::Error::New(env, "'kTfLiteComplex64' is not yet supported")
+          .ThrowAsJavaScriptException();
+      break;
+    case kTfLiteInt8:
+      typedArray = Napi::Int8Array::New(env, getLength(), buffer, 0);
+      break;
+    case kTfLiteFloat16:
+      Napi::Error::New(env, "'kTfLiteFloat16' is not yet supported")
+          .ThrowAsJavaScriptException();
+      break;
+      break;
+    case kTfLiteFloat64:
+      typedArray = Napi::Float64Array::New(env, getLength(), buffer, 0);
+      break;
+    case kTfLiteComplex128:
+      Napi::Error::New(env, "'kTfLiteComplex128' is not yet supported")
+          .ThrowAsJavaScriptException();
+      break;
+    case kTfLiteUInt64:
+      typedArray = Napi::BigUint64Array::New(env, getLength(), buffer, 0);
+      break;
+    case kTfLiteResource:
+      Napi::Error::New(env, "'kTfLiteResource' is not yet supported")
+          .ThrowAsJavaScriptException();
+      break;
+    case kTfLiteVariant:
+      Napi::Error::New(env, "'kTfLiteVariant' is not yet supported")
+          .ThrowAsJavaScriptException();
+      break;
+    case kTfLiteUInt32:
+      typedArray = Napi::Uint32Array::New(env, getLength(), buffer, 0);
+      break;
+    }
+    dataArray = Napi::Reference<Napi::TypedArray>::New(typedArray, 1);
   }
 
   Napi::Value GetId(const Napi::CallbackInfo &info) {
@@ -186,7 +247,7 @@ class TensorInfo : public Napi::ObjectWrap<TensorInfo> {
   }
 
   Napi::Value GetData(const Napi::CallbackInfo &info) {
-    return dataBuffer.Value();
+    return dataArray.Value();
   }
 };
 
