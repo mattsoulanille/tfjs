@@ -76,35 +76,36 @@
                 "<(PRODUCT_DIR)/node_tflite_binding.node"
               ]
             }
-            # {
-            #   'postbuild_name': 'Adjust libtflite_framework load path',
-            #   'action': [
-            #     'install_name_tool',
-            #     "-change",
-            #     "@rpath/libtflite_framework.2.dylib",
-            #     "@loader_path/../../cc_deps/lib/libtflite_framework.2.dylib",
-            #     "<(PRODUCT_DIR)/node_tflite_binding.node"
-            #   ]
-            # }
           ],
         }
-      ]
-    #   [
-    #     'OS=="win"', {
-    #       'defines': ['COMPILER_MSVC'],
-    #       'libraries': ['tflite'],
-    #       'library_dirs' : ['<(module_root_dir)/cc_deps/lib'],
-    #       'variables': {
-    #         'tflite-library-target': 'windows'
-    #       },
-    #       'msvs_disabled_warnings': [
-    #         # Warning	C4190: 'TF_NewWhile' has C-linkage specified, but returns
-    #         # UDT 'TF_WhileParams' which is incompatible with C.
-    #         # (in include/tflite/c/c_api.h)
-    #         4190
-    #       ]
-    #     },
-    #   ],
+      ],
+      [
+        'OS=="win"', {
+          'defines': ['COMPILER_MSVC'],
+          #'libraries': ['tensorflowlite_c', 'external_delegate_obj'],
+          'libraries': [
+            '<(module_root_dir)/cc_deps/windows_amd64/tensorflowlite_c.dll.if.lib',
+            '<(module_root_dir)/cc_deps/windows_amd64/external_delegate_obj.dll.if.lib',
+          ],
+          'copies': [{
+            'destination': './build/Release',
+              'files': [
+                '<(module_root_dir)/cc_deps/windows_amd64/tensorflowlite_c.dll',
+                '<(module_root_dir)/cc_deps/windows_amd64/external_delegate_obj.dll',
+              ],
+          }],
+          'library_dirs' : ['<(module_root_dir)/cc_deps/windows_amd64'],
+          'variables': {
+            'tflite-library-target': 'windows'
+          },
+          'msvs_disabled_warnings': [
+            # Warning	C4190: 'TF_NewWhile' has C-linkage specified, but returns
+            # UDT 'TF_WhileParams' which is incompatible with C.
+            # (in include/tflite/c/c_api.h)
+            4190
+          ]
+        },
+      ],
     ],
     "defines" : [
         "NAPI_DISABLE_CPP_EXCEPTIONS"
