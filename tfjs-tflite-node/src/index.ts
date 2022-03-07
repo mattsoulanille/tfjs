@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import { TFLiteWebModelRunner, TFLiteWebModelRunnerTensorInfo} from '@tensorflow/tfjs-tflite';
+import type {TFLiteWebModelRunner, TFLiteWebModelRunnerTensorInfo} from '@tensorflow/tfjs-tflite/dist/types/tflite_web_model_runner';
 
 const addon = require('bindings')('node_tflite_binding');
 
