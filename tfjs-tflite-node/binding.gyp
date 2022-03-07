@@ -27,7 +27,6 @@
   'targets' : [{
     'target_name' : 'node_tflite_binding',
     'sources' : [
-#      'binding/tfjs_backend.cc',
       'binding/node_tflite_binding.cc'
     ],
     'include_dirs' : [
@@ -40,11 +39,9 @@
         'OS=="linux"', {
           'libraries' : [
             '<(module_root_dir)/cc_deps/linux_amd64/libtensorflowlite_c.so',
+            '<(module_root_dir)/cc_deps/linux_amd64/libexternal_delegate_obj.so',
             '-Wl,-rpath,\$$ORIGIN/../../cc_deps/linux_amd64'
-            #'-ltensorflowlite',
-            #'-ltflite_framework',
           ]
-#          'library_dirs' : ['<(module_root_dir)/cc_deps/lib'],
         }
       ],
       [
@@ -52,8 +49,6 @@
           'libraries' : [
             '<(module_root_dir)/cc_deps/darwin_arm64/libtensorflowlite_c.dylib',
             '<(module_root_dir)/cc_deps/darwin_arm64/libexternal_delegate_obj.dylib',
-              #'-Wl,-rpath,@loader_path'
-              #'-Wl,-rpath,\$$ORIGIN/../../cc_deps/darwin_arm64'
           ],
           'postbuilds': [
             {
@@ -82,7 +77,6 @@
       [
         'OS=="win"', {
           'defines': ['COMPILER_MSVC'],
-          #'libraries': ['tensorflowlite_c', 'external_delegate_obj'],
           'libraries': [
             '<(module_root_dir)/cc_deps/windows_amd64/tensorflowlite_c.dll.if.lib',
             '<(module_root_dir)/cc_deps/windows_amd64/external_delegate_obj.dll.if.lib',
@@ -111,18 +105,7 @@
         "NAPI_DISABLE_CPP_EXCEPTIONS"
     ]
   }
-  # , {
-  #     "target_name": "action_after_build",
-  #     "type": "none",
-  #     "dependencies": [ "<(module_name)" ],
-  #     "copies": [
-  #       {
-  #         "files": [ "<(PRODUCT_DIR)/<(module_name).node" ],
-  #         "destination": "<(module_path)"
-  #       }
-  #     ]
-  #   }
-    ],
+  ],
   "defines": [
       "NAPI_VERSION=<(napi_build_version)"
   ]
