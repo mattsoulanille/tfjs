@@ -10,7 +10,11 @@
     "test": "yarn build && yarn test-dev"
   },
   "devDependencies": {
+    "@tensorflow/tfjs-tflite-node": "link:../tfjs-tflite-node",
+    "@tensorflow/tfjs-core": "link:../link-package-core/node_modules/@tensorflow/tfjs-core",
+    "@tensorflow/tfjs-node": "link:../tfjs-node",
     "jasmine": "^4.0.2",
+    "jpeg-js": "^0.4.3",
     "typescript": "^4.5.4"
   }
 }

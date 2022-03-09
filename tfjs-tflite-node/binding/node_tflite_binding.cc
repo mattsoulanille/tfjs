@@ -281,7 +281,7 @@ class Interpreter : public Napi::ObjectWrap<Interpreter> {
 
     // TODO: Throw error on incorrect argument types.
     // Model is stored as a uint8 buffer.
-    Napi::Buffer<uint8_t> buffer = info[0].As<Napi::Buffer<uint8_t>>();
+    Napi::ArrayBuffer buffer = info[0].As<Napi::ArrayBuffer>();
     // Options are an object.
     Napi::Object options = info[1].As<Napi::Object>();
 
@@ -301,7 +301,6 @@ class Interpreter : public Napi::ObjectWrap<Interpreter> {
     if (options.Has("delegate")) {
       auto delegateConfig = options.Get("delegate").As<Napi::Object>();
       delegate_path = delegateConfig.Get("path").As<Napi::String>().Utf8Value();
-
       TfLiteExternalDelegateOptions delegateOptions = TfLiteExternalDelegateOptionsDefault(delegate_path.c_str());
       TfLiteDelegate* delegate = TfLiteExternalDelegateCreate(&delegateOptions);
 
@@ -310,7 +309,7 @@ class Interpreter : public Napi::ObjectWrap<Interpreter> {
 
     // Create a model from the model buffer.
     modelData = std::vector<uint8_t>(
-        buffer.Data(), buffer.Data() + buffer.ByteLength());
+        (uint8_t*) buffer.Data(), (uint8_t*) buffer.Data() + buffer.ByteLength());
 
     auto model = TfLiteModelCreate(modelData.data(), modelData.size());
     if (!model) {

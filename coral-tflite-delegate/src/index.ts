@@ -16,36 +16,25 @@
  */
 
 import * as path from 'path';
-import { getLibPaths, getPlatform } from './utils';
-
-// TODO(mattsoulanille): Move this to @tensorflow/tfjs-tflite
-interface TFLiteDelegatePlugin<Options> {
-  name: string;
-  tfliteVersion: string;
-  node?: {
-    path(): string;
-  },
-  browser?: {
-    path(): string;
-  },
-  serializeOptions(options: Options): Map<string, string>
-}
+import {getLibPaths, getPlatform} from './utils';
+import type {TFLiteDelegatePlugin} from '@tensorflow/tfjs-tflite-node';
 
 const libPaths = getLibPaths('edgetpu', path.join(__dirname, '../cc_lib'));
 
-export type CoralOptions = Map<string, string>;
+export class CoralDelegate implements TFLiteDelegatePlugin {
+  readonly name: 'CoralDelegate';
+  readonly tfliteVersion: '2.7';
+  readonly node: TFLiteDelegatePlugin['node'];
 
-export const CoralDelegate: TFLiteDelegatePlugin<CoralOptions> = {
-  name: 'CoralDelegate',
-  tfliteVersion: '2.7',
-  node: {
-    path(platform = getPlatform()) {
-      const libPath = libPaths.get(platform);
-      if (!libPath) {
-        throw new Error(`Platform ${platform} is not supported`);
-      }
-      return libPath;
-    },
-  },
-  serializeOptions: options => options,
+  constructor(readonly options: [string, string][] = []) {
+    const platform = getPlatform();
+    const libPath = libPaths.get(platform);
+    if (!libPath) {
+      throw new Error(`Platform ${platform} is not supported`);
+    }
+
+    this.node = {
+      path: libPath,
+    };
+  }
 }

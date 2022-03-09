@@ -16,9 +16,34 @@
  */
 
 import {CoralDelegate} from './index';
+import {loadTFLiteModel} from '@tensorflow/tfjs-tflite-node'
+import {TFLiteModel} from '@tensorflow/tfjs-tflite-node/dist/tflite_model';
+import * as fs from 'fs';
+import * as tfnode from '@tensorflow/tfjs-node';
+import {Tensor} from '@tensorflow/tfjs-core';
 
-describe('coral plugin', () => {
-  it('includes the \'node\' property', () => {
-    expect(CoralDelegate.node).toBeDefined();
+describe('coral delegate', () => {
+  const modelPath = './test_model/mobilenet_v2_1.0_224_inat_bird_quant_edgetpu.tflite';
+  let model: TFLiteModel;
+  let parrot: Tensor;
+  let labels: string[];
+
+  beforeEach(async () => {
+    model = await loadTFLiteModel(modelPath, {
+      delegates: [new CoralDelegate()],
+    });
+
+    // Load the input image of a parrot.
+    const parrotJpeg = fs.readFileSync('./test_model/parrot-small.jpg');
+    parrot = tfnode.expandDims(tfnode.node.decodeJpeg(parrotJpeg), 0);
+    labels = fs.readFileSync('./test_model/inat_bird_labels.txt', 'utf-8')
+      .split('\n');
+  });
+
+  it('runs a coral model (will fail without coral device)', () => {
+    const prediction = model.predict(parrot);
+    const argmax = tfnode.argMax(prediction as Tensor, 1);
+    const label = labels[argmax.dataSync()[0]];
+    expect(label).toEqual('Ara macao (Scarlet Macaw)');
   });
 });

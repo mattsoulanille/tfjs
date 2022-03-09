@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {TFLiteNodeModelRunner} from './index';
+import { loadTFLiteModel, TFLiteNodeModelRunner} from './index';
 import * as fs from 'fs';
 import { TFLiteWebModelRunner } from '@tensorflow/tfjs-tflite/dist/types/tflite_web_model_runner';
 import '@tensorflow/tfjs-backend-cpu';
@@ -25,10 +25,10 @@ import * as jpeg from 'jpeg-js';
 //SegfaultHandler.registerHandler('crash.log');
 
 describe('interpreter', () => {
-  let model: Uint8Array;
+  let model: ArrayBuffer;
   let modelRunner: TFLiteWebModelRunner;
   beforeEach(() => {
-    model = fs.readFileSync('./test_data/mobilenet_v2_1.0_224_inat_bird_quant.tflite');
+    model = fs.readFileSync('./test_data/mobilenet_v2_1.0_224_inat_bird_quant.tflite').buffer;
     modelRunner = new TFLiteNodeModelRunner(model, { threads: 4 });
   });
 
@@ -117,13 +117,13 @@ function getMaxIndex(data: ArrayLike<number>) {
 }
 
 describe('model', () => {
-  let model: Uint8Array;
+  let model: ArrayBuffer;
   let modelRunner: TFLiteWebModelRunner;
   let parrot: Uint8Array;
   let labels: string[];
 
   beforeEach(() => {
-    model = fs.readFileSync('./test_data/mobilenet_v2_1.0_224_inat_bird_quant.tflite');
+    model = fs.readFileSync('./test_data/mobilenet_v2_1.0_224_inat_bird_quant.tflite').buffer;
     modelRunner = new TFLiteNodeModelRunner(model, { threads: 4 });
     parrot = getParrot();
     labels = fs.readFileSync('./test_data/inat_bird_labels.txt', 'utf-8').split('\n');
@@ -141,13 +141,13 @@ describe('model', () => {
 });
 
 describe('float32 support', () => {
-  let model: Uint8Array;
+  let model: ArrayBuffer;
   let modelRunner: TFLiteWebModelRunner;
   let red: Float32Array;
   let labels: string[];
 
   beforeEach(() => {
-    model = fs.readFileSync('./test_data/teachable_machine_float.tflite');
+    model = fs.readFileSync('./test_data/teachable_machine_float.tflite').buffer;
     modelRunner = new TFLiteNodeModelRunner(model, {});
     labels = ['class1', 'class2'];
 
@@ -180,33 +180,11 @@ describe('float32 support', () => {
   });
 });
 
-describe('delegate support', () => {
-  let model: Uint8Array;
-  let modelRunner: TFLiteWebModelRunner;
-  let parrot: Uint8Array;
-  let labels: string[];
-
-  beforeEach(() => {
-    model = fs.readFileSync('./test_data/mobilenet_v2_1.0_224_inat_bird_quant_edgetpu.tflite');
-    modelRunner = new TFLiteNodeModelRunner(model, {
-      threads: 4,
-      delegate: {
-        //path: './tmp_delegate_dlls/libedgetpu.1.dylib',
-        path: '/Users/matthew/Projects/tfjs/tfjs-tflite-node/tmp_delegate_dlls/libedgetpu.1.dylib',
-      },
-    });
-
-    parrot = getParrot();
-    labels = fs.readFileSync('./test_data/inat_bird_labels.txt', 'utf-8').split('\n');
-  });
-
-  it('runs a model with the coral delegate', () => {
-    const input = modelRunner.getInputs()[0];
-    input.data().set(parrot);
-    modelRunner.infer();
-    const output = modelRunner.getOutputs()[0];
-    const maxIndex = getMaxIndex(output.data());
-    const label = labels[maxIndex];
-    expect(label).toEqual('Ara macao (Scarlet Macaw)');
+// TODO(mattsoulanille): Move this to integration tests since it loads from
+// the web. Alternatively, serve the model locally.
+describe('loading model from the web', () => {
+  it('loads a model from the web', async () => {
+    const model = await loadTFLiteModel('https://tfhub.dev/sayakpaul/lite-model/cartoongan/fp16/1');
+    expect(model).toBeDefined();
   });
 });
