@@ -298,10 +298,33 @@ class Interpreter : public Napi::ObjectWrap<Interpreter> {
       TfLiteInterpreterOptionsSetNumThreads(interpreterOptions, threads);
     }
 
+    // TODO(mattsoulanille): Support multiple delegates at a time.
     if (options.Has("delegate")) {
       auto delegateConfig = options.Get("delegate").As<Napi::Object>();
       delegate_path = delegateConfig.Get("path").As<Napi::String>().Utf8Value();
+      auto delegate_options_array = delegateConfig.Get("options").As<Napi::Array>();
+
+      std::vector<std::vector<std::string>> options;
       TfLiteExternalDelegateOptions delegateOptions = TfLiteExternalDelegateOptionsDefault(delegate_path.c_str());
+      for (uint i = 0; i < delegate_options_array.Length(); i++) {
+        auto pair = delegate_options_array.Get(i).As<Napi::Array>();
+        std::string key = pair.Get((uint) 0).As<Napi::String>().Utf8Value();
+        std::string val = pair.Get((uint) 1).As<Napi::String>().Utf8Value();
+
+        // Options must remain allocated until the interpreter is created, but
+        // options must be inserted as char*. Store options in a vector to keep
+        // them allocated.
+        std::vector<std::string> pairVec;
+        pairVec.push_back(key);
+        pairVec.push_back(val);
+        options.push_back(pairVec);
+
+        TfLiteStatus status = delegateOptions.insert(&delegateOptions,
+                                                     key.c_str(),
+                                                     val.c_str());
+        throwIfError(env, "Failed to set delegate options", status);
+      }
+
       TfLiteDelegate* delegate = TfLiteExternalDelegateCreate(&delegateOptions);
 
       TfLiteInterpreterOptionsAddDelegate(interpreterOptions, delegate);

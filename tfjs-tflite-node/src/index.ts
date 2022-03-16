@@ -29,6 +29,7 @@ interface InterpreterOptions {
   threads?: number;
   delegate?: {
     path: string;
+    options: [string, string][];
   }
 }
 
@@ -71,6 +72,7 @@ async function createModel(model: string | ArrayBuffer,
     if (delegatePath) {
       interpreterOptions.delegate = {
         path: delegatePath,
+        options: firstDelegate.options,
       }
     }
   }
