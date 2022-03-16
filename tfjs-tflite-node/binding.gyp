@@ -22,6 +22,7 @@
       '<@(tflite_include_dir)/tflite/c/c_api.h',
       '<@(tflite_include_dir)/tflite/c/eager/c_api.h',
     ],
+    'ARCH': '<!(node -e "console.log(process.arch)")',
     'tflite-library-action': 'move'
   },
   'targets' : [{
@@ -36,7 +37,7 @@
     ],
     'conditions' : [
       [
-        'OS=="linux"', {
+        'OS=="linux" and ARCH=="x64"', {
           'libraries' : [
             '<(module_root_dir)/cc_deps/linux_amd64/libtensorflowlite_c.so',
             '<(module_root_dir)/cc_deps/linux_amd64/libexternal_delegate_obj.so',
@@ -45,7 +46,16 @@
         }
       ],
       [
-        'OS=="mac"', {
+        'OS=="linux" and ARCH=="arm64"', {
+          'libraries' : [
+            '<(module_root_dir)/cc_deps/linux_arm64/libtensorflowlite_c.so',
+            '<(module_root_dir)/cc_deps/linux_arm64/libexternal_delegate_obj.so',
+            '-Wl,-rpath,\$$ORIGIN/../../cc_deps/linux_arm64'
+          ]
+        }
+      ],
+      [
+        'OS=="mac" and ARCH=="arm64"', {
           'libraries' : [
             '<(module_root_dir)/cc_deps/darwin_arm64/libtensorflowlite_c.dylib',
             '<(module_root_dir)/cc_deps/darwin_arm64/libexternal_delegate_obj.dylib',
