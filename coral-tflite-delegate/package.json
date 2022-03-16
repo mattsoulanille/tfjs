@@ -1,5 +1,5 @@
 {
-  "name": "@tensorflow/tflite-coral-delegate",
+  "name": "coral-tflite-delegate",
   "version": "0.1.0",
   "description": "A tflite delegate for using Coral devices.",
   "main": "dist/index.js",
