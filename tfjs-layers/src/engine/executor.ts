@@ -269,7 +269,7 @@ export function execute(
     const out = getTopologicalSortAndRecipientCounts(fetchArray, feedDict);
     sorted = out.sorted;
     recipientCounts = out.recipientCounts;
-
+    debugger;
     // Store results in cache for future use.
     cachedSorted[fetchAndFeedKey] = sorted;
     cachedRecipientCounts[fetchAndFeedKey] = recipientCounts;

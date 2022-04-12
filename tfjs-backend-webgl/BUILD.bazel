@@ -110,8 +110,9 @@ tfjs_web_test(
         "bs_firefox_mac",
         "bs_android_9",
         "win_10_chrome",
+        "chrome_headless_webgl",
     ],
-    headless = False,
+#    headless = False,
     static_files = STATIC_FILES,
 )
 

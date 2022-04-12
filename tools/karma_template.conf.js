@@ -21,11 +21,80 @@ const browserstackConfig = {
   port: 9876,
 };
 
+
+const CUSTOM_LAUNCHERS = {
+  // For browserstack configs see:
+  // https://www.browserstack.com/automate/node
+  bs_chrome_mac: {
+    base: 'BrowserStack',
+    browser: 'chrome',
+    browser_version: 'latest',
+    os: 'OS X',
+    os_version: 'High Sierra'
+  },
+  bs_firefox_mac: {
+    base: 'BrowserStack',
+    browser: 'firefox',
+    browser_version: '90',
+    os: 'OS X',
+    os_version: 'High Sierra'
+  },
+  bs_safari_mac: {
+    base: 'BrowserStack',
+    browser: 'safari',
+    browser_version: 'latest',
+    os: 'OS X',
+    os_version: 'High Sierra'
+  },
+  bs_ios_11: {
+    base: 'BrowserStack',
+    device: 'iPhone X',
+    os: 'ios',
+    os_version: '11.0',
+    real_mobile: true
+  },
+  bs_android_9: {
+    base: 'BrowserStack',
+    device: 'Google Pixel 3 XL',
+    os: 'android',
+    os_version: '9.0',
+    real_mobile: true
+  },
+  win_10_chrome: {
+    base: 'BrowserStack',
+    browser: 'chrome',
+    browser_version: 'latest',
+    os: 'Windows',
+    os_version: '10'
+  },
+  chrome_headless_webgl: {
+    base: 'ChromeHeadless',
+    //flags: ['--no-sandbox', '--use-gl=egl']
+  },
+  chrome_with_swift_shader: {
+    base: 'Chrome',
+    flags: ['--blacklist-accelerated-compositing', '--blacklist-webgl']
+  },
+  chrome_webgpu: {
+    base: 'Chrome',
+    flags: [
+      '--enable-unsafe-webgpu',
+      '--disable-dawn-features=disallow_unsafe_apis'
+    ]
+  },
+  chrome_debugging:
+  {base: 'Chrome', flags: ['--remote-debugging-port=9333']}
+};
+
 module.exports = function(config) {
   console.log(`Running with arguments ${TEMPLATE_args.join(' ')}`);
   let browser = 'TEMPLATE_browser';
   let extraConfig = {};
-  if (browser) {
+  const browserLauncher = CUSTOM_LAUNCHERS[browser];
+  if (browser && !browserLauncher) {
+    throw new Error(`Missing launcher for ${browser}`);
+  }
+  if (browserLauncher?.base === 'BrowserStack') {
     if (browser !== 'chrome_webgpu') {
       const username = process.env.BROWSERSTACK_USERNAME;
       const accessKey = process.env.BROWSERSTACK_KEY;
@@ -44,7 +113,6 @@ module.exports = function(config) {
       }
 
       Object.assign(extraConfig, browserstackConfig);
-      extraConfig.browsers = [browser];
       extraConfig.browserStack = {
         username: process.env.BROWSERSTACK_USERNAME,
         accessKey: process.env.BROWSERSTACK_KEY,
@@ -52,9 +120,8 @@ module.exports = function(config) {
         tunnelIdentifier:
             `tfjs_${Date.now()}_${Math.floor(Math.random() * 1000)}`
       };
-    } else {
-      extraConfig.browsers = [browser];
     }
+    extraConfig.browsers = [browser];
   }
 
   config.set({
@@ -65,65 +132,7 @@ module.exports = function(config) {
     browserDisconnectTolerance: 0,
     browserSocketTimeout: 1.2e5,
     ...extraConfig,
-    customLaunchers: {
-      // For browserstack configs see:
-      // https://www.browserstack.com/automate/node
-      bs_chrome_mac: {
-        base: 'BrowserStack',
-        browser: 'chrome',
-        browser_version: 'latest',
-        os: 'OS X',
-        os_version: 'High Sierra'
-      },
-      bs_firefox_mac: {
-        base: 'BrowserStack',
-        browser: 'firefox',
-        browser_version: '90',
-        os: 'OS X',
-        os_version: 'High Sierra'
-      },
-      bs_safari_mac: {
-        base: 'BrowserStack',
-        browser: 'safari',
-        browser_version: 'latest',
-        os: 'OS X',
-        os_version: 'High Sierra'
-      },
-      bs_ios_11: {
-        base: 'BrowserStack',
-        device: 'iPhone X',
-        os: 'ios',
-        os_version: '11.0',
-        real_mobile: true
-      },
-      bs_android_9: {
-        base: 'BrowserStack',
-        device: 'Google Pixel 3 XL',
-        os: 'android',
-        os_version: '9.0',
-        real_mobile: true
-      },
-      win_10_chrome: {
-        base: 'BrowserStack',
-        browser: 'chrome',
-        browser_version: 'latest',
-        os: 'Windows',
-        os_version: '10'
-      },
-      chrome_with_swift_shader: {
-        base: 'Chrome',
-        flags: ['--blacklist-accelerated-compositing', '--blacklist-webgl']
-      },
-      chrome_webgpu: {
-        base: 'Chrome',
-        flags: [
-          '--enable-unsafe-webgpu',
-          '--disable-dawn-features=disallow_unsafe_apis'
-        ]
-      },
-      chrome_debugging:
-          {base: 'Chrome', flags: ['--remote-debugging-port=9333']}
-    },
+    customLaunchers: CUSTOM_LAUNCHERS,
     client: {args: TEMPLATE_args},
   });
 }
