@@ -162,6 +162,19 @@ describeWithFlags('Passthrough Loader', BROWSER_ENVS, () => {
     expect(modelArtifacts.userDefinedMetadata).toEqual(undefined);
   });
 
+  it('synchronously load topology and weights', () => {
+    const passthroughHandler = tf.io.fromMemorySync({
+      modelTopology: modelTopology1,
+      weightSpecs: weightSpecs1,
+      weightData: weightData1
+    });
+    const modelArtifacts = passthroughHandler.load();
+    expect(modelArtifacts.modelTopology).toEqual(modelTopology1);
+    expect(modelArtifacts.weightSpecs).toEqual(weightSpecs1);
+    expect(modelArtifacts.weightData).toEqual(weightData1);
+    expect(modelArtifacts.userDefinedMetadata).toEqual(undefined);
+  });
+
   it('load topology and weights', async () => {
     const passthroughHandler = tf.io.fromMemory({
       modelTopology: modelTopology1,

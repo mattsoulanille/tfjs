@@ -23,9 +23,13 @@ import {OperationMapper} from '../operations/operation_mapper';
 
 import {GraphExecutor} from './graph_executor';
 import {ResourceManager} from './resource_manager';
+import {isPromise} from '@tensorflow/tfjs-core/util';
 
 export const TFHUB_SEARCH_PARAM = '?tfjs-format=file';
 export const DEFAULT_MODEL_NAME = 'model.json';
+type Url = string | io.IOHandler | io.IOHandlerSync;
+type UrlIOHandler<T extends Url> = T extends string ? io.IOHandler : T;
+
 /**
  * A `tf.GraphModel` is a directed, acyclic graph built from a
  * SavedModel GraphDef and allows inference execution.
@@ -36,10 +40,11 @@ export const DEFAULT_MODEL_NAME = 'model.json';
  *
  * @doc {heading: 'Models', subheading: 'Classes'}
  */
-export class GraphModel implements InferenceModel {
+export class GraphModel<ModelURL extends Url = string|io.IOHandler>
+  implements InferenceModel {
   private executor: GraphExecutor;
   private version = 'n/a';
-  private handler: io.IOHandler;
+  private handler: UrlIOHandler<ModelURL>;
   private artifacts: io.ModelArtifacts;
   private initializer: GraphExecutor;
   private resourceManager: ResourceManager;
@@ -88,7 +93,7 @@ export class GraphModel implements InferenceModel {
    * before the load is completed.
    */
   constructor(
-      private modelUrl: string|io.IOHandler,
+      private modelUrl: ModelURL,
       private loadOptions: io.LoadOptions = {}) {
     if (loadOptions == null) {
       this.loadOptions = {};
@@ -97,12 +102,14 @@ export class GraphModel implements InferenceModel {
   }
 
   private findIOHandler() {
+    type IOHandler = UrlIOHandler<ModelURL>;
     const path = this.modelUrl;
     if ((path as io.IOHandler).load != null) {
       // Path is an IO Handler.
-      this.handler = path as io.IOHandler;
+      this.handler = path as IOHandler;
     } else if (this.loadOptions.requestInit != null) {
-      this.handler = io.browserHTTPRequest(path as string, this.loadOptions);
+      this.handler = io.browserHTTPRequest(path as string, this.loadOptions) as
+      IOHandler;
     } else {
       const handlers = io.getLoadHandlers(path as string, this.loadOptions);
       if (handlers.length === 0) {
@@ -114,7 +121,7 @@ export class GraphModel implements InferenceModel {
             `Found more than one (${handlers.length}) load handlers for ` +
             `URL '${[path]}'`);
       }
-      this.handler = handlers[0];
+      this.handler = handlers[0] as IOHandler;
     }
   }
 
@@ -122,16 +129,24 @@ export class GraphModel implements InferenceModel {
    * Loads the model and weight files, construct the in memory weight map and
    * compile the inference graph.
    */
-  async load(): Promise<boolean> {
+  load(): UrlIOHandler<ModelURL> extends io.IOHandlerSync ? boolean : Promise<boolean> {
+    type IOHandler = UrlIOHandler<ModelURL>;
     this.findIOHandler();
     if (this.handler.load == null) {
       throw new Error(
           'Cannot proceed with model loading because the IOHandler provided ' +
           'does not have the `load` method implemented.');
     }
-    const artifacts = await this.handler.load();
 
-    return this.loadSync(artifacts);
+    type Result = IOHandler extends io.IOHandlerSync ? boolean
+      : Promise<boolean>;
+
+    const loadResult = this.handler.load() as ReturnType<IOHandler['load']>;
+    if (isPromise(loadResult)) {
+      return loadResult.then(artifacts => this.loadSync(artifacts)) as Result;
+    }
+
+    return this.loadSync(loadResult) as Result;
   }
 
   /**
@@ -458,5 +473,18 @@ export async function loadGraphModel(
   }
   const model = new GraphModel(modelUrl, options);
   await model.load();
+  return model;
+}
+
+export function loadGraphModelSync(
+  modelUrl: io.IOHandlerSync,
+  options: io.LoadOptions = {}): GraphModel<io.IOHandlerSync> {
+
+  if (!modelUrl.load) {
+    throw new Error(`modelUrl IO Handler ${modelUrl} has no load function`);
+  }
+  const model = new GraphModel(modelUrl, options);
+
+  model.load();
   return model;
 }
