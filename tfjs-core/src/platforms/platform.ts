@@ -42,9 +42,9 @@ export interface Platform {
             options?: RequestDetails): {
     ok: boolean,
     arrayBuffer: () => ArrayBuffer,
+    // tslint:disable-next-line:no-any
     json: () => any,
   };
-
 
   /**
    * Returns the current high-resolution time in milliseconds relative to an

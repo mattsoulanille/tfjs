@@ -46,7 +46,7 @@ export class PlatformBrowser implements Platform {
                                c => c.charCodeAt(0)).buffer;
       },
       json: () => JSON.parse(request.responseText),
-    }
+    };
   }
 
   now(): number {

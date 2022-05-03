@@ -80,48 +80,6 @@ export class HTTPRequestSync implements IOHandlerSync {
 
   save(_modelArtifacts: ModelArtifacts): SaveResult {
     throw new Error('http_sync does not support saving models. Use http instead.');
-    // if (modelArtifacts.modelTopology instanceof ArrayBuffer) {
-    //   throw new Error(
-    //       'BrowserHTTPRequest.save() does not support saving model topology ' +
-    //       'in binary formats yet.');
-    // }
-
-    // const init = Object.assign({method: this.DEFAULT_METHOD}, this.requestInit);
-    // init.body = new FormData();
-
-    // const weightsManifest: WeightsManifestConfig = [{
-    //   paths: ['./model.weights.bin'],
-    //   weights: modelArtifacts.weightSpecs,
-    // }];
-    // const modelTopologyAndWeightManifest: ModelJSON =
-    //     getModelJSONForModelArtifacts(modelArtifacts, weightsManifest);
-
-    // init.body.append(
-    //     'model.json',
-    //     new Blob(
-    //         [JSON.stringify(modelTopologyAndWeightManifest)],
-    //         {type: JSON_TYPE}),
-    //     'model.json');
-
-    // if (modelArtifacts.weightData != null) {
-    //   init.body.append(
-    //       'model.weights.bin',
-    //       new Blob([modelArtifacts.weightData], {type: OCTET_STREAM_MIME_TYPE}),
-    //       'model.weights.bin');
-    // }
-
-    // const response = this.fetch(this.path, init);
-
-    // if (response.ok) {
-    //   return {
-    //     modelArtifactsInfo: getModelArtifactsInfoForJSON(modelArtifacts),
-    //     responses: [response],
-    //   };
-    // } else {
-    //   throw new Error(
-    //       `BrowserHTTPRequest.save() failed due to HTTP response status ` +
-    //       `${response.status}.`);
-    // }
   }
 
   /**

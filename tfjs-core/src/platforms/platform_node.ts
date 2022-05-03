@@ -62,8 +62,9 @@ export class PlatformNode implements Platform {
     return systemFetch(path, requestInits);
   }
 
-  fetchSync(path: string, requestInits?: RequestInit, options?: RequestDetails): {ok: boolean; arrayBuffer: () => ArrayBuffer; json: () => any;} {
-    throw new Error('Method not implemented.');
+  fetchSync(path: string, requestInits?: RequestInit, options?: RequestDetails):
+  ReturnType<Platform['fetchSync']> {
+    throw new Error('fetchSync is not implemented for node.');
   }
 
   now(): number {

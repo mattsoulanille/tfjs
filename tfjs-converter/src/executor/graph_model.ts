@@ -23,7 +23,8 @@ import {OperationMapper} from '../operations/operation_mapper';
 
 import {GraphExecutor} from './graph_executor';
 import {ResourceManager} from './resource_manager';
-import {isPromise} from '@tensorflow/tfjs-core/util';
+// tslint:disable-next-line: no-imports-from-dist
+import {isPromise} from '@tensorflow/tfjs-core/dist/util';
 
 export const TFHUB_SEARCH_PARAM = '?tfjs-format=file';
 export const DEFAULT_MODEL_NAME = 'model.json';
@@ -129,7 +130,8 @@ export class GraphModel<ModelURL extends Url = string|io.IOHandler>
    * Loads the model and weight files, construct the in memory weight map and
    * compile the inference graph.
    */
-  load(): UrlIOHandler<ModelURL> extends io.IOHandlerSync ? boolean : Promise<boolean> {
+  load(): UrlIOHandler<ModelURL> extends io.IOHandlerSync ? boolean
+    : Promise<boolean> {
     type IOHandler = UrlIOHandler<ModelURL>;
     this.findIOHandler();
     if (this.handler.load == null) {

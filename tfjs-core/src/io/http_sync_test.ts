@@ -60,7 +60,6 @@ const setupFakeWeightFiles =
                      });
     };
 
-
 describeWithFlags('http-sync-load', BROWSER_ENVS, () => {
   describe('JSON model', () => {
     let requestInits: {[key: string]: {headers: {[key: string]: string}}};
@@ -477,8 +476,8 @@ describeWithFlags('http-sync-load', BROWSER_ENVS, () => {
 
     const fetchInputs: RequestInfo[] = [];
     const fetchInits: RequestInit[] = [];
-    function customFetch(
-      input: RequestInfo, init?: RequestInit): ReturnType<Platform['fetchSync']> {
+    function customFetch(input: RequestInfo, init?: RequestInit):
+    ReturnType<Platform['fetchSync']> {
       fetchInputs.push(input);
       fetchInits.push(init);
 
@@ -489,18 +488,11 @@ describeWithFlags('http-sync-load', BROWSER_ENVS, () => {
               modelTopology: modelTopology1,
               weightsManifest: weightManifest1,
               trainingConfig: trainingConfig1
-            }
+            };
           },
           ok: true,
           arrayBuffer() {throw new Error('not supported');}
-        }
-        // return new Response(
-        //     JSON.stringify({
-        //       modelTopology: modelTopology1,
-        //       weightsManifest: weightManifest1,
-        //       trainingConfig: trainingConfig1
-        //     }),
-        //     {status: 200, headers: {'content-type': 'application/json'}});
+        };
       } else if (input === './weightfile0') {
         return {
           arrayBuffer() {
@@ -508,18 +500,13 @@ describeWithFlags('http-sync-load', BROWSER_ENVS, () => {
           },
           json() {throw new Error('not supported');},
           ok: true,
-        }
-        // return new Response(floatData, {
-        //   status: 200,
-        //   headers: {'content-type': 'application/octet-stream'}
-        // });
+        };
       } else {
         return {
           ok: false,
           json() {throw new Error('not supported');},
           arrayBuffer() {throw new Error('not supported');},
-        }
-        //return new Response(null, {status: 404});
+        };
       }
     }
 
