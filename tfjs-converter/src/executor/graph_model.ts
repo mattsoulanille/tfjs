@@ -465,13 +465,8 @@ export async function loadGraphModel(
     options = {};
   }
 
-  if (options.fromTFHub) {
-    if ((modelUrl as io.IOHandler).load == null) {
-      if (!(modelUrl as string).endsWith('/')) {
-        modelUrl = (modelUrl as string) + '/';
-      }
-      modelUrl = `${modelUrl}${DEFAULT_MODEL_NAME}${TFHUB_SEARCH_PARAM}`;
-    }
+  if (options.fromTFHub && typeof modelUrl === 'string') {
+    modelUrl = getTFHubUrl(modelUrl);
   }
   const model = new GraphModel(modelUrl, options);
   await model.load();
@@ -479,8 +474,19 @@ export async function loadGraphModel(
 }
 
 export function loadGraphModelSync(
-  modelUrl: io.IOHandlerSync,
+  modelUrl: string|io.IOHandlerSync,
   options: io.LoadOptions = {}): GraphModel<io.IOHandlerSync> {
+  if (modelUrl == null) {
+    throw new Error(
+        'modelUrl in loadGraphModel() cannot be null. Please provide a url ' +
+        'or an IOHandler that loads the model');
+  }
+  if (typeof modelUrl === 'string') {
+    if (options.fromTFHub) {
+      modelUrl = getTFHubUrl(modelUrl);
+    }
+    modelUrl = io.httpSync(modelUrl);
+  }
 
   if (!modelUrl.load) {
     throw new Error(`modelUrl IO Handler ${modelUrl} has no load function`);
@@ -489,4 +495,11 @@ export function loadGraphModelSync(
 
   model.load();
   return model;
+}
+
+function getTFHubUrl(modelUrl: string): string {
+  if (!modelUrl.endsWith('/')) {
+    modelUrl = (modelUrl as string) + '/';
+  }
+  return `${modelUrl}${DEFAULT_MODEL_NAME}${TFHUB_SEARCH_PARAM}`;
 }
