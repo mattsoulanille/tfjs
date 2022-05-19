@@ -86,6 +86,7 @@ describeWithFlags('fused conv2d', ALL_ENVS, () => {
 
   it('relu with stride 2 x=[1,8,8,16] f=[3,3,16,1] s=[2,2] d=1 p=same',
      async () => {
+       console.log('test');
        const inputDepth = 16;
        const xSize = 8;
        const inputShape: [number, number, number, number] =
