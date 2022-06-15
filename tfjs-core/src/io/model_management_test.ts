@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import * as tf from '../index';
+import * as tf from '../../index';
 import {CHROME_ENVS, describeWithFlags, runWithLock} from '../jasmine_util';
 import {deleteDatabase} from './indexed_db';
 import {purgeLocalStorageArtifacts} from './local_storage';

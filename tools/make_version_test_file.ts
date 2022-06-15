@@ -70,7 +70,7 @@ const version = JSON.parse(package_json).version as string;
 
 const versionTestContent = `${LICENSE}
 ${AUTOGEN_CLAUSE}
-import {${args.version_name}} from './index';
+import {${args.version_name}} from '../index';
 
 describe('version', () => {
   it('version is contained', () => {

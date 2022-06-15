@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import * as tf from '../index';
+import * as tf from '../../index';
 import {BROWSER_ENVS, CHROME_ENVS, describeWithFlags, NODE_ENVS} from '../jasmine_util';
 import {HTTPRequest, httpRouter, parseUrl} from './http';
 

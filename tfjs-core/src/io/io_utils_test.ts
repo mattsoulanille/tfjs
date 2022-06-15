@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import * as tf from '../index';
+import * as tf from '../../index';
 import {ALL_ENVS, BROWSER_ENVS, describeWithFlags} from '../jasmine_util';
 import {scalar, tensor1d, tensor2d} from '../ops/ops';
 import {NamedTensor, NamedTensorMap} from '../tensor_types';

@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import * as tf from '../index';
+import * as tf from '../../index';
 import {BROWSER_ENVS, describeWithFlags} from '../jasmine_util';
 
 import {BrowserIndexedDB, browserIndexedDB} from './indexed_db';

@@ -15,8 +15,8 @@
  * =============================================================================
  */
 
-import {util} from '..';
-import * as tf from '../index';
+import { util } from '../../index';
+import * as tf from '../../index';
 import {ALL_ENVS, describeWithFlags} from '../jasmine_util';
 import {expectValuesInRange} from '../test_util';
 

@@ -18,6 +18,7 @@ load("@build_bazel_rules_nodejs//:index.bzl", "nodejs_test", "pkg_npm")
 load("//tools:copy_to_dist.bzl", "copy_to_dist", "copy_ts_library_to_dist")
 load("//tools:tfjs_bundle.bzl", "tfjs_bundle")
 load("//tools:tfjs_web_test.bzl", "tfjs_web_test")
+load("//tools:defaults.bzl", "ts_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -27,9 +28,18 @@ exports_files([
     "package.json",
 ])
 
+ts_library(
+    name = "tfjs-core_lib",
+    srcs = ["index.ts"],
+    module_name = "@tensorflow/tfjs-core",
+    deps = [
+        "//tfjs-core/src:tfjs-core_src_lib",
+    ],
+)
+
 tfjs_bundle(
     name = "tf-core",
-    entry_point = "//tfjs-core/src:index.ts",
+    entry_point = ":index.ts",
     external = [
         "crypto",
     ],
@@ -40,14 +50,14 @@ tfjs_bundle(
     ],
     umd_name = "tf",
     deps = [
-        "//tfjs-core/src:tfjs-core_lib",
+        ":tfjs-core_lib",
     ],
 )
 
 copy_ts_library_to_dist(
     name = "copy_src_to_dist",
     srcs = [
-        "//tfjs-core/src:tfjs-core_lib",
+        ":tfjs-core_lib",
         "//tfjs-core/src:tfjs-core_src_lib",
         "//tfjs-core/src:tfjs-core_test_lib",
     ],
@@ -146,7 +156,7 @@ nodejs_test(
         "//tfjs-backend-cpu/src:tfjs-backend-cpu_lib",
         "//tfjs-core/src:setup_test_lib",
         "//tfjs-core/src:test_node_lib",
-        "//tfjs-core/src:tfjs-core_lib",
+        ":tfjs-core_lib",
         "//tfjs-core/src:tfjs-core_src_lib",
         "//tfjs-core/src:tfjs-core_test_lib",
     ],

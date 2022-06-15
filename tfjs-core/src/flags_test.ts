@@ -16,7 +16,7 @@
  */
 
 import * as device_util from './device_util';
-import * as tf from './index';
+import * as tf from '../index';
 
 describe('DEBUG', () => {
   beforeEach(() => {

@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import * as tf from '../index';
+import * as tf from '../../index';
 import { ALL_ENVS, describeWithFlags } from '../jasmine_util';
 import { expectArraysClose } from '../test_util';
 

@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import * as tf from './index';
+import * as tf from '../index';
 import {ALL_ENVS, describeWithFlags} from './jasmine_util';
 import {complex, scalar, tensor2d} from './ops/ops';
 import {inferShape} from './tensor_util_env';

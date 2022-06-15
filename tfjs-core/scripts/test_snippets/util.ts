@@ -29,7 +29,7 @@ let snippetCount = 0;
 let errorCount = 0;
 
 /**
- * Parse and evaluate snippets for the src/index.ts from where this script is
+ * Parse and evaluate snippets for the index.ts from where this script is
  * run.
  * @param tf The TensorFlow.js module to use when evaluating snippets. If used
  *     outside core, this should be a union of core and the separate package.
@@ -37,7 +37,7 @@ let errorCount = 0;
  */
 // tslint:disable-next-line:no-any
 export async function parseAndEvaluateSnippets(tf: any) {
-  const index = path.join(process.cwd(), 'src/index.ts');
+  const index = path.join(process.cwd(), 'index.ts');
   const tsconfigPath = path.join(process.cwd(), 'tsconfig.json');
 
   // Use the same compiler options that we use to compile the library

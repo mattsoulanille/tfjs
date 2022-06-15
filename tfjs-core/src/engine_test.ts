@@ -17,8 +17,8 @@
 
 import {KernelBackend} from './backends/backend';
 import {ENGINE} from './engine';
-import * as tf from './index';
-import {KernelFunc} from './index';
+import * as tf from '../index';
+import { KernelFunc } from '../index';
 import {ALL_ENVS, describeWithFlags, TestKernelBackend} from './jasmine_util';
 import {TensorInfo} from './kernel_registry';
 import {Tensor} from './tensor';

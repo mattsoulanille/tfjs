@@ -23,7 +23,7 @@
 // explicitly test this threshold.
 export const MATMUL_SHARED_DIM_THRESHOLD = 1000;
 
-import * as tf from '../index';
+import * as tf from '../../index';
 import {ALL_ENVS, describeWithFlags} from '../jasmine_util';
 import {expectArraysClose, expectArraysEqual} from '../test_util';
 import {Rank} from '../types';

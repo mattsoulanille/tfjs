@@ -15,10 +15,10 @@
  * =============================================================================
  */
 
-import * as tf from '../index';
-import {ALL_ENVS, describeWithFlags} from '../jasmine_util';
-import {expectArraysClose} from '../test_util';
-import {backend} from '../index';
+import * as tf from '../../index';
+import { ALL_ENVS, describeWithFlags } from '../jasmine_util';
+import { expectArraysClose } from '../test_util';
+import { backend } from '../../index';
 
 describeWithFlags('reverse', ALL_ENVS, () => {
   it('throws when passed a non-tensor', () => {

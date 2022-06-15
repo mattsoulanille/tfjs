@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import * as tf from './index';
+import * as tf from '../index';
 import {ALL_ENVS, describeWithFlags, SYNC_BACKEND_ENVS} from './jasmine_util';
 import {convertToTensor} from './tensor_util_env';
 import {expectArraysClose} from './test_util';

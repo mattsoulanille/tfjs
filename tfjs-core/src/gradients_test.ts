@@ -17,7 +17,7 @@
  */
 
 import {ENGINE} from './engine';
-import * as tf from './index';
+import * as tf from '../index';
 import {ALL_ENVS, describeWithFlags} from './jasmine_util';
 import {Tensor} from './tensor';
 import {expectArraysClose} from './test_util';

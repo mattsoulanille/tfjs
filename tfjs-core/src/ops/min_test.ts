@@ -15,10 +15,10 @@
  * =============================================================================
  */
 
-import * as tf from '../index';
-import {ALL_ENVS, describeWithFlags} from '../jasmine_util';
-import {expectArraysClose} from '../test_util';
-import {backend} from '../index';
+import * as tf from '../../index';
+import { ALL_ENVS, describeWithFlags } from '../jasmine_util';
+import { expectArraysClose } from '../test_util';
+import { backend } from '../../index';
 
 describeWithFlags('min', ALL_ENVS, () => {
   it('Tensor1D', async () => {

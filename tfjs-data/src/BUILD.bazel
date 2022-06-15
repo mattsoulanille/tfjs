@@ -55,7 +55,7 @@ ts_library(
     deps = [
         "//tfjs-backend-cpu/src:tfjs-backend-cpu_lib",
         "//tfjs-backend-cpu/src:tfjs-backend-cpu_src_lib",
-        "//tfjs-core/src:tfjs-core_lib",
+        "//tfjs-core:tfjs-core_lib",
         "//tfjs-core/src:tfjs-core_src_lib",
         "@npm//@types/seedrandom",
         "@npm//seedrandom",
@@ -72,7 +72,7 @@ ts_library(
     module_name = "@tensorflow/tfjs-data",
     deps = [
         ":tfjs-data_src_lib",
-        "//tfjs-core/src:tfjs-core_lib",
+        "//tfjs-core:tfjs-core_lib",
         "//tfjs-core/src:tfjs-core_src_lib",
     ],
 )
@@ -89,7 +89,7 @@ ts_library(
         ":tfjs-data_src_lib",
         "//tfjs-backend-cpu/src:tfjs-backend-cpu_lib",
         "//tfjs-backend-webgl/src:tfjs-backend-webgl_lib",
-        "//tfjs-core/src:tfjs-core_lib",
+        "//tfjs-core:tfjs-core_lib",
         "//tfjs-core/src:tfjs-core_src_lib",
         "//tfjs-core/src:tfjs-core_test_lib",
         "@npm//@types/jasmine",

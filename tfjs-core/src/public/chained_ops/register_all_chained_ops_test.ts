@@ -17,7 +17,7 @@
 
 import '../../public/chained_ops/register_all_chained_ops';
 
-import * as tf from '../../index';
+import * as tf from '../../../index';
 import {ALL_ENVS, describeWithFlags} from '../../jasmine_util';
 
 // Testing for presence of chained op in this file will allow us to more easily
