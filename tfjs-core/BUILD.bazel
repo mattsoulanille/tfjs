@@ -61,7 +61,8 @@ copy_ts_library_to_dist(
         "//tfjs-core/src:tfjs-core_src_lib",
         "//tfjs-core/src:tfjs-core_test_lib",
     ],
-    root = "src",
+    root = ".",
+    dest_dir = "esm2020",
 )
 
 copy_to_dist(
