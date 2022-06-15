@@ -3,16 +3,16 @@
   "version": "0.0.0",
   "description": "Hardware-accelerated JavaScript library for machine intelligence",
   "private": false,
-  "main": "dist/tf-core.node.js",
-  "jsdelivr": "dist/tf-core.min.js",
-  "unpkg": "dist/tf-core.min.js",
+  "main": "tf-core.node.js",
+  "jsdelivr": "tf-core.min.js",
+  "unpkg": "tf-core.min.js",
   "types": "esm2020/index.d.ts",
   "jsnext:main": "esm2020/index.js",
   "module": "esm2020/index.js",
   "exports": {
     ".": {
       "esm2020": "./esm2020/index.js",
-      "node": "./dist/tf-core.node.js",
+      "node": "./tf-core.node.js",
       "default": "./esm2020/index.js"
     },
     "./dist/*": {
@@ -20,7 +20,7 @@
       "default": "./esm2020/src/*"
     }
   },
-  "miniprogram": "dist/miniprogram",
+  "miniprogram": "miniprogram",
   "engines": {
     "yarn": ">= 1.3.2"
   },
