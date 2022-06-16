@@ -16,8 +16,8 @@
       "default": "./esm2020/index.js"
     },
     "./dist/*": {
-      "esm2020": "./esm2020/src/*",
-      "default": "./esm2020/src/*"
+      "esm2020": "./esm2020/src/*.js",
+      "default": "./esm2020/src/*.js"
     }
   },
   "miniprogram": "miniprogram",

@@ -87,7 +87,7 @@ ts_library(
         ":tfjs-layers_lib",
         ":tfjs-layers_src_lib",
         "//tfjs-backend-cpu:tfjs-backend-cpu_lib",
-        "//tfjs-backend-webgl/src:tfjs-backend-webgl_lib",
+        "//tfjs-backend-webgl:tfjs-backend-webgl_lib",
         "//tfjs-core:tfjs-core_lib",
         "//tfjs-core/src:tfjs-core_src_lib",
         "//tfjs-core/src:tfjs-core_test_lib",

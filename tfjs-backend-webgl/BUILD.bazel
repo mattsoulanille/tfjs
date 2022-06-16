@@ -18,12 +18,22 @@ load("@build_bazel_rules_nodejs//:index.bzl", "js_library", "pkg_npm")
 load("//tools:copy_to_dist.bzl", "copy_to_dist", "copy_ts_library_to_dist")
 load("//tools:tfjs_bundle.bzl", "tfjs_bundle")
 load("//tools:tfjs_web_test.bzl", "tfjs_web_test")
+load("//tools:defaults.bzl", "ts_library")
 
 package(default_visibility = ["//visibility:public"])
 
+ts_library(
+    name = "tfjs-backend-webgl_lib",
+    srcs = ["index.ts"],
+    module_name = "@tensorflow/tfjs-backend-webgl",
+    deps = [
+        "//tfjs-backend-webgl/src:tfjs-backend-webgl_src_lib",
+    ],
+)
+
 tfjs_bundle(
     name = "tf-backend-webgl",
-    entry_point = "//tfjs-backend-webgl/src:index.ts",
+    entry_point = ":index.ts",
     external = [
         "crypto",
         "@tensorflow/tfjs-core",
@@ -36,7 +46,7 @@ tfjs_bundle(
     },
     umd_name = "tf",
     deps = [
-        "//tfjs-backend-webgl/src:tfjs-backend-webgl_lib",
+        ":tfjs-backend-webgl_lib",
         "//tfjs-backend-webgl/src:tfjs-backend-webgl_src_lib",
     ],
 )
@@ -44,35 +54,23 @@ tfjs_bundle(
 copy_ts_library_to_dist(
     name = "copy_src_to_dist",
     srcs = [
-        "//tfjs-backend-webgl/src:tfjs-backend-webgl_lib",
+        ":tfjs-backend-webgl_lib",
         "//tfjs-backend-webgl/src:tfjs-backend-webgl_src_lib",
     ],
-    root = "src",
-)
-
-copy_to_dist(
-    name = "copy_bundles",
-    srcs = [
-        ":tf-backend-webgl",
-        ":tf-backend-webgl.es2017",
-        ":tf-backend-webgl.es2017.min",
-        ":tf-backend-webgl.fesm",
-        ":tf-backend-webgl.fesm.min",
-        ":tf-backend-webgl.min",
-        ":tf-backend-webgl.node",
-    ],
+    root = ".",
+    dest_dir = "esm2020",
 )
 
 copy_file(
     name = "copy_miniprogram",
     src = ":tf-backend-webgl.min.js",
-    out = "dist/miniprogram/index.js",
+    out = "miniprogram/index.js",
 )
 
 copy_file(
     name = "copy_miniprogram_map",
     src = ":tf-backend-webgl.min.js.map",
-    out = "dist/miniprogram/index.js.map",
+    out = "miniprogram/index.js.map",
 )
 
 pkg_npm(
@@ -84,7 +82,13 @@ pkg_npm(
     ],
     tags = ["ci"],
     deps = [
-        ":copy_bundles",
+        ":tf-backend-webgl",
+        ":tf-backend-webgl.es2017",
+        ":tf-backend-webgl.es2017.min",
+        ":tf-backend-webgl.fesm",
+        ":tf-backend-webgl.fesm.min",
+        ":tf-backend-webgl.min",
+        ":tf-backend-webgl.node",
         ":copy_miniprogram",
         ":copy_miniprogram_map",
         ":copy_src_to_dist",
