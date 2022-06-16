@@ -3,18 +3,29 @@
   "version": "0.0.0",
   "description": "TensorFlow Data API in JavaScript",
   "private": false,
-  "main": "dist/tf-data.node.js",
+  "main": "tf-data.node.js",
+  "jsdelivr": "tf-data.min.js",
+  "unpkg": "tf-data.min.js",
+  "types": "esm2020/index.d.ts",
+  "jsnext:main": "esm2020/index.js",
+  "module": "esm2020/index.js",
+  "exports": {
+    ".": {
+      "esm2020": "./esm2020/index.js",
+      "node": "./tf-data.node.js",
+      "default": "./esm2020/index.js"
+    },
+    "./dist/*": {
+      "esm2020": "./esm2020/src/*.js",
+      "default": "./esm2020/src/*.js"
+    }
+  },
+  "miniprogram": "miniprogram",
   "repository": {
     "type": "git",
     "url": "https://github.com/tensorflow/tfjs.git",
     "directory": "tfjs-data"
   },
-  "jsdelivr": "dist/tf-data.min.js",
-  "unpkg": "dist/tf-data.min.js",
-  "types": "dist/index.d.ts",
-  "jsnext:main": "dist/index.js",
-  "module": "dist/index.js",
-  "miniprogram": "dist/miniprogram",
   "license": "Apache-2.0",
   "devDependencies": {
     "@bazel/bazelisk": "^1.10.1",

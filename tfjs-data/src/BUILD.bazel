@@ -63,20 +63,6 @@ ts_library(
     ],
 )
 
-# Compiles the `index.ts` entrypoint of tfjs-data separately from the rest of
-# the sources in order to use the `@tensorflow/tfjs-data` module name instead
-# of `@tensorflow/tfjs-data/dist`,
-ts_library(
-    name = "tfjs-data_lib",
-    srcs = ["index.ts"],
-    module_name = "@tensorflow/tfjs-data",
-    deps = [
-        ":tfjs-data_src_lib",
-        "//tfjs-core:tfjs-core_lib",
-        "//tfjs-core/src:tfjs-core_src_lib",
-    ],
-)
-
 ts_library(
     name = "tfjs-data_test_lib",
     # disable testonly for the issue in the nodejs build target.
@@ -85,7 +71,7 @@ ts_library(
     srcs = glob(TEST_SRCS) + [":tests"],
     module_name = "@tensorflow/tfjs-data/dist",
     deps = [
-        ":tfjs-data_lib",
+        "//tfjs-data:tfjs-data_lib",
         ":tfjs-data_src_lib",
         "//tfjs-backend-cpu:tfjs-backend-cpu_lib",
         "//tfjs-backend-webgl:tfjs-backend-webgl_lib",
@@ -114,7 +100,7 @@ esbuild(
     ],
     sources_content = True,
     deps = [
-        ":tfjs-data_lib",
+        "//tfjs-data:tfjs-data_lib",
         ":tfjs-data_test_lib",
     ],
 )
