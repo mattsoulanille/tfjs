@@ -1,0 +1,69 @@
+# Copyright 2022 Google LLC. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# =============================================================================
+
+load("//tools:defaults.bzl", "ts_library")
+load("//tools:tfjs_bundle.bzl", "tfjs_bundle")
+
+package(default_visibility = ["//visibility:public"])
+
+DEPS = [
+    "//tfjs-core:tfjs-core_lib",
+    "//tfjs-core/src:tfjs-core_src_lib",
+    "//tfjs-layers:tfjs-layers_lib",
+    "//tfjs-converter:tfjs-converter_lib",
+    "//tfjs-data:tfjs-data_lib",
+    "//tfjs-backend-cpu:tfjs-backend-cpu_lib",
+    "//tfjs-backend-webgl:tfjs-backend-webgl_lib",
+    "//tfjs/src:tfjs_src_lib",
+]
+
+ts_library(
+    name = "tfjs_lib",
+    srcs = ["index.ts"],
+    module_name = "@tensorflow/tfjs",
+    deps = DEPS,
+)
+
+ts_library(
+    name = "tfjs_polyfill_lib",
+    srcs = ["index_with_polyfills.ts"],
+    module_name = "@tensorflow/tfjs",
+    deps = DEPS + [
+        ":tfjs_lib",
+        "@npm//core-js",
+        "@npm//regenerator-runtime",
+    ],
+)
+
+# TODO(mattsoulanille): Check polyfills. Check node external.
+tfjs_bundle(
+    name = "tf",
+    entry_point = ":index.ts",
+    external = [
+        "crypto",
+        "node-fetch",
+    ],
+    leave_as_require = [
+        "crypto",
+        "fs",
+        "node-fetch",
+        "string_decoder",
+        "util",
+    ],
+    umd_name = "tf",
+    deps = [
+        ":tfjs_lib",
+    ],
+)

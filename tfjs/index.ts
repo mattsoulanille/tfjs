@@ -40,7 +40,7 @@ import {version_webgl} from '@tensorflow/tfjs-backend-webgl';
 import {version_data} from '@tensorflow/tfjs-data';
 import {version_layers} from '@tensorflow/tfjs-layers';
 import {version_converter} from '@tensorflow/tfjs-converter';
-import {version as version_union} from './version';
+import { version as version_union } from './src/version';
 
 export const version = {
   'tfjs-core': version_core,

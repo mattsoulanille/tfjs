@@ -1,7 +1,7 @@
 {
   "extends": "../tsconfig",
   "include": [
-    "src/"
+    "src/", "index.ts", "index_with_polyfills.ts", "index_test.ts"
   ],
   "exclude": [
     "node_modules/"
