@@ -60,7 +60,7 @@ ts_library(
     ),
     module_name = "@tensorflow/tfjs-backend-wasm/dist",
     deps = [
-        "//tfjs-backend-cpu/src:tfjs-backend-cpu_lib",
+        "//tfjs-backend-cpu:tfjs-backend-cpu_lib",
         "//tfjs-backend-cpu/src:tfjs-backend-cpu_src_lib",
         "//tfjs-backend-wasm/wasm-out",
         "//tfjs-core:tfjs-core_lib",

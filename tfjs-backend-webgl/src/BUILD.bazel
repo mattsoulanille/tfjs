@@ -47,7 +47,7 @@ ts_library(
     ),
     module_name = "@tensorflow/tfjs-backend-webgl/dist",
     deps = [
-        "//tfjs-backend-cpu/src:tfjs-backend-cpu_lib",
+        "//tfjs-backend-cpu:tfjs-backend-cpu_lib",
         "//tfjs-backend-cpu/src:tfjs-backend-cpu_src_lib",
         "//tfjs-core:tfjs-core_lib",
         "//tfjs-core/src:tfjs-core_src_lib",
@@ -77,7 +77,7 @@ ts_library(
     deps = [
         ":tfjs-backend-webgl_lib",
         ":tfjs-backend-webgl_src_lib",
-        "//tfjs-backend-cpu/src:tfjs-backend-cpu_lib",
+        "//tfjs-backend-cpu:tfjs-backend-cpu_lib",
         "//tfjs-core:tfjs-core_lib",
         "//tfjs-core/src:tfjs-core_src_lib",
         "//tfjs-core/src:tfjs-core_test_lib",

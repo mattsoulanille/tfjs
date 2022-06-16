@@ -35,7 +35,7 @@ nodejs_test(
     data = [
         ":tsconfig.json",
         "//:tsconfig.json",
-        "//tfjs-backend-cpu/src:tfjs-backend-cpu_lib",
+        "//tfjs-backend-cpu:tfjs-backend-cpu_lib",
         "//tfjs-layers/scripts:test_snippets_lib",
         "//tfjs-layers/src:all_srcs",
     ],

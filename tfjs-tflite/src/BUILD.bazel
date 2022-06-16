@@ -77,7 +77,7 @@ esbuild(
     deps = [
         ":tfjs-tflite_lib",
         ":tfjs-tflite_test_lib",
-        "//tfjs-backend-cpu/src:tfjs-backend-cpu_lib",
+        "//tfjs-backend-cpu:tfjs-backend-cpu_lib",
         "//tfjs-core:tfjs-core_lib",
     ],
 )

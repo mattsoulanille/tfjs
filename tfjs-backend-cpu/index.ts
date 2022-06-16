@@ -16,5 +16,5 @@
  */
 
 // All exports from this package should be in base.
-export * from './base';
-import './register_all_kernels';
+export * from './src/base';
+import './src/register_all_kernels';

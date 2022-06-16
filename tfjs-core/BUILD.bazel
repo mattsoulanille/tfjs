@@ -126,7 +126,7 @@ nodejs_test(
     data = [
         ":tsconfig.json",
         "//:tsconfig.json",
-        "//tfjs-backend-cpu/src:tfjs-backend-cpu_lib",
+        "//tfjs-backend-cpu:tfjs-backend-cpu_lib",
         "//tfjs-core/scripts/test_snippets:test_snippets_lib",
         "//tfjs-core/src:all_srcs",
     ],
@@ -138,7 +138,7 @@ nodejs_test(
 nodejs_test(
     name = "tfjs-core_node_test",
     data = [
-        "//tfjs-backend-cpu/src:tfjs-backend-cpu_lib",
+        "//tfjs-backend-cpu:tfjs-backend-cpu_lib",
         "//tfjs-core/src:setup_test_lib",
         "//tfjs-core/src:test_node_lib",
         ":tfjs-core_lib",
@@ -153,7 +153,7 @@ nodejs_test(
 nodejs_test(
     name = "tfjs-core_async_backends_test",
     data = [
-        "//tfjs-backend-cpu/src:tfjs-backend-cpu_lib",
+        "//tfjs-backend-cpu:tfjs-backend-cpu_lib",
         "//tfjs-core/src:tfjs-core_test_lib",
     ],
     entry_point = "//tfjs-core/src:test_async_backends.ts",
