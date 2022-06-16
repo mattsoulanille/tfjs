@@ -1,13 +1,24 @@
 {
   "name": "@tensorflow/tfjs-backend-webgpu",
   "version": "0.0.1-alpha.4",
-  "main": "dist/tf-backend-webgpu.node.js",
-  "types": "dist/index.d.ts",
-  "jsnext:main": "dist/index.js",
-  "module": "dist/index.js",
-  "unpkg": "dist/tf-backend-webgpu.min.js",
-  "jsdelivr": "dist/tf-backend-webgpu.min.js",
-  "miniprogram": "dist/miniprogram",
+  "main": "tf-backend-webgpu.node.js",
+  "types": "esm2020/index.d.ts",
+  "jsnext:main": "esm2020/index.js",
+  "module": "esm2020/index.js",
+  "unpkg": "tf-backend-webgpu.min.js",
+  "jsdelivr": "tf-backend-webgpu.min.js",
+  "exports": {
+    ".": {
+      "esm2020": "./esm2020/index.js",
+      "node": "./tf-backend-webgpu.node.js",
+      "default": "./esm2020/index.js"
+    },
+    "./dist/*": {
+      "esm2020": "./esm2020/src/*.js",
+      "default": "./esm2020/src/*.js"
+    }
+  },
+  "miniprogram": "miniprogram",
   "scripts": {
     "benchmark": "yarn test --//:grep=benchmark",
     "build-ci": "yarn build",

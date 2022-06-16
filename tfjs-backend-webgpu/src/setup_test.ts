@@ -16,7 +16,7 @@
  */
 
 // Register the backend.
-import './index';
+import '../index';
 // tslint:disable-next-line: no-imports-from-dist
 import '@tensorflow/tfjs-core/dist/public/chained_ops/register_all_chained_ops';
 // tslint:disable-next-line: no-imports-from-dist
