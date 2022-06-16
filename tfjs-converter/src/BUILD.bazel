@@ -15,6 +15,7 @@
 
 load("//tfjs-converter/scripts:gen_op.bzl", "gen_op")
 load("//tools:defaults.bzl", "ts_library")
+load("//tools:make_version_test_file.bzl", "make_version_test_file")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -27,6 +28,12 @@ TEST_SRCS = [
 filegroup(
     name = "all_srcs",
     srcs = glob(["**/*.ts"]),
+)
+
+make_version_test_file(
+    name = "version_test",
+    package_json = "//tfjs-converter:package.json",
+    version_name = "version_converter",
 )
 
 gen_op(
@@ -53,21 +60,12 @@ ts_library(
 )
 
 ts_library(
-    name = "tfjs-converter_lib",
-    srcs = ["index.ts"],
-    module_name = "@tensorflow/tfjs-converter",
-    deps = [
-        ":tfjs-converter_src_lib",
-    ],
-)
-
-ts_library(
     name = "tfjs-converter_test_lib",
     testonly = True,
-    srcs = glob(TEST_SRCS),
+    srcs = glob(TEST_SRCS),# + [":version_test"]),
     module_name = "@tensorflow/tfjs-converter/dist",
     deps = [
-        ":tfjs-converter_lib",
+        "//tfjs-converter:tfjs-converter_lib",
         ":tfjs-converter_src_lib",
         "//tfjs-backend-cpu:tfjs-backend-cpu_lib",
         "//tfjs-core:tfjs-core_lib",

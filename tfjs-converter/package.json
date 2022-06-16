@@ -2,13 +2,24 @@
   "name": "@tensorflow/tfjs-converter",
   "version": "0.0.0",
   "description": "Tensorflow model converter for javascript",
-  "main": "dist/tf-converter.node.js",
-  "jsnext:main": "dist/index.js",
-  "module": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "unpkg": "dist/tf-converter.min.js",
-  "jsdelivr": "dist/tf-converter.min.js",
-  "miniprogram": "dist/miniprogram",
+  "main": "tf-converter.node.js",
+  "jsnext:main": "esm2020/index.js",
+  "module": "esm2020/index.js",
+  "types": "esm2020/index.d.ts",
+  "unpkg": "tf-converter.min.js",
+  "jsdelivr": "tf-converter.min.js",
+  "exports": {
+    ".": {
+      "esm2020": "./esm2020/index.js",
+      "node": "./tf-converter.node.js",
+      "default": "./esm2020/index.js"
+    },
+    "./dist/*": {
+      "esm2020": "./esm2020/src/*.js",
+      "default": "./esm2020/src/*.js"
+    }
+  },
+  "miniprogram": "miniprogram",
   "repository": {
     "type": "git",
     "url": "https://github.com/tensorflow/tfjs.git",

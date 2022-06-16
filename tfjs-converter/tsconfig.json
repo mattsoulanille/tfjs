@@ -1,7 +1,7 @@
 {
   "extends": "../tsconfig",
   "include": [
-    "src/"
+    "src/", "index.ts"
   ],
   "exclude": [
     "node_modules/"
