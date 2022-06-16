@@ -13,7 +13,7 @@
  */
 
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
-import * as tfl from '../index';
+import * as tfl from '../../index';
 import {ones, Tensor} from '@tensorflow/tfjs-core';
 import {getExactlyOneTensor} from '../utils/types_utils';
 

@@ -9,7 +9,7 @@
  */
 
 // tslint:disable-next-line:no-require-imports
-import {version_layers} from './index';
+import { version_layers } from '../index';
 
 describe('tfjs-core version consistency', () => {
   it('version.ts matches package version', () => {

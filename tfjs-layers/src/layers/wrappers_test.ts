@@ -16,7 +16,7 @@ import {ones, scalar, serialization, Tensor, tensor2d, Tensor3D, tensor3d} from 
 
 import {Layer, SymbolicTensor} from '../engine/topology';
 import {LayersModel} from '../engine/training';
-import * as tfl from '../index';
+import * as tfl from '../../index';
 import {BidirectionalMergeMode, VALID_BIDIRECTIONAL_MERGE_MODES} from '../keras_format/common';
 import {convertPythonicToTs} from '../utils/serialization_utils';
 import {describeMathCPU, describeMathCPUAndWebGL2, expectTensorsClose} from '../utils/test_utils';

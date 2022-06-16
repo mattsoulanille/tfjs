@@ -10,7 +10,7 @@
 
 // Unit tests for tf.LayersModel.summary() and tf.Sequential.summary().
 
-import * as tfl from './index';
+import * as tfl from '../index';
 import {describeMathCPU} from './utils/test_utils';
 
 function getRandomLayerOrModelName(length = 12) {

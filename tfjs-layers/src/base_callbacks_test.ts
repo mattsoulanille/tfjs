@@ -17,7 +17,7 @@ import {scalar, zeros} from '@tensorflow/tfjs-core';
 import {BaseCallback, BaseLogger, CallbackConstructorRegistry, CallbackList, History} from './base_callbacks';
 import {Callback} from './callbacks';
 import {LayersModel} from './engine/training';
-import * as tfl from './index';
+import * as tfl from '../index';
 import {disposeTensorsInLogs, Logs, resolveScalarsInLogs, UnresolvedLogs} from './logs';
 import {describeMathCPUAndGPU} from './utils/test_utils';
 

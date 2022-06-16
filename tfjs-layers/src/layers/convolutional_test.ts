@@ -15,7 +15,7 @@
 import * as tfc from '@tensorflow/tfjs-core';
 import {scalar, Tensor, tensor1d, tensor3d, tensor4d, tensor5d, util} from '@tensorflow/tfjs-core';
 
-import * as tfl from '../index';
+import * as tfl from '../../index';
 import {InitializerIdentifier} from '../initializers';
 import {ActivationIdentifier} from '../keras_format/activation_config';
 import {DataFormat, InterpolationFormat, PaddingMode, Shape} from '../keras_format/common';

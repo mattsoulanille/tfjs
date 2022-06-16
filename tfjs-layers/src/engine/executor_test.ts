@@ -14,7 +14,7 @@
 
 import {dispose, env, memory, ones, Tensor, tensor1d, tensor2d, tensor3d, zeros} from '@tensorflow/tfjs-core';
 
-import * as tfl from '../index';
+import * as tfl from '../../index';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 
 import {cachedRecipientCounts, execute, ExecutionProbe, FeedDict, getTopologicalSortAndRecipientCountsForOneFetch} from './executor';

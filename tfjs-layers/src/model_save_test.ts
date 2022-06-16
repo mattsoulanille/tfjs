@@ -10,7 +10,7 @@
 
 import {io, linalg, randomNormal, Tensor, zeros} from '@tensorflow/tfjs-core';
 
-import * as tfl from './index';
+import * as tfl from '../index';
 // tslint:disable-next-line:max-line-length
 import {describeMathCPUAndGPU, describeMathCPUAndWebGL2, expectTensorsClose} from './utils/test_utils';
 import {version} from './version';

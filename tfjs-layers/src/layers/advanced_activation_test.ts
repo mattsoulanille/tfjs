@@ -14,7 +14,7 @@
 
 import {ones, Tensor, tensor1d, tensor2d, zeros} from '@tensorflow/tfjs-core';
 
-import * as tfl from '../index';
+import * as tfl from '../../index';
 import {convertPythonicToTs, convertTsToPythonic} from '../utils/serialization_utils';
 import {describeMathCPU, describeMathCPUAndGPU, describeMathCPUAndWebGL2, expectTensorsClose} from '../utils/test_utils';
 

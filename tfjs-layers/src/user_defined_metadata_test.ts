@@ -10,7 +10,7 @@
 
 import {io, zeros} from '@tensorflow/tfjs-core';
 
-import * as tfl from './index';
+import * as tfl from '../index';
 import {Sequential} from './models';
 import {plainObjectCheck, MAX_USER_DEFINED_METADATA_SERIALIZED_LENGTH} from './user_defined_metadata';
 

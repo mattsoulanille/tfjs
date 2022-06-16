@@ -17,7 +17,7 @@ import {randomUniform, scalar, tensor1d, tensor2d, zeros} from '@tensorflow/tfjs
 
 import * as K from './backend/tfjs_backend';
 import {nameScope} from './common';
-import * as tfl from './index';
+import * as tfl from '../index';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from './utils/test_utils';
 import * as V from './variables';
 

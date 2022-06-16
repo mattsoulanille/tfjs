@@ -16,7 +16,7 @@ import * as tfc from '@tensorflow/tfjs-core';
 import {Tensor, tensor3d} from '@tensorflow/tfjs-core';
 
 import {SymbolicTensor} from '../engine/topology';
-import * as tfl from '../index';
+import * as tfl from '../../index';
 import {DataFormat} from '../keras_format/common';
 import {convertPythonicToTs, convertTsToPythonic} from '../utils/serialization_utils';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';

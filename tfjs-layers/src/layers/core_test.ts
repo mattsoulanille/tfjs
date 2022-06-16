@@ -15,7 +15,7 @@ import {mul, ones, scalar, Tensor, tensor2d, tensor3d, tensor4d, zeros} from '@t
 
 import * as K from '../backend/tfjs_backend';
 import {SymbolicTensor} from '../engine/topology';
-import * as tfl from '../index';
+import * as tfl from '../../index';
 import {InitializerIdentifier} from '../initializers';
 import {ActivationIdentifier} from '../keras_format/activation_config';
 import {pyListRepeat} from '../utils/generic_utils';

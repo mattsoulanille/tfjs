@@ -12,7 +12,7 @@
 
 import {scalar, serialization, Tensor, tensor1d} from '@tensorflow/tfjs-core';
 
-import * as tfl from './index';
+import * as tfl from '../index';
 import {deserializeRegularizer, getRegularizer, serializeRegularizer} from './regularizers';
 import {describeMathCPU, expectTensorsClose} from './utils/test_utils';
 
