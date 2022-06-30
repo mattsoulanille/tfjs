@@ -27,6 +27,7 @@ export interface WebGPUProgram {
   // dispatchLayout enumerates how tensor dimensions are distributed among
   // dispatch x,y,z dimensions.
   dispatchLayout: {x: number[], y?: number[], z?: number[]};
+  isFromPixels?: boolean;
   isVec4?: boolean;
   outputShape: number[];
   // The unique key to distinguish different shader source code.
@@ -51,17 +52,16 @@ export interface WebGPUProgram {
 }
 
 export const compileProgram =
-    (device: GPUDevice, program: WebGPUProgram,
-     pipelineLayout: GPUPipelineLayout, inputsData: InputInfo[],
-     output: TensorInfo, isFromPixel = false): GPUComputePipeline => {
+    (device: GPUDevice, program: WebGPUProgram, inputsData: InputInfo[],
+     output: TensorInfo): GPUComputePipeline => {
       const outputData = {dtype: output.dtype, shape: output.shape};
-      const source = makeShader(inputsData, outputData, program, isFromPixel);
+      const source = makeShader(inputsData, outputData, program);
       const module = device.createShaderModule(
           {code: source, label: program.constructor.name});
       const pipeline = device.createComputePipeline({
-        layout: pipelineLayout,
         compute: {module, entryPoint: 'main'},
-        label: program.constructor.name
+        label: program.constructor.name,
+        layout: 'auto'
       });
 
       return pipeline;
@@ -124,13 +124,13 @@ export function getMainHeaderString(): string {
 
 export function getWorkGroupSizeString(): string {
   return `
-  @stage(compute) @workgroup_size(workGroupSizeX, workGroupSizeY, workGroupSizeZ)
+  @compute @workgroup_size(workGroupSizeX, workGroupSizeY, workGroupSizeZ)
 `;
 }
 
-export function makeShader(
+function makeShader(
     inputInfo: InputInfo[], outputData: {dtype: DataType, shape: number[]},
-    program: WebGPUProgram, isFromPixel = false): string {
+    program: WebGPUProgram): string {
   const prefixSnippets: string[] = [];
   prefixSnippets.push(`
       let workGroupSizeX = ${program.workGroupSize[0]}u;
@@ -159,7 +159,7 @@ export function makeShader(
       }
     `);
 
-  if (isFromPixel === true) {
+  if (program.isFromPixels) {
     prefixSnippets.push(`
         struct Uniform {
           size            : i32,
@@ -258,7 +258,7 @@ export function makeShader(
       `);
   }
 
-  const [coordsSnippet, dispatchLayoutRank] =
+  const coordsSnippet =
       getOutputCoordsSnippet(outputData.shape, program.dispatchLayout);
 
   const sources = [
@@ -270,22 +270,18 @@ export function makeShader(
     sources.push(
         setOutputSnippet(outputData.shape, outputData.dtype, program.isVec4));
   }
-  if (dispatchLayoutRank === outputData.shape.length) {
-    // Input snippet is only meaningful when the output isn't getting
-    // implicitly reshaped (like it does in conv2d_matmul).
-    const inputSnippet =
-        inputInfo
-            .map(
-                (x, i) => getInputSnippet(
-                    x, outputData.shape,
-                    program.variableTypes ?
-                        (program.variableTypes[i] === 'vec4<f32>') :
-                        program.isVec4,
-                    program.dispatchLayout.x.length ===
-                        outputData.shape.length))
-            .join('\n');
-    sources.push(inputSnippet);
-  }
+
+  const inputSnippet =
+      inputInfo
+          .map(
+              (x, i) => getInputSnippet(
+                  x, outputData.shape,
+                  program.variableTypes ?
+                      (program.variableTypes[i] === 'vec4<f32>') :
+                      program.isVec4,
+                  program.dispatchLayout.x.length === outputData.shape.length))
+          .join('\n');
+  sources.push(inputSnippet);
 
   sources.push(program.getUserCode());
   const source = sources.join('\n');
@@ -293,14 +289,27 @@ export function makeShader(
 }
 
 export function makeShaderKey<R extends Rank>(
-    program: WebGPUProgram, shapes: Array<ShapeMap[R]>, types: string[] = [],
-    broadcastDimsKey = '', inputShapesEqualsOutShape = ''): string {
+    program: WebGPUProgram, shapes: Array<ShapeMap[R]>, inputsData: InputInfo[],
+    output: TensorInfo): string {
+  let key = program.shaderKey;
+  if (program.isFromPixels) {
+    return key;
+  }
+
+  const types = inputsData.map(d => d.dtype).concat(output.dtype);
+  const broadcastDims =
+      inputsData.map(d => backend_util.getBroadcastDims(d.shape, output.shape));
+  const inputShapesEqualsOutShape =
+      inputsData.map(d => util.arraysEqual(d.shape, output.shape)).join('_');
+  const broadcastDimsKey = broadcastDims.map(d => d.join('_')).join(';');
+
   const flatDispatchString = isFlatDispatch(program) ? 'flatDispatch' : '';
-  const key = program.shaderKey + '_' +
-      (program.workGroupSize ? program.workGroupSize.join(',') : '') +
+
+  key += '_' + (program.workGroupSize ? program.workGroupSize.join(',') : '') +
       shapes.map(shape => shape.length).join(',') + types.join(',') +
       program.variableNames.join(',') + broadcastDimsKey +
       inputShapesEqualsOutShape + flatDispatchString;
+
   return key;
 }
 
@@ -367,7 +376,7 @@ const commonSnippet = `
 type InputInfo = {
   dtype: DataType; shape: number[]; name: string;
 };
-type WGSLDataType = 'f32'|'i32'|'vec4<f32>'|'vec4<i32>'|'vec4<bool>';
+export type WGSLDataType = 'f32'|'i32'|'vec4<f32>'|'vec4<i32>'|'vec4<bool>';
 
 /**
  * Derives logical coordinates from a flat index. Performs integer division
@@ -621,8 +630,7 @@ function getInputSnippet(
  */
 function getOutputCoordsSnippet(
     outShape: number[],
-    dispatchLayout: {x: number[], y?: number[], z?: number[]}):
-    [string, number] {
+    dispatchLayout: {x: number[], y?: number[], z?: number[]}): string {
   const {x, y = [], z = []} = dispatchLayout;
 
   const outRank = outShape.length;
@@ -633,7 +641,7 @@ function getOutputCoordsSnippet(
     return getCoordsFromIndex(globalIndex);
   }
   `;
-    return [snippet, outRank];
+    return snippet;
   }
 
   let gatherDimensionsStr = '';
@@ -684,7 +692,7 @@ function getOutputCoordsSnippet(
     snippet += `return ${dtype}(${dimensions.join(',')}); }`;
   }
 
-  return [snippet, rank];
+  return snippet;
 }
 
 function getOutputIndexFromCoordsSnippet(outRank: number) {
@@ -754,7 +762,7 @@ function isFlatDispatch(program: WebGPUProgram): boolean {
   return program.dispatch[1] === 1 && program.dispatch[2] === 1;
 }
 
-function mapToWgslTypes(type: DataType, isVec4: boolean): WGSLDataType|
+export function mapToWgslTypes(type: DataType, isVec4: boolean): WGSLDataType|
     DataType {
   if (type === 'float32') {
     return isVec4 ? 'vec4<f32>' : 'f32';
