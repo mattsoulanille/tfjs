@@ -25,7 +25,7 @@ import '@tensorflow/tfjs-core/dist/register_all_gradients';
 import './index';
 // tslint:disable-next-line: no-imports-from-dist
 import {setTestEnvs, setupTestFilters, TestFilter} from '@tensorflow/tfjs-core/dist/jasmine_util';
-import {setupCachedWasmPaths} from './test_util';
+import {setupWasmPaths} from './test_util';
 
 setTestEnvs([{name: 'test-wasm', backendName: 'wasm', isDataSync: true}]);
 
@@ -412,7 +412,7 @@ const customInclude = (testName: string) => {
 };
 setupTestFilters(TEST_FILTERS, customInclude);
 
-beforeAll(setupCachedWasmPaths, 30_000);
+beforeAll(setupWasmPaths, 30_000);
 
 // Import and run all the tests from core.
 // tslint:disable-next-line:no-imports-from-dist

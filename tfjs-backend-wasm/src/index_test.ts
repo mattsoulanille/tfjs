@@ -22,7 +22,7 @@ import {ALL_ENVS, BROWSER_ENVS, describeWithFlags} from '@tensorflow/tfjs-core/d
 
 import {init, resetWasmPath} from './backend_wasm';
 import {BackendWasm, setWasmPath, setWasmPaths} from './index';
-import {VALID_PREFIX, setupCachedWasmPaths} from './test_util';
+import {VALID_PREFIX, setupWasmPaths} from './test_util';
 
 /**
  * Tests specific to the wasm backend. The name of these tests must start with
@@ -68,7 +68,7 @@ describeWithFlags('wasm read/write', ALL_ENVS, () => {
 
 describeWithFlags('wasm init', BROWSER_ENVS, () => {
   beforeEach(async () => {
-    await setupCachedWasmPaths();
+    await setupWasmPaths();
     registerBackend('wasm-test', async () => {
       const {wasm} = await init();
       return new BackendWasm(wasm);
@@ -83,7 +83,7 @@ describeWithFlags('wasm init', BROWSER_ENVS, () => {
     removeBackend('wasm-test');
   });
 
-  afterAll(setupCachedWasmPaths);
+  afterAll(setupWasmPaths);
 
   it('backend init fails when the path is invalid', async () => {
     resetWasmPath();
