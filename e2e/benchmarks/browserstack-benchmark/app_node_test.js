@@ -216,27 +216,25 @@ describe('test app.js cli', () => {
 
 describe('test adding to firestore', () => {
   let db;
-  let mockDb;
   let mockResultValue;
+  let mockSerialization;
+  let mockDate;
 
   beforeAll(async () => {
     // Set a longer jasmine timeout than 5 seconds
-    jasmine.DEFAULT_TIMEOUT_INTERVAL = 1000000;
-
-    // References result collection and checks credentials
-    db = await runFirestore(firebaseConfig);
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = 1_000_000;
   });
 
   beforeEach(() => {
     // mockResultValue is the result of a successful benchmark
     mockResultValue = require('./firestore_test_value.json');
-    mockDb = spyOn(db, 'add');
+    db = jasmine.createSpyObj('firestore', ['add']);
     mockSerialization = jasmine.createSpy('mockSerialization');
     mockDate = jasmine.createSpy('mockDate').and.returnValue('7/21/2021');
   });
 
   it('Expects db.add to be called with formatted results', () => {
-    mockDb.and.returnValue(Promise.resolve({id: 123}));
+    db.add.and.returnValue(Promise.resolve({id: 123}));
     let expectedAdd = {
       result:
           formatForFirestore(mockResultValue, serializeTensors, getReadableDate)
