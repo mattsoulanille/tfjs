@@ -124,7 +124,6 @@ async function benchmarkAll(config) {
     }
   }
   console.log('\nAll benchmarks complete!');
-  endFirebaseInstance();
   return allResults;
 }
 
@@ -378,7 +377,7 @@ function setupHelpMessage() {
  */
 function runBenchmarkFromFile(file, runBenchmark = benchmarkAll) {
   console.log('Running a preconfigured benchmark...');
-  runBenchmark(file);
+  return runBenchmark(file);
 }
 
 /** Sets up the local or remote environment for benchmarking. */
@@ -395,7 +394,11 @@ async function prebenchmarkSetup() {
     if (fs.existsSync(filePath)) {
       console.log(`\nFound file at ${filePath}`);
       const config = require(filePath);
-      runBenchmarkFromFile(config);
+      await runBenchmarkFromFile(config);
+      debugger;
+      if (cliArgs.firestore) {
+	await endFirebaseInstance();
+      }
     } else {
       throw new Error(
           `File could not be found at ${filePath}. ` +
