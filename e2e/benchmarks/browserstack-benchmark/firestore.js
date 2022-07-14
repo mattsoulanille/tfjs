@@ -45,8 +45,8 @@ async function runFirestore(firebaseConfig) {
     // the benchmark results.
     return firebase.firestore().collection('BenchmarkResults');
   } catch (err) {
-    console.log(`\nError code: ${err.code}`);
-    throw new Error(`Error message: ${err.message}`);
+    console.warn(`Failed to connect to firebase database: ${err.message}`);
+    throw err;
   }
 }
 
