@@ -73,11 +73,11 @@ describe('benchmark models', () => {
       // Load the model.
       const benchmark = benchmarks[benchmarkParameters.model];
       const numRuns = benchmarkParameters.numRuns;
-      let model;
       if (benchmarkParameters.model === 'custom') {
         if (benchmarkParameters.modelUrl == null) {
           throw new Error('Please provide model url for the custom model.');
         }
+	// Note: model is a global variable
         model = await loadModelByUrl(benchmarkParameters.modelUrl);
       } else {
         model = await benchmark.load();
