@@ -53,8 +53,8 @@ async function runFirestore(firebaseConfig) {
 /**
  * Deletes the Firebase instance, which allows the Node.js process to finish.
  */
-function endFirebaseInstance() {
-  firebase.app().delete();
+async function endFirebaseInstance() {
+  await firebase.app().delete();
   console.log('Exited Firebase instance.');
 }
 
