@@ -17,7 +17,7 @@
 
 import {backend_util} from '@tensorflow/tfjs-core';
 
-import {mapActivationToShaderProgram} from './activation_util';
+import {activationFnSnippet, biasActivationSnippet} from './activation_util';
 import {getWorkGroupSizeString, WebGPUProgram} from './webgpu_program';
 import {computeDispatch} from './webgpu_util';
 
@@ -27,9 +27,7 @@ export class DepthwiseConv2DNCHWSharedProgram implements WebGPUProgram {
   dispatchLayout: {x: number[], y: number[], z: number[]};
   dispatch: [number, number, number];
   variableNames = ['x', 'W'];
-  uniforms = `pad : vec2<i32>, stride : vec2<i32>, dilation : vec2<i32>,
-      inDims : vec2<i32>, filterHeight : i32, filterWidth : i32,
-      channelMul : i32,`;
+  uniforms = `pad : vec2<i32>, inDims : vec2<i32>,`;
   workGroupSize: [number, number, number] = [16, 16, 1];
   addBias: boolean;
   activation: backend_util.Activation;
@@ -63,30 +61,6 @@ export class DepthwiseConv2DNCHWSharedProgram implements WebGPUProgram {
   }
 
   getUserCode(): string {
-    let activationSnippet = '', applyActivationSnippet = '';
-    if (this.activation) {
-      const activationOp = mapActivationToShaderProgram(this.activation, false);
-      if (this.hasPreluActivation) {
-        activationSnippet =
-            `fn activation(a : f32, outCoord : vec4<i32>) -> f32 {
-          let b = getPreluActivationWeightsByOutputCoords(outCoord);
-          ${activationOp}
-        }`;
-      } else {
-        activationSnippet = `
-          fn activation(a : f32, outCoord : vec4<i32>) -> f32 {
-            ${activationOp}
-          }
-        `;
-      }
-
-      applyActivationSnippet = `dotProd = activation(dotProd, coords);`;
-    }
-
-    const addBiasSnippet = this.addBias ?
-        'dotProd = dotProd + getBiasByOutputCoords(coords);' :
-        '';
-
     const filterSize = this.filterWidth * this.filterHeight;
     const workGroupSize =
         this.workGroupSize[0] * this.workGroupSize[1] * this.workGroupSize[2];
@@ -94,7 +68,7 @@ export class DepthwiseConv2DNCHWSharedProgram implements WebGPUProgram {
     const tileAWidth = this.workGroupSize[0] + this.filterWidth - 1;
 
     const userCode = `
-      ${activationSnippet}
+      ${activationFnSnippet(this.activation, this.hasPreluActivation, false, 4)}
 
       var<workgroup> mm_Asub : array<array<f32, ${tileAWidth}>, ${tileAHeight}>;
       var<workgroup> mm_Bsub : array<array<f32, ${this.filterWidth}>, ${
@@ -109,20 +83,20 @@ export class DepthwiseConv2DNCHWSharedProgram implements WebGPUProgram {
       }
 
       ${getWorkGroupSizeString()}
-      fn main(@builtin(local_invocation_id) LocalId : vec3<u32>,
-              @builtin(global_invocation_id) GlobalId : vec3<u32>,
-              @builtin(local_invocation_index) LocalIndex: u32,
-              @builtin(num_workgroups) NumWorkgroups: vec3<u32>) {
+      fn _start(@builtin(local_invocation_id) LocalId : vec3<u32>,
+                @builtin(global_invocation_id) GlobalId : vec3<u32>,
+                @builtin(local_invocation_index) LocalIndex: u32,
+                @builtin(num_workgroups) NumWorkgroups: vec3<u32>) {
         localId = LocalId;
         globalId = GlobalId;
         let localIndex = i32(LocalIndex);
         numWorkgroups = NumWorkgroups;
         let coords = getOutputCoords();
         let batch = coords[0];
-        let xRCCorner = vec2<i32>(coords.zw) * uniforms.stride - uniforms.pad;
-        let d2 = coords[1];
-        let d1 = d2 / uniforms.channelMul;
-        let q = d2 - d1 * uniforms.channelMul;
+        let xRCCorner = vec2<i32>(coords.zw) - uniforms.pad;
+        let channelMul = uniforms.wShape[3];
+        let d1 = coords[1] / channelMul;
+        let q = coords[1] % channelMul;
 
         let inputRowStart = xRCCorner.x;
         let inputColStart = xRCCorner.y;
@@ -156,19 +130,17 @@ export class DepthwiseConv2DNCHWSharedProgram implements WebGPUProgram {
 
         workgroupBarrier();
 
-        var dotProd = 0.0;
-        for (var wR = 0; wR < uniforms.filterHeight; wR = wR + 1) {
-          for (var wC = 0; wC < uniforms.filterWidth; wC = wC + 1) {
+        var value = 0.0;
+        for (var wR = 0; wR < ${this.filterHeight}; wR = wR + 1) {
+          for (var wC = 0; wC < ${this.filterWidth}; wC = wC + 1) {
             let xVal = mm_Asub[localRow + wR][localCol + wC];
             let wVal = mm_Bsub[wR][wC];
-            dotProd = fma(xVal, wVal, dotProd);
+            value = fma(xVal, wVal, value);
           }
         }
-
-        ${addBiasSnippet}
-        ${applyActivationSnippet}
+        ${biasActivationSnippet(this.addBias, this.activation)}
         if (coordsInBounds4D(coords, uniforms.outShape)) {
-          setOutputAtCoords(coords[0], coords[1], coords[2], coords[3], dotProd);
+          setOutputAtCoords(coords[0], coords[1], coords[2], coords[3], value);
         }
       }
     `;

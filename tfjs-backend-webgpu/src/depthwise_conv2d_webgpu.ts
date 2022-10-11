@@ -17,8 +17,8 @@
 
 import {backend_util} from '@tensorflow/tfjs-core';
 
-import {mapActivationToShaderProgram} from './activation_util';
-import {getMainHeaderString, WebGPUProgram} from './webgpu_program';
+import {activationFnSnippet, biasActivationSnippet} from './activation_util';
+import {getMainHeaderString as main, WebGPUProgram} from './webgpu_program';
 import {computeDispatch, flatDispatchLayout} from './webgpu_util';
 
 export class DepthwiseConv2DProgram implements WebGPUProgram {
@@ -27,9 +27,8 @@ export class DepthwiseConv2DProgram implements WebGPUProgram {
   dispatchLayout: {x: number[], y?: number[], z?: number[]};
   dispatch: [number, number, number];
   variableNames = ['x', 'W'];
-  uniforms = `pad : vec2<i32>, stride : vec2<i32>, dilation : vec2<i32>,
-      inDims : vec2<i32>, filterHeight : i32, filterWidth : i32,
-      channelMul : i32,`;
+  uniforms = `pad : vec2<i32>, inDims : vec2<i32>, filterHeight : i32,
+      filterWidth : i32, stride : vec2<i32>, dilation : vec2<i32>,`;
   // This is an experimental value.
   workGroupSize: [number, number, number] = [256, 1, 1];
   convInfo: backend_util.Conv2DInfo;
@@ -62,44 +61,21 @@ export class DepthwiseConv2DProgram implements WebGPUProgram {
   }
 
   getUserCode(): string {
-    let activationSnippet = '', applyActivationSnippet = '';
-    if (this.activation) {
-      const activationOp = mapActivationToShaderProgram(this.activation, false);
-      if (this.hasPreluActivation) {
-        activationSnippet =
-            `fn activation(a : f32, outCoord : vec4<i32>) -> f32 {
-          let b = getPreluActivationWeightsByOutputCoords(outCoord);
-          ${activationOp}
-        }`;
-      } else {
-        activationSnippet = `
-          fn activation(a : f32, outCoord : vec4<i32>) -> f32 {
-            ${activationOp}
-          }
-        `;
-      }
-
-      applyActivationSnippet = `dotProd = activation(dotProd, coords);`;
-    }
-
-    const addBiasSnippet = this.addBias ?
-        'dotProd = dotProd + getBiasByOutputCoords(coords);' :
-        '';
-
     const getXSnippet = this.isChannelsLast ? 'getX(batch, xR, xC, d1);' :
                                               'getX(batch, d1, xR, xC);';
 
     const userCode = `
-      ${activationSnippet}
+      ${activationFnSnippet(this.activation, this.hasPreluActivation, false, 4)}
 
-      ${getMainHeaderString()}
+      ${main()} {
         let coords = getOutputCoords();
         let batch = coords[0];
         let xRCCorner = vec2<i32>(coords.${
         this.isChannelsLast ? 'yz' : 'zw'}) * uniforms.stride - uniforms.pad;
         let d2 = coords[${this.isChannelsLast ? 3 : 1}];
-        let d1 = d2 / uniforms.channelMul;
-        let q = d2 - d1 * uniforms.channelMul;
+        let channelMul = uniforms.wShape[3];
+        let d1 = d2 / channelMul;
+        let q = d2 % channelMul;
 
         let inputRowStart = xRCCorner.x;
         let inputColStart = xRCCorner.y;
@@ -112,7 +88,7 @@ export class DepthwiseConv2DProgram implements WebGPUProgram {
         // y(yR, yC, d2)|y(d2, yR, yC). ? = to be determined. : = across all
         // values in that axis. x(?, ?, d1) and y(yR, yC, d2) is for NHWC.
         // x(d1, ?, ?) and y(d2, yR, yC) is for NCHW.
-        var dotProd = 0.0;
+        var value = 0.0;
 
         // Extract if checking out of for loop for performance.
         if (inputRowStart >= 0 && inputColStart >= 0 &&
@@ -126,7 +102,7 @@ export class DepthwiseConv2DProgram implements WebGPUProgram {
 
                 let xVal = ${getXSnippet};
                 let wVal = getW(wR, wC, d1, q);
-                dotProd = dotProd + xVal * wVal;
+                value = value + xVal * wVal;
               }
             }
           } else {
@@ -146,15 +122,13 @@ export class DepthwiseConv2DProgram implements WebGPUProgram {
 
                 let xVal = ${getXSnippet};
                 let wVal = getW(wR, wC, d1, q);
-                dotProd = dotProd + xVal * wVal;
+                value = value + xVal * wVal;
               }
             }
           }
-
-        ${addBiasSnippet}
-        ${applyActivationSnippet}
+          ${biasActivationSnippet(this.addBias, this.activation)}
         if (coordsInBounds4D(coords, uniforms.outShape)) {
-          setOutputAtCoords(coords[0], coords[1], coords[2], coords[3], dotProd);
+          setOutputAtCoords(coords[0], coords[1], coords[2], coords[3], value);
         }
       }
     `;
