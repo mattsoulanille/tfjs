@@ -17,7 +17,7 @@
 
 import * as tf from '@tensorflow/tfjs-core';
 import {resetWasmPath} from './backend_wasm';
-import {setWasmPaths} from './index';
+import { setWasmPaths } from '../index';
 
 export const VALID_PREFIX = '/base/tfjs/tfjs-backend-wasm/wasm-out/';
 

@@ -57,7 +57,7 @@ ts_library(
     name = "tfjs-backend-wasm_src_lib",
     srcs = glob(
         ["**/*.ts"],
-        exclude = TEST_SRCS + ["index.ts"],
+        exclude = TEST_SRCS,
     ),
     module_name = "@tensorflow/tfjs-backend-wasm/dist",
     deps = [
@@ -67,15 +67,6 @@ ts_library(
         "//tfjs-core:tfjs-core_lib",
         "@npm//@types/seedrandom",
         "@npm//seedrandom",
-    ],
-)
-
-ts_library(
-    name = "tfjs-backend-wasm_lib",
-    srcs = ["index.ts"],
-    module_name = "@tensorflow/tfjs-backend-wasm",
-    deps = [
-        ":tfjs-backend-wasm_src_lib",
     ],
 )
 
@@ -90,7 +81,7 @@ ts_library(
     ],
     module_name = "@tensorflow/tfjs-backend-wasm/dist",
     deps = [
-        ":tfjs-backend-wasm_lib",
+        "//tfjs-backend-wasm:tfjs-backend-wasm_lib",
         ":tfjs-backend-wasm_src_lib",
         "//tfjs-backend-wasm/wasm-out",
         "//tfjs-core:tfjs-core_lib",
@@ -118,7 +109,7 @@ esbuild(
     sources_content = True,
     target = "es6",
     deps = [
-        ":tfjs-backend-wasm_lib",
+        "//tfjs-backend-wasm:tfjs-backend-wasm_lib",
         ":tfjs-backend-wasm_test_lib",
     ],
 )

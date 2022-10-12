@@ -15,5 +15,5 @@
  * =============================================================================
  */
 
-import './register_all_kernels';
-export * from './base';
+import './src/register_all_kernels';
+export * from './src/base';

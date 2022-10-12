@@ -21,7 +21,7 @@ import {registerBackend, removeBackend, test_util, env} from '@tensorflow/tfjs-c
 import {ALL_ENVS, BROWSER_ENVS, describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
 
 import {init, resetWasmPath} from './backend_wasm';
-import {BackendWasm, setWasmPath, setWasmPaths} from './index';
+import { BackendWasm, setWasmPath, setWasmPaths } from '../index';
 import {VALID_PREFIX, setupCachedWasmPaths} from './test_util';
 
 /**
