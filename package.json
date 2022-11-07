@@ -27,6 +27,9 @@
     "@types/shelljs": "^0.8.7",
     "@types/webgl-ext": "0.0.30",
     "@types/webgl2": "0.0.6",
+    "@typescript-eslint/eslint-plugin": "^5.42.1",
+    "@typescript-eslint/eslint-plugin-tslint": "^5.42.1",
+    "@typescript-eslint/parser": "^5.42.1",
     "@webgpu/types": "0.1.21",
     "ajv": "~6.12.3",
     "argparse": "^1.0.10",
@@ -36,6 +39,11 @@
     "copyfiles": "~1.2.0",
     "core-js": "3",
     "deep-equal": "^1.0.1",
+    "eslint": "^8.27.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-jsdoc": "^39.6.2",
+    "eslint-plugin-prefer-arrow": "^1.2.3",
     "estree-walker": "~1.0.1",
     "jasmine": "~4.2.1",
     "jasmine-core": "~4.2.0",
@@ -53,6 +61,7 @@
     "long": "4.0.0",
     "mkdirp": "~0.5.1",
     "opn": "~5.1.0",
+    "prettier": "^2.7.1",
     "protobufjs": "~6.11.3",
     "requirejs": "^2.3.6",
     "rimraf": "~2.6.2",
@@ -92,7 +101,8 @@
     "bazel:lint": "yarn bazel:format --lint=warn",
     "bazel:lint-fix": "yarn bazel:format --lint=fix",
     "bazel:lint-check": "yarn bazel:format --lint=warn --mode=check",
-    "buildifier-ci": "./scripts/buildifier-ci.sh"
+    "buildifier-ci": "./scripts/buildifier-ci.sh",
+    "lint": "NODE_OPTIONS=\"--max-old-space-size=1400\" yarn eslint -c .eslintrc.js --ext .ts tfjs-* --no-error-on-unmatched-pattern"
   },
   "dependencies": {
     "node-fetch": "^2.6.7"

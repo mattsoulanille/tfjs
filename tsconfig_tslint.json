@@ -23,7 +23,13 @@
       "@tensorflow/tfjs-tflite": ["tfjs-tflite/src/index.ts"],
       "@tensorflow/tfjs-tflite/dist/*": ["tfjs-tflite/src/*"],
       "@tensorflow/tfjs-backend-wasm": ["tfjs-backend-wasm/src/index.ts"],
-      "@tensorflow/tfjs-backend-wasm/dist/*": ["tfjs-backend-wasm/src/*"]
+      "@tensorflow/tfjs-backend-wasm/dist/*": ["tfjs-backend-wasm/src/*"],
+      "@tensorflow/tfjs-vis": ["tfjs-vis/src/index.ts"],
+      "@tensorflow/tfjs-vis/dist/*": ["tfjs-vis/src/*"],
+      "@tensorflow/tfjs-node": ["tfjs-node/src/index.ts"],
+      "@tensorflow/tfjs-node/dist/*": ["tfjs-node/src/*"]
+      "@tensorflow/tfjs-node-gpu": ["tfjs-node-gpu/src/index.ts"],
+      "@tensorflow/tfjs-node-gpu/dist/*": ["tfjs-node-gpu/src/*"]
     },
     "rootDirs": [
       ".",
@@ -44,7 +50,6 @@
     "tfjs-node",
     "tfjs-node-gpu",
     "tfjs-react-native",
-    "tfjs-vis",
     "tsc-dist",
     "wasm-dist"
   ]
