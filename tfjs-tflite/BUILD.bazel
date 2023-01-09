@@ -66,6 +66,15 @@ copy_to_dist(
     ],
 )
 
+# copy wasm to dist
+copy_to_dist(
+    name = "copy_wasm",
+    srcs = [
+        "//tfjs-tflite/wasm",
+    ],
+    root = "wasm",
+)
+
 # Package for npm.
 pkg_npm(
     name = "tfjs-tflite_pkg",
@@ -78,6 +87,7 @@ pkg_npm(
     deps = [
         ":copy_bundles",
         ":copy_src_to_dist",
+        ":copy_wasm",
         "//tfjs-tflite/wasm",
     ],
 )
