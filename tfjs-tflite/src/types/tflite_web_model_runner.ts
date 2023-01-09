@@ -101,6 +101,10 @@ export declare interface TFLiteWebModelRunnerOptions {
    * Default to 1024.
    */
   maxProfilingBufferEntries?: number;
+  /**
+   * A path to an external delegate to load. Only works in a webworker.
+   */
+  delegatePath?: string;
 }
 
 /** Types of TFLite tensor data. */
