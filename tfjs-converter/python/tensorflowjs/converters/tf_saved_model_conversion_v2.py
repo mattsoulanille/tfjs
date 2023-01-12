@@ -41,7 +41,7 @@ from tensorflow.python.grappler import tf_optimizer
 from tensorflow.python.keras.saving.saving_utils import trace_model_call
 from tensorflow.python.keras.saving.saving_utils import def_function
 from tensorflow.python.keras.saving.saving_utils import model_input_signature
-from tensorflow.python.saved_model.load import load
+from tensorflow.saved_model import load
 from tensorflow.python.saved_model import loader
 from tensorflow.python.tools.saved_model_utils import get_meta_graph_def
 from tensorflow.python.training.saver import export_meta_graph
