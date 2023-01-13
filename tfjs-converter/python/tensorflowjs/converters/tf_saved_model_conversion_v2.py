@@ -880,6 +880,8 @@ def _convert_tf_saved_model(output_dir,
       print('Can not freeze saved model v1.')
       return
 
+  breakpoint()
+
   if frozen_graph_dir:
     output_graph = os.path.join(frozen_graph_dir,
                                 common.ARTIFACT_MODEL_JSON_FILE_NAME)
