@@ -23,7 +23,9 @@ import tempfile
 import unittest
 import numpy as np
 
-import tensorflow.compat.v2 as tf
+#import tensorflow.compat.v2 as tf
+import tensorflow as tf
+from tensorflow import keras
 from tensorflow_decision_forests.keras import GradientBoostedTreesModel
 from tensorflow.python.eager import def_function
 from tensorflow.python.framework import constant_op
@@ -40,6 +42,7 @@ from tensorflowjs.converters import tf_saved_model_conversion_v2
 from tensorflowjs.converters.common import ASSETS_DIRECTORY_NAME
 
 SAVED_MODEL_DIR = 'saved_model'
+BIG_MODEL_DIR = 'big_model'
 HUB_MODULE_DIR = 'hub_module'
 FROZEN_MODEL_DIR = 'frozen_model'
 
@@ -218,6 +221,19 @@ class ConvertTest(tf.test.TestCase):
 
     save_dir = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
     save(root, save_dir, to_save)
+
+  def _create_big_model(self):
+      # Save a big model for testing above 2gb model conversion
+      big_model = keras.Sequential(
+          [
+              #keras.layers.Input((1, 2**29)),
+              keras.layers.Input((1, 2**10)),
+              keras.layers.Dense(1) # just a really simple model
+          ]
+      )
+      model_dir = os.path.join(self._tmp_dir, BIG_MODEL_DIR)
+      big_model.save(model_dir)
+      return model_dir
 
   def _create_saved_model_with_fusable_matmul(self):
     """Test a fusable matmul model."""
@@ -1292,6 +1308,31 @@ class ConvertTest(tf.test.TestCase):
     self.assertTrue(
         glob.glob(
             os.path.join(self._tmp_dir, SAVED_MODEL_DIR, 'group*-*')))
+
+  def test_convert_saved_model_above_2gb(self):
+    input_dir = self._create_big_model()
+    output_dir = os.path.join(self._tmp_dir, 'big_model_js')
+    #breakpoint()
+    tf_saved_model_conversion_v2.convert_tf_saved_model(
+        input_dir,
+        output_dir
+    )
+
+    # Check model.json and weights manifest.
+    with open(os.path.join(output_dir, 'model.json'), 'rt') as f:
+      model_json = json.load(f)
+    self.assertTrue(model_json['modelTopology'])
+    self.assertIsNot(model_json['modelTopology']['versions'], None)
+    signature = model_json['signature']
+    self.assertIsNot(signature, None)
+    self.assertIsNot(signature['inputs'], None)
+    self.assertIsNot(signature['outputs'], None)
+    weights_manifest = model_json['weightsManifest']
+    shard_count = len(weights_manifest[0]['paths'])
+    self.assertCountEqual(weights_manifest[0]['paths'],
+                          [f'group1-shard{x + 1}of{shard_count}.bin' for x in range(shard_count)])
+    #breakpoint()
+    self.assertIn('weights', weights_manifest[0])
 
 if __name__ == '__main__':
   tf.test.main()
