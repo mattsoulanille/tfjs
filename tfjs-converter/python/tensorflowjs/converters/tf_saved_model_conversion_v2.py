@@ -113,6 +113,7 @@ def validate(graph_def, skip_op_check, strip_debug_ops):
         ops += json.load(json_data)
 
   names = {x['tfOpName'] for x in ops}
+  names.add('ReadVariableOp')
   if strip_debug_ops:
     names = names.union({'Assert', 'CheckNumerics', 'Print'})
   not_supported = {x.op for x in [x for x in nodes if x.op not in names]}
@@ -127,33 +128,23 @@ def _run_grappler(config, graph_def, graph, signature_def):
   return tf_optimizer.OptimizeGraph(
       config, meta_graph, cluster=get_cluster())
 
-def optimize_graph(graph, signature_def, output_graph,
-                   tf_version, quantization_dtype_map=None,
+def optimize_graph(graph, signature_def,
                    skip_op_check=False, strip_debug_ops=False,
-                   weight_shard_size_bytes=1024 * 1024 * 4,
-                   experiments=False,
-                   initializer_graph=None,
-                   resource_ids_maps=None,
-                   metadata=None):
+                   experiments=False):
   """Takes a Python Graph object and optimizes the graph.
 
   Args:
     graph: The frozen graph to optimize.
     signature_def: the SignatureDef of the inference graph.
-    output_graph: The location of the output graph.
-    tf_version: Tensorflow version of the input graph.
     quantization_dtype_map: A mapping from dtype
       (`uint8`, `uint16`, `float16`) to weights names. The weight mapping
       supports wildcard substitution.
     skip_op_check: Bool whether to skip the op check.
     strip_debug_ops: Bool whether to strip debug ops.
-    weight_shard_size_bytes: Shard size (in bytes) of the weight files.
-      The size of each weight file will be <= this value.
     initializer_graph: The frozen graph for initializers.
     resource_ids_maps: Tuple of two dictionaries, one
       mapping inference input names to resource id, and the other
       mapping initializer output names to resource id.
-    metadata: User defined metadata map.
   """
 
   # Add a collection 'train_op' so that Grappler knows the outputs.
@@ -216,24 +207,20 @@ def optimize_graph(graph, signature_def, output_graph,
   optimized_graph = fuse_prelu.fuse_prelu_with_fused_conv2d_or_matmul(
       optimized_graph)
 
-  unsupported = validate(optimized_graph, skip_op_check,
-                         strip_debug_ops)
-  if unsupported:
-    raise ValueError('Unsupported Ops in the model after optimization\n' +
-                     ', '.join(unsupported))
+  return optimized_graph
 
-  initializer_graph_def = None
-  initializer_signature_def = None
-  if initializer_graph:
-    initializer_graph_def = initializer_graph.as_graph_def()
-    if hasattr(initializer_graph, 'outputs'):
-      initializer_signature_def = _build_signature_def(initializer_graph, [], initializer_graph.outputs)
+  # initializer_graph_def = None
+  # initializer_signature_def = None
+  # if initializer_graph:
+  #   initializer_graph_def = initializer_graph.as_graph_def()
+  #   if hasattr(initializer_graph, 'outputs'):
+  #     initializer_signature_def = _build_signature_def(initializer_graph.as_graph_def(), [], initializer_graph.outputs)
 
-  extract_weights(
-      optimized_graph, output_graph, tf_version,
-      signature_def, quantization_dtype_map, weight_shard_size_bytes,
-      initializer_graph_def, initializer_signature_def,
-      resource_ids_maps=resource_ids_maps, metadata=metadata)
+  # extract_weights(
+  #     optimized_graph, output_graph, tf_version,
+  #     signature_def, quantization_dtype_map, weight_shard_size_bytes,
+  #     initializer_graph_def, initializer_signature_def,
+  #     resource_ids_maps=resource_ids_maps, metadata=metadata)
 
 def extract_const_nodes(nodes):
   """Takes a list of nodes and extract the weights. Return weight manifest
@@ -266,34 +253,13 @@ def extract_const_nodes(nodes):
   return const_manifest
 
 def extract_weights(graph_def,
-                    output_graph,
-                    tf_version,
-                    signature_def,
-                    quantization_dtype_map=None,
-                    weight_shard_size_bytes=1024 * 1024 * 4,
-                    initializer_graph_def=None,
-                    initializer_signature_def=None,
-                    resource_ids_maps=None,
-                    metadata=None):
+                    initializer_graph_def=None):
   """Takes a Python GraphDef object and extract the weights.
 
   Args:
     graph_def: tf.GraphDef TensorFlow GraphDef proto object, which represents
       the model topology.
-    tf_version: Tensorflow version of the input graph.
-    signature_def: the SignatureDef of the inference graph.
-    quantization_dtype_map: A mapping from dtype
-      (`uint8`, `uint16`, `float16`) to weights names. The weight mapping
-      compression. Only np.uint8 and np.uint16 are supported.
-      supports wildcard substitution.
-    weight_shard_size_bytes: Shard size (in bytes) of the weight files.
-      The size of each weight file will be <= this value.
     initializer_graph_def: tf.GraphDef proto object for initializer graph.
-    initializer_signature_def: the SignatureDef of the initializer graph.
-    resource_ids_maps: Tuple of two dictionaries, one
-      mapping inference input names to resource id, and the other
-      mapping initializer output names to resource id.
-    metadata: User defined metadata map.
   """
   global_manifest = extract_const_nodes(graph_def.node)
 
@@ -309,20 +275,22 @@ def extract_weights(graph_def,
   if initializer_graph_def:
     initializer_manifests = extract_const_nodes(initializer_graph_def.node)
 
-  print('Writing weight file ' + output_graph + '...')
+  return global_manifest + function_manifests + initializer_manifests
 
-  write_artifacts(MessageToDict(graph_def),
-                  [global_manifest +
-                   function_manifests +
-                   initializer_manifests],
-                  output_graph,
-                  tf_version, signature_def,
-                  quantization_dtype_map=quantization_dtype_map,
-                  weight_shard_size_bytes=weight_shard_size_bytes,
-                  initializer_graph_def=initializer_graph_def,
-                  initializer_signature_def=initializer_signature_def,
-                  resource_ids_maps=resource_ids_maps,
-                  metadata=metadata)
+  # print('Writing weight file ' + output_graph + '...')
+
+  # write_artifacts(MessageToDict(graph_def),
+  #                 [global_manifest +
+  #                  function_manifests +
+  #                  initializer_manifests],
+  #                 output_graph,
+  #                 tf_version, signature_def,
+  #                 quantization_dtype_map=quantization_dtype_map,
+  #                 weight_shard_size_bytes=weight_shard_size_bytes,
+  #                 initializer_graph_def=initializer_graph_def,
+  #                 initializer_signature_def=initializer_signature_def,
+  #                 resource_ids_maps=resource_ids_maps,
+  #                 metadata=metadata)
 
 def write_artifacts(topology,
                     weights,
@@ -463,10 +431,10 @@ def _is_assets_required(model_ops):
     opNames = frozenset([x['tfOpName'] for x in ops])
     return not opNames.isdisjoint(model_ops)
 
-def _get_frozen_graph_ops(frozen_graph):
-  if frozen_graph is None:
+def _get_frozen_graph_ops(frozen_graph_def):
+  if frozen_graph_def is None:
     return []
-  return [node.op for node in frozen_graph.as_graph_def().node]
+  return [node.op for node in frozen_graph_def.node]
 
 
 def _freeze_saved_model_v1(saved_model_dir, saved_model_tags,
@@ -521,13 +489,61 @@ def _freeze_saved_model_v1(saved_model_dir, saved_model_tags,
       return frozen_graph, frozen_initializer_graph
 
 def _freeze_saved_model_v2(concrete_func, control_flow_v2=False):
-  if version.parse(tf.__version__) < version.parse('2.2.0'):
-    return convert_to_constants.convert_variables_to_constants_v2(
-        concrete_func, lower_control_flow=not control_flow_v2).graph
+  # if version.parse(tf.__version__) < version.parse('2.2.0'):
+  #   return convert_to_constants.convert_variables_to_constants_v2(
+  #       concrete_func, lower_control_flow=not control_flow_v2).graph
 
-  return convert_to_constants.convert_variables_to_constants_v2(
-      concrete_func, lower_control_flow=not control_flow_v2,
-      aggressive_inlining=True).graph
+  # return convert_to_constants.convert_variables_to_constants_v2(
+  #     concrete_func, lower_control_flow=not control_flow_v2,
+  #     aggressive_inlining=True).graph
+
+
+  from tensorflow.python.framework.convert_to_constants import _FunctionConverterDataInEager, _replace_variables_by_constants, _construct_concrete_function, _GraphDef
+
+  converter_data = _FunctionConverterDataInEager(
+    func=concrete_func,
+    lower_control_flow=not control_flow_v2,
+    aggressive_inlining=False,
+  )
+
+  # Replace variables with constants, but don't actually.
+  input_graph = _GraphDef(converter_data.graph_def)
+
+  for tensor_name, tensor_data in converter_data.tensor_data.items():
+    input_graph.nodes[tensor_name].convert_variable_to_constant(
+        None, tensor_data)
+
+  converted_graph = input_graph.converted_self().graph_def
+
+  converted_input_indices = {
+      t.index
+      for t in converter_data.tensor_data.values()
+      if t.index is not None
+  }
+
+  # return converted_graph, converted_input_indices
+
+  output_graph_def = converted_graph
+
+  # output_graph_def, converted_input_indices = _replace_variables_by_constants(
+  #   converter_data=converter_data)
+
+  # concrete_frozen = _construct_concrete_function(concrete_func, output_graph_def,
+  #                                                converted_input_indices)
+
+  #breakpoint()
+  #return concrete_func.graph
+  #return concrete_frozen.graph
+
+  # graph = tf.Graph()
+  # with graph.as_default():
+  #   tf.import_graph_def(output_graph_def)
+  # return graph
+
+  return output_graph_def
+
+  # return convert_to_constants.convert_variables_to_constants_v2(
+  #   concrete_func, lower_control_flow=not control_flow_v2).graph
 
 def _find_signature_def_name(tensor, signature_map):
   if not signature_map:
@@ -547,16 +563,18 @@ def _find_signature_def_name(tensor, signature_map):
   else:
     return names[0]
 
-def _build_signature_def(frozen_graph, input_nodes, output_nodes,
+def _build_signature_def(frozen_graph_def, input_nodes, output_nodes,
                          signature_def=None):
   signature = meta_graph_pb2.SignatureDef()
+  nodes = {node.op: node for node in frozen_graph_def.node}
   for input_tensor in input_nodes:
     op_name = input_tensor.name.split(':')[0]
     # The graph freezing may turn the original inputs into constants, or remove
     # them from the graph, so we need to ignore those.
     try:
-      op = frozen_graph.get_operation_by_name(op_name)
-      if op.type != 'Const':
+      node = nodes[op_name]
+      #op = frozen_graph.get_operation_by_name(op_name)
+      if node.op != 'Const':
         name = input_tensor.name
         if hasattr(signature_def, 'inputs'):
           name = _find_signature_def_name(input_tensor, signature_def.inputs)
@@ -616,7 +634,7 @@ def convert_tf_frozen_model(frozen_model_path,
 
   graph = load_graph(frozen_model_path)
   signature = _build_signature_def(
-      graph, [], output_node_names.split(','))
+      graph.as_graph_def(), [], output_node_names.split(','))
 
   optimize_graph(graph, signature,
                  output_graph, tf.__version__,
@@ -805,6 +823,7 @@ def _convert_tf_saved_model(output_dir,
   model = None
   concrete_func = None
   saved_model_sigature = None
+  
   if saved_model_dir:
     saved_model_sigature = _find_signature(saved_model_dir, saved_model_tags,
                                            signature_def)
@@ -862,36 +881,39 @@ def _convert_tf_saved_model(output_dir,
   # the graph using V1 utils.
   frozen_initializer_graph = None
   resource_ids_maps = None
-  try:
-    frozen_graph = _freeze_saved_model_v2(concrete_func, control_flow_v2)
-    resource_initializer_concrete_func = _get_resource_initializer_concrete_function(model)
+  # try:
+  #   frozen_graph_def = _freeze_saved_model_v2(concrete_func, control_flow_v2)
+  #   resource_initializer_concrete_func = _get_resource_initializer_concrete_function(model)
 
-    if resource_initializer_concrete_func:
-      frozen_initializer_graph = _freeze_saved_model_v2(resource_initializer_concrete_func, control_flow_v2)
-      resource_ids_maps = _get_resource_ids_maps(model, concrete_func, resource_initializer_concrete_func)
+  #   if resource_initializer_concrete_func:
+  #     frozen_initializer_graph_def = _freeze_saved_model_v2(resource_initializer_concrete_func, control_flow_v2)
+  #     resource_ids_maps = _get_resource_ids_maps(model, concrete_func, resource_initializer_concrete_func)
 
-  except BaseException:
-    if saved_model_dir:
-      (frozen_graph,
-       frozen_initializer_graph) = _freeze_saved_model_v1(saved_model_dir,
-                                                          saved_model_tags_list,
-                                                          output_node_names)
-    else:
-      print('Can not freeze saved model v1.')
-      return
+  # except BaseException:
+  #   if saved_model_dir:
+  #     (frozen_graph,
+  #      frozen_initializer_graph) = _freeze_saved_model_v1(saved_model_dir,
+  #                                                         saved_model_tags_list,
+  #                                                         output_node_names)
+  #     frozen_graph_def = frozen_graph.as_graph_def()
 
-  breakpoint()
+  #   else:
+  #     print('Can not freeze saved model v1.')
+  #     return
 
-  if frozen_graph_dir:
-    output_graph = os.path.join(frozen_graph_dir,
-                                common.ARTIFACT_MODEL_JSON_FILE_NAME)
-    frozen_file = output_graph + '.frozen'
-    with tf.compat.v1.gfile.GFile(frozen_file, 'wb') as f:
-      f.write(frozen_graph.as_graph_def().SerializeToString())
+  # #breakpoint()
 
-  signature = _build_signature_def(
-      frozen_graph, concrete_func.inputs, concrete_func.outputs, saved_model_sigature)
+  # if frozen_graph_dir:
+  #   output_graph = os.path.join(frozen_graph_dir,
+  #                               common.ARTIFACT_MODEL_JSON_FILE_NAME)
+  #   frozen_file = output_graph + '.frozen'
+  #   with tf.compat.v1.gfile.GFile(frozen_file, 'wb') as f:
+  #     f.write(frozen_graph_def.SerializeToString())
 
+
+  # signature = _build_signature_def(
+  #     frozen_graph_def, concrete_func.inputs, concrete_func.outputs, saved_model_sigature)
+  signature = saved_model_sigature
   define_transform_graph_func()
 
   tf_version = None
@@ -903,21 +925,25 @@ def _convert_tf_saved_model(output_dir,
     tf_version = tf.__version__
 
   if saved_model_dir:
-      model_ops = set(_get_frozen_graph_ops(frozen_graph)) |\
-                  set(_get_frozen_graph_ops(frozen_initializer_graph))
+      model_ops = set(_get_frozen_graph_ops(frozen_graph_def)) |\
+                  set(_get_frozen_graph_ops(frozen_initializer_graph.as_graph_def()))
       if _is_assets_required(model_ops):
         _copy_assets(saved_model_dir, output_dir)
 
-  optimize_graph(frozen_graph, signature,
-                 output_graph, tf_version,
-                 quantization_dtype_map=quantization_dtype_map,
+  optimized_graph = optimize_graph(concrete_func, signature,
                  skip_op_check=skip_op_check,
                  strip_debug_ops=strip_debug_ops,
-                 weight_shard_size_bytes=weight_shard_size_bytes,
-                 experiments=experiments,
-                 initializer_graph=frozen_initializer_graph,
-                 resource_ids_maps=resource_ids_maps,
-                 metadata=metadata)
+                 experiments=experiments)
+
+  unsupported = validate(optimized_graph, skip_op_check,
+                         strip_debug_ops)
+  if unsupported:
+    raise ValueError('Unsupported Ops in the model after optimization\n' +
+                     ', '.join(unsupported))
+
+
+  extract_weights(optimized_graph,
+                  initializer_graph_def=frozen_initializer_graph)
 
 def define_transform_graph_func():
   """Check if the TransformGraph is available to be imported, this package is

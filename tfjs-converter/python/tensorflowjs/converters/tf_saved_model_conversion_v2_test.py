@@ -23,6 +23,10 @@ import tempfile
 import unittest
 import numpy as np
 
+import debugpy
+debugpy.listen(5724)
+debugpy.wait_for_client()
+
 #import tensorflow.compat.v2 as tf
 import tensorflow as tf
 from tensorflow import keras
@@ -223,17 +227,22 @@ class ConvertTest(tf.test.TestCase):
     save(root, save_dir, to_save)
 
   def _create_big_model(self):
-      # Save a big model for testing above 2gb model conversion
-      big_model = keras.Sequential(
-          [
-              #keras.layers.Input((1, 2**29)),
-              keras.layers.Input((1, 2**10)),
-              keras.layers.Dense(1) # just a really simple model
-          ]
-      )
-      model_dir = os.path.join(self._tmp_dir, BIG_MODEL_DIR)
-      big_model.save(model_dir)
-      return model_dir
+    # Save a big model for testing above 2gb model conversion
+    # Avoid having a single weight over 2gb, but still have the
+    # model be over 2gb.
+    #size = 2**28
+    size = 2**1
+    big_model = keras.Sequential(
+      [
+        keras.layers.Input((1, size), name='big_input'),
+        keras.layers.Dense(1, name='big_dense_1'),
+        keras.layers.Dense(size, name='big_dense_2'),
+        keras.layers.Dense(1, name='big_dense_3'),
+      ]
+    )
+    model_dir = os.path.join(self._tmp_dir, BIG_MODEL_DIR)
+    big_model.save(model_dir)
+    return model_dir
 
   def _create_saved_model_with_fusable_matmul(self):
     """Test a fusable matmul model."""
@@ -404,910 +413,910 @@ class ConvertTest(tf.test.TestCase):
         saved_model_tags=tf.compat.v1.saved_model.tag_constants.SERVING,
         input_saved_model_dir=saved_model_dir)
 
-  def test_convert_saved_model_v1(self):
-    self._create_saved_model_v1()
-
-    input_dir = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-    output_dir = os.path.join(input_dir, 'js')
-    tf_saved_model_conversion_v2.convert_tf_saved_model(
-        input_dir,
-        output_dir
-    )
-
-    tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR, 'js')
-    # Check model.json and weights manifest.
-    with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
-      model_json = json.load(f)
-    self.assertTrue(model_json['modelTopology'])
-    self.assertIsNot(model_json['modelTopology']['versions'], None)
-    signature = model_json['signature']
-    self.assertIsNot(signature, None)
-    self.assertIsNot(signature['inputs'], None)
-    self.assertIsNot(signature['outputs'], None)
-    weights_manifest = model_json['weightsManifest']
-    self.assertCountEqual(weights_manifest[0]['paths'],
-                          ['group1-shard1of1.bin'])
-    self.assertIn('weights', weights_manifest[0])
-
-    # Check meta-data in the artifact JSON.
-    self.assertEqual(model_json['format'], 'graph-model')
-    self.assertEqual(
-        model_json['convertedBy'],
-        'TensorFlow.js Converter v%s' % version.version)
-    self.assertEqual(model_json['generatedBy'],
-                     tf.__version__)
-    self.assertTrue(glob.glob(os.path.join(output_dir, 'group*-*')))
-
-  def test_convert_saved_model_v1_with_hashtable(self):
-    self._create_saved_model_v1_with_hashtable()
-
-    input_dir = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-    output_dir = os.path.join(input_dir, 'js')
-    tf_saved_model_conversion_v2.convert_tf_saved_model(
-        input_dir,
-        output_dir
-    )
-
-    expected_weights_manifest = [{
-        'paths': ['group1-shard1of1.bin'],
-        'weights': [
-            {'dtype': 'float32', 'name': 'w', 'shape': [2, 2]},
-            {'dtype': 'string', 'name': 'Const', 'shape': [1]},
-            {'dtype': 'int32', 'name': 'Const_1', 'shape': [1]}
-        ]}]
-
-    tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR, 'js')
-    # Check model.json and weights manifest.
-    with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
-      model_json = json.load(f)
-    self.assertTrue(model_json['modelTopology'])
-    self.assertIsNot(model_json['modelTopology']['versions'], None)
-    signature = model_json['signature']
-    self.assertIsNot(signature, None)
-    self.assertIsNot(signature['inputs'], None)
-    self.assertIsNot(signature['outputs'], None)
-    self.assertTrue(model_json['modelInitializer'])
-
-    for node in model_json['modelTopology']['node']:
-      if node['name'] == 'ToFloat' and node['op'] == 'Placeholder':
-        self.assertEqual(node['attr']['shape'],
-                         {'shape': {'dim': [
-                             {'size': '-1'}, {'size': '2'}, {'size': '2'}]}})
-
-    weights_manifest = model_json['weightsManifest']
-    self.assertEqual(weights_manifest, expected_weights_manifest)
-    # Check meta-data in the artifact JSON.
-    self.assertEqual(model_json['format'], 'graph-model')
-    self.assertEqual(
-        model_json['convertedBy'],
-        'TensorFlow.js Converter v%s' % version.version)
-    self.assertEqual(model_json['generatedBy'],
-                     tf.__version__)
-    self.assertTrue(glob.glob(os.path.join(output_dir, 'group*-*')))
-
-  def test_convert_saved_model_v2_with_hashtable(self):
-    self._create_saved_model_v2_with_hashtable()
-
-    input_dir = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-    output_dir = os.path.join(input_dir, 'js')
-    tf_saved_model_conversion_v2.convert_tf_saved_model(
-        input_dir,
-        output_dir
-    )
-
-    expected_signature = {
-      'inputs': {
-        'input': {
-          'name': 'input:0',
-          'dtype': 'DT_STRING',
-          'tensorShape': {'dim': [{'size': '-1'}]}
-        },
-        'unknown:0': {
-          'name': 'unknown:0',
-          'dtype': 'DT_RESOURCE',
-          'tensorShape': {},
-          'resourceId': None
-        }
-    },
-      'outputs': {
-        'output_0': {
-          'name': 'Identity:0',
-          'dtype': 'DT_INT32',
-          'tensorShape': {'dim': [{'size': '-1'}]}
-        }
-      }
-    }
-
-    expected_initializer_signature = {
-      'outputs': {
-        'Identity:0': {
-          'name': 'Identity:0',
-          'dtype': 'DT_RESOURCE',
-          'tensorShape': {},
-          'resourceId': None
-        }
-      }
-    }
-
-    tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR, 'js')
-    # Check model.json and weights manifest.
-    with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
-      model_json = json.load(f)
-
-    # Check resource ids match which indicates the initializer output is mapped
-    # to the inference input.
-    signature_resource_id = model_json['signature']['inputs']['unknown:0']['resourceId']
-    initializer_resource_id = model_json['initializerSignature']['outputs']['Identity:0']['resourceId']
-    self.assertTrue(signature_resource_id)
-    self.assertEqual(signature_resource_id, initializer_resource_id)
-
-    # Update expected signatures with resourceId since it is a runtime value.
-    expected_signature['inputs']['unknown:0']['resourceId'] = signature_resource_id
-    expected_initializer_signature['outputs']['Identity:0']['resourceId'] = signature_resource_id
-    self.assertEqual(model_json['signature'], expected_signature)
-    self.assertEqual(model_json['initializerSignature'], expected_initializer_signature)
-
-    self.assertTrue(model_json['modelTopology'])
-    self.assertIsNot(model_json['modelTopology']['versions'], None)
-    model_ops = [node['op'] for node in model_json['modelTopology']['node']]
-    self.assertIn('LookupTableFindV2', model_ops)
-
-    self.assertTrue(model_json['modelInitializer'])
-    initializer_ops = [node['op'] for node in model_json['modelInitializer']['node']]
-    self.assertIn('HashTableV2', initializer_ops)
-    self.assertIn('LookupTableImportV2', initializer_ops)
-
-    weights_manifest = model_json['weightsManifest'][0]
-    self.assertEqual(weights_manifest['paths'], ['group1-shard1of1.bin'])
-    self.assertEqual(weights_manifest['weights'][0],
-                     {'name': 'unknown_0', 'shape': [], 'dtype': 'int32'})
-    # Only check weights and dtype since name may vary between TF versions.
-    self.assertEqual(weights_manifest['weights'][1]['shape'], [2])
-    self.assertEqual(weights_manifest['weights'][1]['dtype'], 'string')
-    self.assertEqual(weights_manifest['weights'][2]['shape'], [2])
-    self.assertEqual(weights_manifest['weights'][2]['dtype'], 'int32')
-
-    # Check meta-data in the artifact JSON.
-    self.assertEqual(model_json['format'], 'graph-model')
-    self.assertEqual(
-        model_json['convertedBy'],
-        'TensorFlow.js Converter v%s' % version.version)
-    self.assertEqual(model_json['generatedBy'],
-                     tf.__version__)
-    self.assertTrue(glob.glob(os.path.join(output_dir, 'group*-*')))
-
-  def test_convert_saved_model_v1_with_metadata(self):
-    self._create_saved_model_v1()
-
-    input_dir = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-    output_dir = os.path.join(input_dir, 'js')
-
-    metadata_json = {'a': 1}
-    tf_saved_model_conversion_v2.convert_tf_saved_model(
-        input_dir,
-        output_dir,
-        metadata={'key': metadata_json}
-    )
-
-    tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR, 'js')
-    # Check model.json and weights manifest.
-    with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
-      model_json = json.load(f)
-    self.assertEqual(metadata_json, model_json['userDefinedMetadata']['key'])
-
-  def test_convert_saved_model(self):
-    self._create_saved_model()
-
-    tf_saved_model_conversion_v2.convert_tf_saved_model(
-        os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
-        os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-    )
-
-    tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-    # Check model.json and weights manifest.
-    with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
-      model_json = json.load(f)
-    self.assertTrue(model_json['modelTopology'])
-    self.assertIsNot(model_json['modelTopology']['versions'], None)
-    signature = model_json['signature']
-    self.assertIsNot(signature, None)
-    self.assertIsNot(signature['inputs'], None)
-    self.assertIsNot(signature['outputs'], None)
-    weights_manifest = model_json['weightsManifest']
-    self.assertCountEqual(weights_manifest[0]['paths'],
-                          ['group1-shard1of1.bin'])
-    self.assertIn('weights', weights_manifest[0])
-
-  def test_convert_saved_model_with_frozen_file(self):
-    self._create_saved_model()
-
-    tf_saved_model_conversion_v2.convert_tf_saved_model(
-        os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
-        os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
-        frozen_graph_dir=os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-    )
-
-    frozen_file_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR,
-                                    'model.json.frozen')
-    # Check model.json.frozen exist.
-    self.assertTrue(
-        glob.glob(frozen_file_path))
-
-  def test_convert_saved_model_with_metadata(self):
-    self._create_saved_model()
-
-    metadata_json = {'a': 1}
-
-    tf_saved_model_conversion_v2.convert_tf_saved_model(
-        os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
-        os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
-        metadata={'key': metadata_json}
-    )
-
-    tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-    # Check model.json and weights manifest.
-    with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
-      model_json = json.load(f)
-    self.assertEqual(metadata_json, model_json['userDefinedMetadata']['key'])
-
-  def test_convert_saved_model_with_fused_conv2d(self):
-    for use_bias in [True, False]:
-      self._create_saved_model_with_fusable_conv2d(use_bias)
-      tf_saved_model_conversion_v2.convert_tf_saved_model(
-          os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
-          os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-      )
-
-      tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-      # Check model.json and weights manifest.
-      with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
-        model_json = json.load(f)
-      self.assertTrue(model_json['modelTopology'])
-      self.assertIsNot(model_json['modelTopology']['versions'], None)
-      signature = model_json['signature']
-      self.assertIsNot(signature, None)
-      self.assertIsNot(signature['inputs'], None)
-      self.assertIsNot(signature['outputs'], None)
-
-      nodes = model_json['modelTopology']['node']
-
-      fused_op = None
-      for node in nodes:
-        self.assertNotIn('BatchNorm', node['op'])
-        self.assertNotIn('Relu', node['op'])
-        self.assertNotIn('BiasAdd', node['op'])
-        if node['op'] == '_FusedConv2D':
-          fused_op = node
-      self.assertIsNot(fused_op, None)
-      self.assertEqual(
-          base64.b64decode(fused_op['attr']['fused_ops']['list']['s'][0]),
-          b'BiasAdd')
-      self.assertEqual(
-          base64.b64decode(fused_op['attr']['fused_ops']['list']['s'][1]),
-          b'Relu')
-
-      # Check meta-data in the artifact JSON.
-      self.assertEqual(model_json['format'], 'graph-model')
-      self.assertEqual(
-          model_json['convertedBy'],
-          'TensorFlow.js Converter v%s' % version.version)
-      self.assertEqual(model_json['generatedBy'],
-                       tf.__version__)
-      self.assertTrue(
-          glob.glob(
-              os.path.join(self._tmp_dir, SAVED_MODEL_DIR, 'group*-*')))
-
-  def test_convert_saved_model_with_fused_matmul(self):
-    self._create_saved_model_with_fusable_matmul()
-    tf_saved_model_conversion_v2.convert_tf_saved_model(
-        os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
-        os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-    )
-
-    tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-    # Check model.json and weights manifest.
-    with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
-      model_json = json.load(f)
-    self.assertTrue(model_json['modelTopology'])
-    self.assertIsNot(model_json['modelTopology']['versions'], None)
-    signature = model_json['signature']
-    self.assertIsNot(signature, None)
-    self.assertIsNot(signature['inputs'], None)
-    self.assertIsNot(signature['outputs'], None)
-
-    nodes = model_json['modelTopology']['node']
-    fused_op = None
-    for node in nodes:
-      self.assertNotEqual(node['op'], 'MatMul')
-      self.assertNotIn('Relu', node['op'])
-      self.assertNotIn('BiasAdd', node['op'])
-      if node['op'] == graph_rewrite_util.FUSED_MATMUL:
-        fused_op = node
-    self.assertIsNot(fused_op, None)
-    self.assertIsNot(fused_op['attr']['transpose_a'], None)
-    self.assertIsNot(fused_op['attr']['transpose_b'], None)
-    self.assertEqual(
-        base64.b64decode(fused_op['attr']['fused_ops']['list']['s'][0]),
-        b'BiasAdd')
-    self.assertEqual(
-        base64.b64decode(fused_op['attr']['fused_ops']['list']['s'][1]),
-        b'Relu')
-
-    # Check meta-data in the artifact JSON.
-    self.assertEqual(model_json['format'], 'graph-model')
-    self.assertEqual(
-        model_json['convertedBy'],
-        'TensorFlow.js Converter v%s' % version.version)
-    self.assertEqual(model_json['generatedBy'],
-                     tf.__version__)
-    self.assertTrue(
-        glob.glob(
-            os.path.join(self._tmp_dir, SAVED_MODEL_DIR, 'group*-*')))
-
-  def test_convert_saved_model_with_fused_depthwise_conv2d(self):
-    self._create_saved_model_with_fusable_depthwise_conv2d()
-    tf_saved_model_conversion_v2.convert_tf_saved_model(
-        os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
-        os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-    )
-
-    tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-    # Check model.json and weights manifest.
-    with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
-      model_json = json.load(f)
-    self.assertTrue(model_json['modelTopology'])
-    self.assertIsNot(model_json['modelTopology']['versions'], None)
-    signature = model_json['signature']
-    self.assertIsNot(signature, None)
-    self.assertIsNot(signature['inputs'], None)
-    self.assertIsNot(signature['outputs'], None)
-
-    nodes = model_json['modelTopology']['node']
-
-    fused_op = None
-    for node in nodes:
-      self.assertNotIn('BatchNorm', node['op'])
-      self.assertNotIn('Relu', node['op'])
-      self.assertNotIn('BiasAdd', node['op'])
-      if node['op'] == graph_rewrite_util.FUSED_DEPTHWISE_CONV2D:
-        fused_op = node
-    self.assertIsNot(fused_op, None)
-    self.assertIsNot(fused_op['attr']['dilations'], None)
-    self.assertIsNot(fused_op['attr']['strides'], None)
-    self.assertEqual(
-        base64.b64decode(fused_op['attr']['fused_ops']['list']['s'][0]),
-        b'BiasAdd')
-    self.assertEqual(
-        base64.b64decode(fused_op['attr']['fused_ops']['list']['s'][1]),
-        b'Relu')
-
-    # Check meta-data in the artifact JSON.
-    self.assertEqual(model_json['format'], 'graph-model')
-    self.assertEqual(
-        model_json['convertedBy'],
-        'TensorFlow.js Converter v%s' % version.version)
-    self.assertEqual(model_json['generatedBy'],
-                     tf.__version__)
-    self.assertTrue(
-        glob.glob(
-            os.path.join(self._tmp_dir, SAVED_MODEL_DIR, 'group*-*')))
-
-  def test_convert_saved_model_with_prelu(self):
-    self._create_saved_model_with_prelu()
-    tf_saved_model_conversion_v2.convert_tf_saved_model(
-        os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
-        os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-    )
-
-    tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-    # Check model.json and weights manifest.
-    with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
-      model_json = json.load(f)
-    self.assertTrue(model_json['modelTopology'])
-    self.assertIsNot(model_json['modelTopology']['versions'], None)
-    signature = model_json['signature']
-    self.assertIsNot(signature, None)
-    self.assertIsNot(signature['inputs'], None)
-    self.assertIsNot(signature['outputs'], None)
-
-    nodes = model_json['modelTopology']['node']
-
-    prelu_op = None
-    fused_op = None
-    depthwise_fused_op = None
-    for node in nodes:
-      if node['op'] == 'Prelu':
-        prelu_op = node
-      if node['op'] == '_FusedConv2D':
-        fused_op = node
-      if node['op'] == graph_rewrite_util.FUSED_DEPTHWISE_CONV2D:
-        depthwise_fused_op = node
-    self.assertTrue(prelu_op is None)
-    self.assertIsNot(fused_op, None)
-    self.assertIsNot(depthwise_fused_op, None)
-
-    fused_ops = list(map(base64.b64decode,
-                         fused_op['attr']['fused_ops']['list']['s']))
-    self.assertEqual(fused_ops, [b'BiasAdd', b'Prelu'])
-    self.assertEqual(fused_op['attr']['num_args']['i'], '2')
-    depthwise_fused_ops = list(
-        map(base64.b64decode,
-            depthwise_fused_op['attr']['fused_ops']['list']['s']))
-    self.assertEqual(depthwise_fused_ops, [b'BiasAdd', b'Prelu'])
-    self.assertEqual(depthwise_fused_op['attr']['num_args']['i'], '2')
-    # Check meta-data in the artifact JSON.
-    self.assertEqual(model_json['format'], 'graph-model')
-    self.assertEqual(
-        model_json['convertedBy'],
-        'TensorFlow.js Converter v%s' % version.version)
-    self.assertEqual(model_json['generatedBy'],
-                     tf.__version__)
-    self.assertTrue(
-        glob.glob(
-            os.path.join(self._tmp_dir, SAVED_MODEL_DIR, 'group*-*')))
-
-  def test_convert_saved_model_with_unfusable_prelu(self):
-    self._create_saved_model_with_unfusable_prelu()
-    tf_saved_model_conversion_v2.convert_tf_saved_model(
-        os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
-        os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-    )
-
-    tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-    # Check model.json and weights manifest.
-    with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
-      model_json = json.load(f)
-    self.assertTrue(model_json['modelTopology'])
-    self.assertIsNot(model_json['modelTopology']['versions'], None)
-    signature = model_json['signature']
-    self.assertIsNot(signature, None)
-    self.assertIsNot(signature['inputs'], None)
-    self.assertIsNot(signature['outputs'], None)
-
-    nodes = model_json['modelTopology']['node']
-
-    prelu_op = None
-    for node in nodes:
-      if node['op'] == 'Prelu':
-        prelu_op = node
-        break
-
-    self.assertTrue(prelu_op)
-
-    # Check meta-data in the artifact JSON.
-    self.assertEqual(model_json['format'], 'graph-model')
-    self.assertEqual(
-        model_json['convertedBy'],
-        'TensorFlow.js Converter v%s' % version.version)
-    self.assertEqual(model_json['generatedBy'],
-                     tf.__version__)
-    self.assertTrue(
-        glob.glob(
-            os.path.join(self._tmp_dir, SAVED_MODEL_DIR, 'group*-*')))
-
-  def test_convert_saved_model_with_control_flow(self):
-    self._create_saved_model_with_control_flow()
-
-    tf_saved_model_conversion_v2.convert_tf_saved_model(
-        os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
-        os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-    )
-
-    tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-    # Check model.json and weights manifest.
-    with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
-      model_json = json.load(f)
-    self.assertTrue(model_json['modelTopology'])
-    self.assertIsNot(model_json['modelTopology']['versions'], None)
-    signature = model_json['signature']
-    self.assertIsNot(signature, None)
-    self.assertIsNot(signature['inputs'], None)
-    self.assertIsNot(signature['outputs'], None)
-
-    weights_manifest = model_json['weightsManifest']
-    self.assertCountEqual(weights_manifest[0]['paths'],
-                          ['group1-shard1of1.bin'])
-    self.assertIn('weights', weights_manifest[0])
-
-    # Check meta-data in the artifact JSON.
-    self.assertEqual(model_json['format'], 'graph-model')
-    self.assertEqual(
-        model_json['convertedBy'],
-        'TensorFlow.js Converter v%s' % version.version)
-    self.assertEqual(model_json['generatedBy'],
-                     tf.__version__)
-    self.assertTrue(
-        glob.glob(
-            os.path.join(self._tmp_dir, SAVED_MODEL_DIR, 'group*-*')))
-
-  def test_convert_saved_model_with_control_flow_v2(self):
-    self._create_saved_model_with_control_flow()
-
-    tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-    tf_saved_model_conversion_v2.convert_tf_saved_model(
-        tfjs_path, tfjs_path, control_flow_v2=True
-    )
-
-    # Check model.json and weights manifest.
-    with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
-      model_json = json.load(f)
-    self.assertTrue(model_json['modelTopology'])
-    self.assertIsNot(model_json['modelTopology']['versions'], None)
-    signature = model_json['signature']
-    self.assertIsNot(signature, None)
-    self.assertIsNot(signature['inputs'], None)
-    self.assertIsNot(signature['outputs'], None)
-
-    weights_manifest = model_json['weightsManifest']
-    self.assertCountEqual(weights_manifest[0]['paths'],
-                          ['group1-shard1of1.bin'])
-    self.assertIn('weights', weights_manifest[0])
-
-    add_y_weight = None
-    for weight in weights_manifest[0]['weights']:
-      if 'add/y' in weight['name']:
-        add_y_weight = weight
-
-    self.assertIsNot(add_y_weight, None)
-    self.assertFalse(add_y_weight['name'].startswith('add/y'))
-
-    nodes = model_json['modelTopology']['node']
-
-    while_op = None
-    for node in nodes:
-      self.assertNotIn('Merge', node['op'])
-      self.assertNotIn('Switch', node['op'])
-      if node['op'] == 'StatelessWhile':
-        while_op = node
-    self.assertIsNot(while_op, None)
-    # Check meta-data in the artifact JSON.
-    self.assertEqual(model_json['format'], 'graph-model')
-    self.assertEqual(
-        model_json['convertedBy'],
-        'TensorFlow.js Converter v%s' % version.version)
-    self.assertEqual(model_json['generatedBy'],
-                     tf.__version__)
-    self.assertTrue(
-        glob.glob(
-            os.path.join(self._tmp_dir, SAVED_MODEL_DIR, 'group*-*')))
-
-  def test_convert_saved_model_with_tfdf(self):
-    self._create_saved_model_with_tfdf()
-
-    tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-    tf_saved_model_conversion_v2.convert_tf_saved_model(
-        tfjs_path, tfjs_path, skip_op_check=True
-    )
-
-    # Check model.json and weights manifest.
-    with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
-      model_json = json.load(f)
-
-    # Check TFDF ops are present.
-    model_ops = [node['op'] for node in model_json['modelTopology']['node']]
-    self.assertIn('SimpleMLInferenceOpWithHandle', model_ops)
-
-    initializer_ops = [node['op'] for node in model_json['modelInitializer']['node']]
-    self.assertIn('SimpleMLCreateModelResource', initializer_ops)
-    self.assertIn('SimpleMLLoadModelFromPathWithHandle', initializer_ops)
-
-    # Check assets containing TFDF files were copied over.
-    self.assertTrue(
-        os.path.exists(
-            os.path.join(tfjs_path, ASSETS_DIRECTORY_NAME + '.zip')))
-
-  def test_convert_saved_model_sharded(self):
-    self._create_saved_model()
-    model_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-    tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-
-    # Do initial conversion without sharding.
-    tf_saved_model_conversion_v2.convert_tf_saved_model(model_path, tfjs_path)
-    weight_files = glob.glob(os.path.join(tfjs_path, 'group*.bin'))
-
-    # Get size of weights in bytes after graph optimizations.
-    optimized_total_weight = sum([os.path.getsize(f) for f in weight_files])
-
-    # Due to the shard size, there ought to be 2 shards after conversion.
-    weight_shard_size_bytes = int(optimized_total_weight * 0.8)
-
-    tfjs_path = os.path.join(self._tmp_dir, 'sharded_model')
-    # Convert Saved Model again with shard argument set.
-    tf_saved_model_conversion_v2.convert_tf_saved_model(
-        model_path, tfjs_path,
-        weight_shard_size_bytes=weight_shard_size_bytes)
-
-    weight_files = sorted(glob.glob(os.path.join(tfjs_path, 'group*.bin')))
-    self.assertEqual(len(weight_files), 2)
-    weight_file_sizes = [os.path.getsize(f) for f in weight_files]
-
-    self.assertEqual(sum(weight_file_sizes), optimized_total_weight)
-    self.assertLess(weight_file_sizes[1], weight_file_sizes[0])
-
-  def test_optimizer_add_unsupported_op(self):
-    self._create_unsupported_saved_model()
-    with self.assertRaisesRegexp(  # pylint: disable=deprecated-method
-        ValueError, r'^Unsupported Ops'):
-      tf_saved_model_conversion_v2.convert_tf_saved_model(
-          os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
-          os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-      )
-
-  def test_convert_saved_model_skip_op_check(self):
-    self._create_unsupported_saved_model()
-
-    tf_saved_model_conversion_v2.convert_tf_saved_model(
-        os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
-        os.path.join(self._tmp_dir, SAVED_MODEL_DIR), skip_op_check=True
-    )
-
-    tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-    # Check model.json and weights manifest.
-    with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
-      model_json = json.load(f)
-    self.assertTrue(model_json['modelTopology'])
-    self.assertIsNot(model_json['modelTopology']['versions'], None)
-    signature = model_json['signature']
-    self.assertIsNot(signature, None)
-    self.assertIsNot(signature['inputs'], None)
-    self.assertIsNot(signature['outputs'], None)
-
-    weights_manifest = model_json['weightsManifest']
-    self.assertCountEqual(weights_manifest[0]['paths'],
-                          ['group1-shard1of1.bin'])
-    self.assertIn('weights', weights_manifest[0])
-    self.assertTrue(
-        glob.glob(
-            os.path.join(self._tmp_dir, SAVED_MODEL_DIR, 'group*-*')))
-
-  # (TODO: piyu) disable this test, need to change
-  # convert_variables_to_constants_v2 to set function_optimization=aggressive.
-  @unittest.skip('not supported')
-  def test_convert_saved_model_strip_debug_ops(self):
-    self._create_saved_model_with_debug_ops()
-
-    tf_saved_model_conversion_v2.convert_tf_saved_model(
-        os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
-        os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
-        strip_debug_ops=True)
-
-    tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-    # Check model.json and weights manifest.
-    with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
-      model_json = json.load(f)
-    self.assertTrue(model_json['modelTopology'])
-    self.assertIsNot(model_json['modelTopology']['versions'], None)
-    signature = model_json['signature']
-    self.assertIsNot(signature, None)
-    self.assertIsNot(signature['inputs'], None)
-    self.assertIsNot(signature['outputs'], None)
-
-    weights_manifest = model_json['weightsManifest']
-    self.assertCountEqual(weights_manifest[0]['paths'],
-                          ['group1-shard1of1.bin'])
-    self.assertIn('weights', weights_manifest[0])
-    self.assertTrue(
-        glob.glob(
-            os.path.join(self._tmp_dir, SAVED_MODEL_DIR, 'group*-*')))
-
-  def test_convert_saved_model_structured_outputs_true(self):
-    self._create_saved_model_with_structured_outputs()
-
-    tf_saved_model_conversion_v2.convert_tf_saved_model(
-        os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
-        os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
-        use_structured_outputs_names=True)
-
-    tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-    # Check model.json and weights manifest.
-    with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
-      model_json = json.load(f)
-    self.assertTrue(model_json['modelTopology'])
-    self.assertIsNot(model_json['modelTopology']['versions'], None)
-    signature = model_json['signature']
-    self.assertIsNot(signature, None)
-    self.assertIsNot(signature['inputs'], None)
-    self.assertIsNot(signature['outputs'], None)
-
-    self.assertEqual(["a", "b", "c"],
-                     model_json['userDefinedMetadata']['structuredOutputKeys'])
-
-  def test_convert_saved_model_structured_outputs_false(self):
-    self._create_saved_model_with_structured_outputs()
-
-    tf_saved_model_conversion_v2.convert_tf_saved_model(
-        os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
-        os.path.join(self._tmp_dir, SAVED_MODEL_DIR))
-
-    tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-    # Check model.json and weights manifest.
-    with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
-      model_json = json.load(f)
-    self.assertIs(model_json.get('userDefinedMetadata'), None)
-
-  def test_convert_hub_module_v1(self):
-    self._create_hub_module()
-    module_path = os.path.join(self._tmp_dir, HUB_MODULE_DIR)
-    tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-
-    tf_saved_model_conversion_v2.convert_tf_hub_module(module_path, tfjs_path)
-
-    # Check model.json and weights manifest.
-    with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
-      model_json = json.load(f)
-    self.assertTrue(model_json['modelTopology'])
-    self.assertIsNot(model_json['modelTopology']['versions'], None)
-    signature = model_json['signature']
-    self.assertIsNot(signature, None)
-    self.assertIsNot(signature['inputs'], None)
-    self.assertIsNot(signature['outputs'], None)
-
-    weights_manifest = model_json['weightsManifest']
-    self.assertCountEqual(weights_manifest[0]['paths'],
-                          ['group1-shard1of1.bin'])
-    self.assertIn('weights', weights_manifest[0])
-
-    self.assertTrue(
-        glob.glob(
-            os.path.join(self._tmp_dir, SAVED_MODEL_DIR, 'group*-*')))
-
-  def test_convert_hub_module_v1_sharded(self):
-    self._create_hub_module()
-    module_path = os.path.join(self._tmp_dir, HUB_MODULE_DIR)
-    tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-
-    # Do initial conversion without sharding.
-    tf_saved_model_conversion_v2.convert_tf_hub_module(module_path, tfjs_path)
-    weight_files = glob.glob(os.path.join(tfjs_path, 'group*.bin'))
-
-    # Get size of weights in bytes after graph optimizations.
-    optimized_total_weight = sum([os.path.getsize(f) for f in weight_files])
-
-    # Due to the shard size, there ought to be 3 shards after conversion.
-    weight_shard_size_bytes = int(optimized_total_weight * 0.4)
-
-    tfjs_path = os.path.join(self._tmp_dir, 'sharded_model')
-    # Convert Hub model again with shard argument set.
-    tf_saved_model_conversion_v2.convert_tf_hub_module(
-        module_path, tfjs_path,
-        weight_shard_size_bytes=weight_shard_size_bytes)
-
-    weight_files = sorted(glob.glob(os.path.join(tfjs_path, 'group*.bin')))
-    self.assertEqual(len(weight_files), 3)
-    weight_file_sizes = [os.path.getsize(f) for f in weight_files]
-
-    self.assertEqual(sum(weight_file_sizes), optimized_total_weight)
-    self.assertEqual(weight_file_sizes[0], weight_file_sizes[1])
-    self.assertLess(weight_file_sizes[2], weight_file_sizes[0])
-
-  def test_convert_hub_module_v1_with_metadata(self):
-    self._create_hub_module()
-    module_path = os.path.join(self._tmp_dir, HUB_MODULE_DIR)
-    tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-
-    metadata_json = {'a': 1}
-    tf_saved_model_conversion_v2.convert_tf_hub_module(
-        module_path, tfjs_path, metadata={'key': metadata_json})
-
-    # Check model.json and weights manifest.
-    with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
-      model_json = json.load(f)
-    self.assertEqual(metadata_json, model_json['userDefinedMetadata']['key'])
-
-  def test_convert_hub_module_v2(self):
-    self._create_saved_model()
-    module_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-    tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-
-    tf_saved_model_conversion_v2.convert_tf_hub_module(
-        module_path, tfjs_path, "serving_default", "serve")
-
-    # Check model.json and weights manifest.
-    with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
-      model_json = json.load(f)
-    self.assertTrue(model_json['modelTopology'])
-    self.assertIsNot(model_json['modelTopology']['versions'], None)
-    signature = model_json['signature']
-    self.assertIsNot(signature, None)
-    self.assertIsNot(signature['inputs'], None)
-    self.assertIsNot(signature['outputs'], None)
-
-    weights_manifest = model_json['weightsManifest']
-    self.assertCountEqual(weights_manifest[0]['paths'],
-                          ['group1-shard1of1.bin'])
-    self.assertIn('weights', weights_manifest[0])
-
-    self.assertTrue(
-        glob.glob(
-            os.path.join(self._tmp_dir, SAVED_MODEL_DIR, 'group*-*')))
-
-  def test_convert_hub_module_v2_with_metadata(self):
-    self._create_saved_model()
-    module_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-    tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-
-    metadata_json = {'a': 1}
-    tf_saved_model_conversion_v2.convert_tf_hub_module(
-        module_path, tfjs_path, "serving_default", "serve",
-        metadata={'key': metadata_json})
-
-    # Check model.json and weights manifest.
-    with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
-      model_json = json.load(f)
-    self.assertEqual(metadata_json, model_json['userDefinedMetadata']['key'])
-
-  def test_convert_frozen_model(self):
-    self.create_frozen_model()
-    print(glob.glob(
-        os.path.join(self._tmp_dir, FROZEN_MODEL_DIR, '*')))
-
-    tf_saved_model_conversion_v2.convert_tf_frozen_model(
-        os.path.join(self._tmp_dir, FROZEN_MODEL_DIR, 'model.frozen'),
-        'Softmax',
-        os.path.join(self._tmp_dir, FROZEN_MODEL_DIR))
-
-    tfjs_path = os.path.join(self._tmp_dir, FROZEN_MODEL_DIR)
-    # Check model.json and weights manifest.
-    with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
-      model_json = json.load(f)
-    self.assertTrue(model_json['modelTopology'])
-    self.assertIsNot(model_json['modelTopology']['versions'], None)
-    signature = model_json['signature']
-    self.assertIsNot(signature, None)
-    # frozen model signature has no input nodes.
-    self.assertIsNot(signature['outputs'], None)
-
-    weights_manifest = model_json['weightsManifest']
-    self.assertCountEqual(weights_manifest[0]['paths'],
-                          ['group1-shard1of1.bin'])
-    self.assertIn('weights', weights_manifest[0])
-    self.assertTrue(
-        glob.glob(
-            os.path.join(self._tmp_dir, FROZEN_MODEL_DIR, 'group*-*')))
-
-  def test_convert_frozen_model_with_metadata(self):
-    self.create_frozen_model()
-    print(glob.glob(
-        os.path.join(self._tmp_dir, FROZEN_MODEL_DIR, '*')))
-
-    metadata_json = {'a': 1}
-    tf_saved_model_conversion_v2.convert_tf_frozen_model(
-        os.path.join(self._tmp_dir, FROZEN_MODEL_DIR, 'model.frozen'),
-        'Softmax',
-        os.path.join(self._tmp_dir, FROZEN_MODEL_DIR),
-        metadata={'key': metadata_json})
-
-    tfjs_path = os.path.join(self._tmp_dir, FROZEN_MODEL_DIR)
-    # Check model.json and weights manifest.
-    with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
-      model_json = json.load(f)
-    self.assertEqual(metadata_json, model_json['userDefinedMetadata']['key'])
-
-  def test_convert_keras_model_to_saved_model(self):
-    keras_model = tf.keras.Sequential(
-        [tf.keras.layers.Dense(1, input_shape=[2])])
-
-    tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
-    tf_saved_model_conversion_v2.convert_keras_model_to_graph_model(
-        keras_model, tfjs_path)
-
-    # Check model.json and weights manifest.
-    with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
-      model_json = json.load(f)
-    self.assertTrue(model_json['modelTopology'])
-    self.assertIsNot(model_json['modelTopology']['versions'], None)
-    signature = model_json['signature']
-    self.assertIsNot(signature, None)
-    self.assertIsNot(signature['inputs'], None)
-    self.assertIsNot(signature['outputs'], None)
-
-    weights_manifest = model_json['weightsManifest']
-    self.assertCountEqual(weights_manifest[0]['paths'],
-                          ['group1-shard1of1.bin'])
-    self.assertIn('weights', weights_manifest[0])
-    self.assertTrue(
-        glob.glob(
-            os.path.join(self._tmp_dir, SAVED_MODEL_DIR, 'group*-*')))
+  # def test_convert_saved_model_v1(self):
+  #   self._create_saved_model_v1()
+
+  #   input_dir = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+  #   output_dir = os.path.join(input_dir, 'js')
+  #   tf_saved_model_conversion_v2.convert_tf_saved_model(
+  #       input_dir,
+  #       output_dir
+  #   )
+
+  #   tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR, 'js')
+  #   # Check model.json and weights manifest.
+  #   with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
+  #     model_json = json.load(f)
+  #   self.assertTrue(model_json['modelTopology'])
+  #   self.assertIsNot(model_json['modelTopology']['versions'], None)
+  #   signature = model_json['signature']
+  #   self.assertIsNot(signature, None)
+  #   self.assertIsNot(signature['inputs'], None)
+  #   self.assertIsNot(signature['outputs'], None)
+  #   weights_manifest = model_json['weightsManifest']
+  #   self.assertCountEqual(weights_manifest[0]['paths'],
+  #                         ['group1-shard1of1.bin'])
+  #   self.assertIn('weights', weights_manifest[0])
+
+  #   # Check meta-data in the artifact JSON.
+  #   self.assertEqual(model_json['format'], 'graph-model')
+  #   self.assertEqual(
+  #       model_json['convertedBy'],
+  #       'TensorFlow.js Converter v%s' % version.version)
+  #   self.assertEqual(model_json['generatedBy'],
+  #                    tf.__version__)
+  #   self.assertTrue(glob.glob(os.path.join(output_dir, 'group*-*')))
+
+  # def test_convert_saved_model_v1_with_hashtable(self):
+  #   self._create_saved_model_v1_with_hashtable()
+
+  #   input_dir = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+  #   output_dir = os.path.join(input_dir, 'js')
+  #   tf_saved_model_conversion_v2.convert_tf_saved_model(
+  #       input_dir,
+  #       output_dir
+  #   )
+
+  #   expected_weights_manifest = [{
+  #       'paths': ['group1-shard1of1.bin'],
+  #       'weights': [
+  #           {'dtype': 'float32', 'name': 'w', 'shape': [2, 2]},
+  #           {'dtype': 'string', 'name': 'Const', 'shape': [1]},
+  #           {'dtype': 'int32', 'name': 'Const_1', 'shape': [1]}
+  #       ]}]
+
+  #   tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR, 'js')
+  #   # Check model.json and weights manifest.
+  #   with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
+  #     model_json = json.load(f)
+  #   self.assertTrue(model_json['modelTopology'])
+  #   self.assertIsNot(model_json['modelTopology']['versions'], None)
+  #   signature = model_json['signature']
+  #   self.assertIsNot(signature, None)
+  #   self.assertIsNot(signature['inputs'], None)
+  #   self.assertIsNot(signature['outputs'], None)
+  #   self.assertTrue(model_json['modelInitializer'])
+
+  #   for node in model_json['modelTopology']['node']:
+  #     if node['name'] == 'ToFloat' and node['op'] == 'Placeholder':
+  #       self.assertEqual(node['attr']['shape'],
+  #                        {'shape': {'dim': [
+  #                            {'size': '-1'}, {'size': '2'}, {'size': '2'}]}})
+
+  #   weights_manifest = model_json['weightsManifest']
+  #   self.assertEqual(weights_manifest, expected_weights_manifest)
+  #   # Check meta-data in the artifact JSON.
+  #   self.assertEqual(model_json['format'], 'graph-model')
+  #   self.assertEqual(
+  #       model_json['convertedBy'],
+  #       'TensorFlow.js Converter v%s' % version.version)
+  #   self.assertEqual(model_json['generatedBy'],
+  #                    tf.__version__)
+  #   self.assertTrue(glob.glob(os.path.join(output_dir, 'group*-*')))
+
+  # def test_convert_saved_model_v2_with_hashtable(self):
+  #   self._create_saved_model_v2_with_hashtable()
+
+  #   input_dir = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+  #   output_dir = os.path.join(input_dir, 'js')
+  #   tf_saved_model_conversion_v2.convert_tf_saved_model(
+  #       input_dir,
+  #       output_dir
+  #   )
+
+  #   expected_signature = {
+  #     'inputs': {
+  #       'input': {
+  #         'name': 'input:0',
+  #         'dtype': 'DT_STRING',
+  #         'tensorShape': {'dim': [{'size': '-1'}]}
+  #       },
+  #       'unknown:0': {
+  #         'name': 'unknown:0',
+  #         'dtype': 'DT_RESOURCE',
+  #         'tensorShape': {},
+  #         'resourceId': None
+  #       }
+  #   },
+  #     'outputs': {
+  #       'output_0': {
+  #         'name': 'Identity:0',
+  #         'dtype': 'DT_INT32',
+  #         'tensorShape': {'dim': [{'size': '-1'}]}
+  #       }
+  #     }
+  #   }
+
+  #   expected_initializer_signature = {
+  #     'outputs': {
+  #       'Identity:0': {
+  #         'name': 'Identity:0',
+  #         'dtype': 'DT_RESOURCE',
+  #         'tensorShape': {},
+  #         'resourceId': None
+  #       }
+  #     }
+  #   }
+
+  #   tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR, 'js')
+  #   # Check model.json and weights manifest.
+  #   with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
+  #     model_json = json.load(f)
+
+  #   # Check resource ids match which indicates the initializer output is mapped
+  #   # to the inference input.
+  #   signature_resource_id = model_json['signature']['inputs']['unknown:0']['resourceId']
+  #   initializer_resource_id = model_json['initializerSignature']['outputs']['Identity:0']['resourceId']
+  #   self.assertTrue(signature_resource_id)
+  #   self.assertEqual(signature_resource_id, initializer_resource_id)
+
+  #   # Update expected signatures with resourceId since it is a runtime value.
+  #   expected_signature['inputs']['unknown:0']['resourceId'] = signature_resource_id
+  #   expected_initializer_signature['outputs']['Identity:0']['resourceId'] = signature_resource_id
+  #   self.assertEqual(model_json['signature'], expected_signature)
+  #   self.assertEqual(model_json['initializerSignature'], expected_initializer_signature)
+
+  #   self.assertTrue(model_json['modelTopology'])
+  #   self.assertIsNot(model_json['modelTopology']['versions'], None)
+  #   model_ops = [node['op'] for node in model_json['modelTopology']['node']]
+  #   self.assertIn('LookupTableFindV2', model_ops)
+
+  #   self.assertTrue(model_json['modelInitializer'])
+  #   initializer_ops = [node['op'] for node in model_json['modelInitializer']['node']]
+  #   self.assertIn('HashTableV2', initializer_ops)
+  #   self.assertIn('LookupTableImportV2', initializer_ops)
+
+  #   weights_manifest = model_json['weightsManifest'][0]
+  #   self.assertEqual(weights_manifest['paths'], ['group1-shard1of1.bin'])
+  #   self.assertEqual(weights_manifest['weights'][0],
+  #                    {'name': 'unknown_0', 'shape': [], 'dtype': 'int32'})
+  #   # Only check weights and dtype since name may vary between TF versions.
+  #   self.assertEqual(weights_manifest['weights'][1]['shape'], [2])
+  #   self.assertEqual(weights_manifest['weights'][1]['dtype'], 'string')
+  #   self.assertEqual(weights_manifest['weights'][2]['shape'], [2])
+  #   self.assertEqual(weights_manifest['weights'][2]['dtype'], 'int32')
+
+  #   # Check meta-data in the artifact JSON.
+  #   self.assertEqual(model_json['format'], 'graph-model')
+  #   self.assertEqual(
+  #       model_json['convertedBy'],
+  #       'TensorFlow.js Converter v%s' % version.version)
+  #   self.assertEqual(model_json['generatedBy'],
+  #                    tf.__version__)
+  #   self.assertTrue(glob.glob(os.path.join(output_dir, 'group*-*')))
+
+  # def test_convert_saved_model_v1_with_metadata(self):
+  #   self._create_saved_model_v1()
+
+  #   input_dir = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+  #   output_dir = os.path.join(input_dir, 'js')
+
+  #   metadata_json = {'a': 1}
+  #   tf_saved_model_conversion_v2.convert_tf_saved_model(
+  #       input_dir,
+  #       output_dir,
+  #       metadata={'key': metadata_json}
+  #   )
+
+  #   tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR, 'js')
+  #   # Check model.json and weights manifest.
+  #   with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
+  #     model_json = json.load(f)
+  #   self.assertEqual(metadata_json, model_json['userDefinedMetadata']['key'])
+
+  # def test_convert_saved_model(self):
+  #   self._create_saved_model()
+
+  #   tf_saved_model_conversion_v2.convert_tf_saved_model(
+  #       os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
+  #       os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+  #   )
+
+  #   tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+  #   # Check model.json and weights manifest.
+  #   with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
+  #     model_json = json.load(f)
+  #   self.assertTrue(model_json['modelTopology'])
+  #   self.assertIsNot(model_json['modelTopology']['versions'], None)
+  #   signature = model_json['signature']
+  #   self.assertIsNot(signature, None)
+  #   self.assertIsNot(signature['inputs'], None)
+  #   self.assertIsNot(signature['outputs'], None)
+  #   weights_manifest = model_json['weightsManifest']
+  #   self.assertCountEqual(weights_manifest[0]['paths'],
+  #                         ['group1-shard1of1.bin'])
+  #   self.assertIn('weights', weights_manifest[0])
+
+  # def test_convert_saved_model_with_frozen_file(self):
+  #   self._create_saved_model()
+
+  #   tf_saved_model_conversion_v2.convert_tf_saved_model(
+  #       os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
+  #       os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
+  #       frozen_graph_dir=os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+  #   )
+
+  #   frozen_file_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR,
+  #                                   'model.json.frozen')
+  #   # Check model.json.frozen exist.
+  #   self.assertTrue(
+  #       glob.glob(frozen_file_path))
+
+  # def test_convert_saved_model_with_metadata(self):
+  #   self._create_saved_model()
+
+  #   metadata_json = {'a': 1}
+
+  #   tf_saved_model_conversion_v2.convert_tf_saved_model(
+  #       os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
+  #       os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
+  #       metadata={'key': metadata_json}
+  #   )
+
+  #   tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+  #   # Check model.json and weights manifest.
+  #   with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
+  #     model_json = json.load(f)
+  #   self.assertEqual(metadata_json, model_json['userDefinedMetadata']['key'])
+
+  # def test_convert_saved_model_with_fused_conv2d(self):
+  #   for use_bias in [True, False]:
+  #     self._create_saved_model_with_fusable_conv2d(use_bias)
+  #     tf_saved_model_conversion_v2.convert_tf_saved_model(
+  #         os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
+  #         os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+  #     )
+
+  #     tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+  #     # Check model.json and weights manifest.
+  #     with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
+  #       model_json = json.load(f)
+  #     self.assertTrue(model_json['modelTopology'])
+  #     self.assertIsNot(model_json['modelTopology']['versions'], None)
+  #     signature = model_json['signature']
+  #     self.assertIsNot(signature, None)
+  #     self.assertIsNot(signature['inputs'], None)
+  #     self.assertIsNot(signature['outputs'], None)
+
+  #     nodes = model_json['modelTopology']['node']
+
+  #     fused_op = None
+  #     for node in nodes:
+  #       self.assertNotIn('BatchNorm', node['op'])
+  #       self.assertNotIn('Relu', node['op'])
+  #       self.assertNotIn('BiasAdd', node['op'])
+  #       if node['op'] == '_FusedConv2D':
+  #         fused_op = node
+  #     self.assertIsNot(fused_op, None)
+  #     self.assertEqual(
+  #         base64.b64decode(fused_op['attr']['fused_ops']['list']['s'][0]),
+  #         b'BiasAdd')
+  #     self.assertEqual(
+  #         base64.b64decode(fused_op['attr']['fused_ops']['list']['s'][1]),
+  #         b'Relu')
+
+  #     # Check meta-data in the artifact JSON.
+  #     self.assertEqual(model_json['format'], 'graph-model')
+  #     self.assertEqual(
+  #         model_json['convertedBy'],
+  #         'TensorFlow.js Converter v%s' % version.version)
+  #     self.assertEqual(model_json['generatedBy'],
+  #                      tf.__version__)
+  #     self.assertTrue(
+  #         glob.glob(
+  #             os.path.join(self._tmp_dir, SAVED_MODEL_DIR, 'group*-*')))
+
+  # def test_convert_saved_model_with_fused_matmul(self):
+  #   self._create_saved_model_with_fusable_matmul()
+  #   tf_saved_model_conversion_v2.convert_tf_saved_model(
+  #       os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
+  #       os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+  #   )
+
+  #   tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+  #   # Check model.json and weights manifest.
+  #   with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
+  #     model_json = json.load(f)
+  #   self.assertTrue(model_json['modelTopology'])
+  #   self.assertIsNot(model_json['modelTopology']['versions'], None)
+  #   signature = model_json['signature']
+  #   self.assertIsNot(signature, None)
+  #   self.assertIsNot(signature['inputs'], None)
+  #   self.assertIsNot(signature['outputs'], None)
+
+  #   nodes = model_json['modelTopology']['node']
+  #   fused_op = None
+  #   for node in nodes:
+  #     self.assertNotEqual(node['op'], 'MatMul')
+  #     self.assertNotIn('Relu', node['op'])
+  #     self.assertNotIn('BiasAdd', node['op'])
+  #     if node['op'] == graph_rewrite_util.FUSED_MATMUL:
+  #       fused_op = node
+  #   self.assertIsNot(fused_op, None)
+  #   self.assertIsNot(fused_op['attr']['transpose_a'], None)
+  #   self.assertIsNot(fused_op['attr']['transpose_b'], None)
+  #   self.assertEqual(
+  #       base64.b64decode(fused_op['attr']['fused_ops']['list']['s'][0]),
+  #       b'BiasAdd')
+  #   self.assertEqual(
+  #       base64.b64decode(fused_op['attr']['fused_ops']['list']['s'][1]),
+  #       b'Relu')
+
+  #   # Check meta-data in the artifact JSON.
+  #   self.assertEqual(model_json['format'], 'graph-model')
+  #   self.assertEqual(
+  #       model_json['convertedBy'],
+  #       'TensorFlow.js Converter v%s' % version.version)
+  #   self.assertEqual(model_json['generatedBy'],
+  #                    tf.__version__)
+  #   self.assertTrue(
+  #       glob.glob(
+  #           os.path.join(self._tmp_dir, SAVED_MODEL_DIR, 'group*-*')))
+
+  # def test_convert_saved_model_with_fused_depthwise_conv2d(self):
+  #   self._create_saved_model_with_fusable_depthwise_conv2d()
+  #   tf_saved_model_conversion_v2.convert_tf_saved_model(
+  #       os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
+  #       os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+  #   )
+
+  #   tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+  #   # Check model.json and weights manifest.
+  #   with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
+  #     model_json = json.load(f)
+  #   self.assertTrue(model_json['modelTopology'])
+  #   self.assertIsNot(model_json['modelTopology']['versions'], None)
+  #   signature = model_json['signature']
+  #   self.assertIsNot(signature, None)
+  #   self.assertIsNot(signature['inputs'], None)
+  #   self.assertIsNot(signature['outputs'], None)
+
+  #   nodes = model_json['modelTopology']['node']
+
+  #   fused_op = None
+  #   for node in nodes:
+  #     self.assertNotIn('BatchNorm', node['op'])
+  #     self.assertNotIn('Relu', node['op'])
+  #     self.assertNotIn('BiasAdd', node['op'])
+  #     if node['op'] == graph_rewrite_util.FUSED_DEPTHWISE_CONV2D:
+  #       fused_op = node
+  #   self.assertIsNot(fused_op, None)
+  #   self.assertIsNot(fused_op['attr']['dilations'], None)
+  #   self.assertIsNot(fused_op['attr']['strides'], None)
+  #   self.assertEqual(
+  #       base64.b64decode(fused_op['attr']['fused_ops']['list']['s'][0]),
+  #       b'BiasAdd')
+  #   self.assertEqual(
+  #       base64.b64decode(fused_op['attr']['fused_ops']['list']['s'][1]),
+  #       b'Relu')
+
+  #   # Check meta-data in the artifact JSON.
+  #   self.assertEqual(model_json['format'], 'graph-model')
+  #   self.assertEqual(
+  #       model_json['convertedBy'],
+  #       'TensorFlow.js Converter v%s' % version.version)
+  #   self.assertEqual(model_json['generatedBy'],
+  #                    tf.__version__)
+  #   self.assertTrue(
+  #       glob.glob(
+  #           os.path.join(self._tmp_dir, SAVED_MODEL_DIR, 'group*-*')))
+
+  # def test_convert_saved_model_with_prelu(self):
+  #   self._create_saved_model_with_prelu()
+  #   tf_saved_model_conversion_v2.convert_tf_saved_model(
+  #       os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
+  #       os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+  #   )
+
+  #   tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+  #   # Check model.json and weights manifest.
+  #   with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
+  #     model_json = json.load(f)
+  #   self.assertTrue(model_json['modelTopology'])
+  #   self.assertIsNot(model_json['modelTopology']['versions'], None)
+  #   signature = model_json['signature']
+  #   self.assertIsNot(signature, None)
+  #   self.assertIsNot(signature['inputs'], None)
+  #   self.assertIsNot(signature['outputs'], None)
+
+  #   nodes = model_json['modelTopology']['node']
+
+  #   prelu_op = None
+  #   fused_op = None
+  #   depthwise_fused_op = None
+  #   for node in nodes:
+  #     if node['op'] == 'Prelu':
+  #       prelu_op = node
+  #     if node['op'] == '_FusedConv2D':
+  #       fused_op = node
+  #     if node['op'] == graph_rewrite_util.FUSED_DEPTHWISE_CONV2D:
+  #       depthwise_fused_op = node
+  #   self.assertTrue(prelu_op is None)
+  #   self.assertIsNot(fused_op, None)
+  #   self.assertIsNot(depthwise_fused_op, None)
+
+  #   fused_ops = list(map(base64.b64decode,
+  #                        fused_op['attr']['fused_ops']['list']['s']))
+  #   self.assertEqual(fused_ops, [b'BiasAdd', b'Prelu'])
+  #   self.assertEqual(fused_op['attr']['num_args']['i'], '2')
+  #   depthwise_fused_ops = list(
+  #       map(base64.b64decode,
+  #           depthwise_fused_op['attr']['fused_ops']['list']['s']))
+  #   self.assertEqual(depthwise_fused_ops, [b'BiasAdd', b'Prelu'])
+  #   self.assertEqual(depthwise_fused_op['attr']['num_args']['i'], '2')
+  #   # Check meta-data in the artifact JSON.
+  #   self.assertEqual(model_json['format'], 'graph-model')
+  #   self.assertEqual(
+  #       model_json['convertedBy'],
+  #       'TensorFlow.js Converter v%s' % version.version)
+  #   self.assertEqual(model_json['generatedBy'],
+  #                    tf.__version__)
+  #   self.assertTrue(
+  #       glob.glob(
+  #           os.path.join(self._tmp_dir, SAVED_MODEL_DIR, 'group*-*')))
+
+  # def test_convert_saved_model_with_unfusable_prelu(self):
+  #   self._create_saved_model_with_unfusable_prelu()
+  #   tf_saved_model_conversion_v2.convert_tf_saved_model(
+  #       os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
+  #       os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+  #   )
+
+  #   tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+  #   # Check model.json and weights manifest.
+  #   with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
+  #     model_json = json.load(f)
+  #   self.assertTrue(model_json['modelTopology'])
+  #   self.assertIsNot(model_json['modelTopology']['versions'], None)
+  #   signature = model_json['signature']
+  #   self.assertIsNot(signature, None)
+  #   self.assertIsNot(signature['inputs'], None)
+  #   self.assertIsNot(signature['outputs'], None)
+
+  #   nodes = model_json['modelTopology']['node']
+
+  #   prelu_op = None
+  #   for node in nodes:
+  #     if node['op'] == 'Prelu':
+  #       prelu_op = node
+  #       break
+
+  #   self.assertTrue(prelu_op)
+
+  #   # Check meta-data in the artifact JSON.
+  #   self.assertEqual(model_json['format'], 'graph-model')
+  #   self.assertEqual(
+  #       model_json['convertedBy'],
+  #       'TensorFlow.js Converter v%s' % version.version)
+  #   self.assertEqual(model_json['generatedBy'],
+  #                    tf.__version__)
+  #   self.assertTrue(
+  #       glob.glob(
+  #           os.path.join(self._tmp_dir, SAVED_MODEL_DIR, 'group*-*')))
+
+  # def test_convert_saved_model_with_control_flow(self):
+  #   self._create_saved_model_with_control_flow()
+
+  #   tf_saved_model_conversion_v2.convert_tf_saved_model(
+  #       os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
+  #       os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+  #   )
+
+  #   tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+  #   # Check model.json and weights manifest.
+  #   with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
+  #     model_json = json.load(f)
+  #   self.assertTrue(model_json['modelTopology'])
+  #   self.assertIsNot(model_json['modelTopology']['versions'], None)
+  #   signature = model_json['signature']
+  #   self.assertIsNot(signature, None)
+  #   self.assertIsNot(signature['inputs'], None)
+  #   self.assertIsNot(signature['outputs'], None)
+
+  #   weights_manifest = model_json['weightsManifest']
+  #   self.assertCountEqual(weights_manifest[0]['paths'],
+  #                         ['group1-shard1of1.bin'])
+  #   self.assertIn('weights', weights_manifest[0])
+
+  #   # Check meta-data in the artifact JSON.
+  #   self.assertEqual(model_json['format'], 'graph-model')
+  #   self.assertEqual(
+  #       model_json['convertedBy'],
+  #       'TensorFlow.js Converter v%s' % version.version)
+  #   self.assertEqual(model_json['generatedBy'],
+  #                    tf.__version__)
+  #   self.assertTrue(
+  #       glob.glob(
+  #           os.path.join(self._tmp_dir, SAVED_MODEL_DIR, 'group*-*')))
+
+  # def test_convert_saved_model_with_control_flow_v2(self):
+  #   self._create_saved_model_with_control_flow()
+
+  #   tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+  #   tf_saved_model_conversion_v2.convert_tf_saved_model(
+  #       tfjs_path, tfjs_path, control_flow_v2=True
+  #   )
+
+  #   # Check model.json and weights manifest.
+  #   with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
+  #     model_json = json.load(f)
+  #   self.assertTrue(model_json['modelTopology'])
+  #   self.assertIsNot(model_json['modelTopology']['versions'], None)
+  #   signature = model_json['signature']
+  #   self.assertIsNot(signature, None)
+  #   self.assertIsNot(signature['inputs'], None)
+  #   self.assertIsNot(signature['outputs'], None)
+
+  #   weights_manifest = model_json['weightsManifest']
+  #   self.assertCountEqual(weights_manifest[0]['paths'],
+  #                         ['group1-shard1of1.bin'])
+  #   self.assertIn('weights', weights_manifest[0])
+
+  #   add_y_weight = None
+  #   for weight in weights_manifest[0]['weights']:
+  #     if 'add/y' in weight['name']:
+  #       add_y_weight = weight
+
+  #   self.assertIsNot(add_y_weight, None)
+  #   self.assertFalse(add_y_weight['name'].startswith('add/y'))
+
+  #   nodes = model_json['modelTopology']['node']
+
+  #   while_op = None
+  #   for node in nodes:
+  #     self.assertNotIn('Merge', node['op'])
+  #     self.assertNotIn('Switch', node['op'])
+  #     if node['op'] == 'StatelessWhile':
+  #       while_op = node
+  #   self.assertIsNot(while_op, None)
+  #   # Check meta-data in the artifact JSON.
+  #   self.assertEqual(model_json['format'], 'graph-model')
+  #   self.assertEqual(
+  #       model_json['convertedBy'],
+  #       'TensorFlow.js Converter v%s' % version.version)
+  #   self.assertEqual(model_json['generatedBy'],
+  #                    tf.__version__)
+  #   self.assertTrue(
+  #       glob.glob(
+  #           os.path.join(self._tmp_dir, SAVED_MODEL_DIR, 'group*-*')))
+
+  # def test_convert_saved_model_with_tfdf(self):
+  #   self._create_saved_model_with_tfdf()
+
+  #   tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+  #   tf_saved_model_conversion_v2.convert_tf_saved_model(
+  #       tfjs_path, tfjs_path, skip_op_check=True
+  #   )
+
+  #   # Check model.json and weights manifest.
+  #   with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
+  #     model_json = json.load(f)
+
+  #   # Check TFDF ops are present.
+  #   model_ops = [node['op'] for node in model_json['modelTopology']['node']]
+  #   self.assertIn('SimpleMLInferenceOpWithHandle', model_ops)
+
+  #   initializer_ops = [node['op'] for node in model_json['modelInitializer']['node']]
+  #   self.assertIn('SimpleMLCreateModelResource', initializer_ops)
+  #   self.assertIn('SimpleMLLoadModelFromPathWithHandle', initializer_ops)
+
+  #   # Check assets containing TFDF files were copied over.
+  #   self.assertTrue(
+  #       os.path.exists(
+  #           os.path.join(tfjs_path, ASSETS_DIRECTORY_NAME + '.zip')))
+
+  # def test_convert_saved_model_sharded(self):
+  #   self._create_saved_model()
+  #   model_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+  #   tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+
+  #   # Do initial conversion without sharding.
+  #   tf_saved_model_conversion_v2.convert_tf_saved_model(model_path, tfjs_path)
+  #   weight_files = glob.glob(os.path.join(tfjs_path, 'group*.bin'))
+
+  #   # Get size of weights in bytes after graph optimizations.
+  #   optimized_total_weight = sum([os.path.getsize(f) for f in weight_files])
+
+  #   # Due to the shard size, there ought to be 2 shards after conversion.
+  #   weight_shard_size_bytes = int(optimized_total_weight * 0.8)
+
+  #   tfjs_path = os.path.join(self._tmp_dir, 'sharded_model')
+  #   # Convert Saved Model again with shard argument set.
+  #   tf_saved_model_conversion_v2.convert_tf_saved_model(
+  #       model_path, tfjs_path,
+  #       weight_shard_size_bytes=weight_shard_size_bytes)
+
+  #   weight_files = sorted(glob.glob(os.path.join(tfjs_path, 'group*.bin')))
+  #   self.assertEqual(len(weight_files), 2)
+  #   weight_file_sizes = [os.path.getsize(f) for f in weight_files]
+
+  #   self.assertEqual(sum(weight_file_sizes), optimized_total_weight)
+  #   self.assertLess(weight_file_sizes[1], weight_file_sizes[0])
+
+  # def test_optimizer_add_unsupported_op(self):
+  #   self._create_unsupported_saved_model()
+  #   with self.assertRaisesRegexp(  # pylint: disable=deprecated-method
+  #       ValueError, r'^Unsupported Ops'):
+  #     tf_saved_model_conversion_v2.convert_tf_saved_model(
+  #         os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
+  #         os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+  #     )
+
+  # def test_convert_saved_model_skip_op_check(self):
+  #   self._create_unsupported_saved_model()
+
+  #   tf_saved_model_conversion_v2.convert_tf_saved_model(
+  #       os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
+  #       os.path.join(self._tmp_dir, SAVED_MODEL_DIR), skip_op_check=True
+  #   )
+
+  #   tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+  #   # Check model.json and weights manifest.
+  #   with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
+  #     model_json = json.load(f)
+  #   self.assertTrue(model_json['modelTopology'])
+  #   self.assertIsNot(model_json['modelTopology']['versions'], None)
+  #   signature = model_json['signature']
+  #   self.assertIsNot(signature, None)
+  #   self.assertIsNot(signature['inputs'], None)
+  #   self.assertIsNot(signature['outputs'], None)
+
+  #   weights_manifest = model_json['weightsManifest']
+  #   self.assertCountEqual(weights_manifest[0]['paths'],
+  #                         ['group1-shard1of1.bin'])
+  #   self.assertIn('weights', weights_manifest[0])
+  #   self.assertTrue(
+  #       glob.glob(
+  #           os.path.join(self._tmp_dir, SAVED_MODEL_DIR, 'group*-*')))
+
+  # # (TODO: piyu) disable this test, need to change
+  # # convert_variables_to_constants_v2 to set function_optimization=aggressive.
+  # @unittest.skip('not supported')
+  # def test_convert_saved_model_strip_debug_ops(self):
+  #   self._create_saved_model_with_debug_ops()
+
+  #   tf_saved_model_conversion_v2.convert_tf_saved_model(
+  #       os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
+  #       os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
+  #       strip_debug_ops=True)
+
+  #   tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+  #   # Check model.json and weights manifest.
+  #   with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
+  #     model_json = json.load(f)
+  #   self.assertTrue(model_json['modelTopology'])
+  #   self.assertIsNot(model_json['modelTopology']['versions'], None)
+  #   signature = model_json['signature']
+  #   self.assertIsNot(signature, None)
+  #   self.assertIsNot(signature['inputs'], None)
+  #   self.assertIsNot(signature['outputs'], None)
+
+  #   weights_manifest = model_json['weightsManifest']
+  #   self.assertCountEqual(weights_manifest[0]['paths'],
+  #                         ['group1-shard1of1.bin'])
+  #   self.assertIn('weights', weights_manifest[0])
+  #   self.assertTrue(
+  #       glob.glob(
+  #           os.path.join(self._tmp_dir, SAVED_MODEL_DIR, 'group*-*')))
+
+  # def test_convert_saved_model_structured_outputs_true(self):
+  #   self._create_saved_model_with_structured_outputs()
+
+  #   tf_saved_model_conversion_v2.convert_tf_saved_model(
+  #       os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
+  #       os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
+  #       use_structured_outputs_names=True)
+
+  #   tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+  #   # Check model.json and weights manifest.
+  #   with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
+  #     model_json = json.load(f)
+  #   self.assertTrue(model_json['modelTopology'])
+  #   self.assertIsNot(model_json['modelTopology']['versions'], None)
+  #   signature = model_json['signature']
+  #   self.assertIsNot(signature, None)
+  #   self.assertIsNot(signature['inputs'], None)
+  #   self.assertIsNot(signature['outputs'], None)
+
+  #   self.assertEqual(["a", "b", "c"],
+  #                    model_json['userDefinedMetadata']['structuredOutputKeys'])
+
+  # def test_convert_saved_model_structured_outputs_false(self):
+  #   self._create_saved_model_with_structured_outputs()
+
+  #   tf_saved_model_conversion_v2.convert_tf_saved_model(
+  #       os.path.join(self._tmp_dir, SAVED_MODEL_DIR),
+  #       os.path.join(self._tmp_dir, SAVED_MODEL_DIR))
+
+  #   tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+  #   # Check model.json and weights manifest.
+  #   with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
+  #     model_json = json.load(f)
+  #   self.assertIs(model_json.get('userDefinedMetadata'), None)
+
+  # def test_convert_hub_module_v1(self):
+  #   self._create_hub_module()
+  #   module_path = os.path.join(self._tmp_dir, HUB_MODULE_DIR)
+  #   tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+
+  #   tf_saved_model_conversion_v2.convert_tf_hub_module(module_path, tfjs_path)
+
+  #   # Check model.json and weights manifest.
+  #   with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
+  #     model_json = json.load(f)
+  #   self.assertTrue(model_json['modelTopology'])
+  #   self.assertIsNot(model_json['modelTopology']['versions'], None)
+  #   signature = model_json['signature']
+  #   self.assertIsNot(signature, None)
+  #   self.assertIsNot(signature['inputs'], None)
+  #   self.assertIsNot(signature['outputs'], None)
+
+  #   weights_manifest = model_json['weightsManifest']
+  #   self.assertCountEqual(weights_manifest[0]['paths'],
+  #                         ['group1-shard1of1.bin'])
+  #   self.assertIn('weights', weights_manifest[0])
+
+  #   self.assertTrue(
+  #       glob.glob(
+  #           os.path.join(self._tmp_dir, SAVED_MODEL_DIR, 'group*-*')))
+
+  # def test_convert_hub_module_v1_sharded(self):
+  #   self._create_hub_module()
+  #   module_path = os.path.join(self._tmp_dir, HUB_MODULE_DIR)
+  #   tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+
+  #   # Do initial conversion without sharding.
+  #   tf_saved_model_conversion_v2.convert_tf_hub_module(module_path, tfjs_path)
+  #   weight_files = glob.glob(os.path.join(tfjs_path, 'group*.bin'))
+
+  #   # Get size of weights in bytes after graph optimizations.
+  #   optimized_total_weight = sum([os.path.getsize(f) for f in weight_files])
+
+  #   # Due to the shard size, there ought to be 3 shards after conversion.
+  #   weight_shard_size_bytes = int(optimized_total_weight * 0.4)
+
+  #   tfjs_path = os.path.join(self._tmp_dir, 'sharded_model')
+  #   # Convert Hub model again with shard argument set.
+  #   tf_saved_model_conversion_v2.convert_tf_hub_module(
+  #       module_path, tfjs_path,
+  #       weight_shard_size_bytes=weight_shard_size_bytes)
+
+  #   weight_files = sorted(glob.glob(os.path.join(tfjs_path, 'group*.bin')))
+  #   self.assertEqual(len(weight_files), 3)
+  #   weight_file_sizes = [os.path.getsize(f) for f in weight_files]
+
+  #   self.assertEqual(sum(weight_file_sizes), optimized_total_weight)
+  #   self.assertEqual(weight_file_sizes[0], weight_file_sizes[1])
+  #   self.assertLess(weight_file_sizes[2], weight_file_sizes[0])
+
+  # def test_convert_hub_module_v1_with_metadata(self):
+  #   self._create_hub_module()
+  #   module_path = os.path.join(self._tmp_dir, HUB_MODULE_DIR)
+  #   tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+
+  #   metadata_json = {'a': 1}
+  #   tf_saved_model_conversion_v2.convert_tf_hub_module(
+  #       module_path, tfjs_path, metadata={'key': metadata_json})
+
+  #   # Check model.json and weights manifest.
+  #   with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
+  #     model_json = json.load(f)
+  #   self.assertEqual(metadata_json, model_json['userDefinedMetadata']['key'])
+
+  # def test_convert_hub_module_v2(self):
+  #   self._create_saved_model()
+  #   module_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+  #   tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+
+  #   tf_saved_model_conversion_v2.convert_tf_hub_module(
+  #       module_path, tfjs_path, "serving_default", "serve")
+
+  #   # Check model.json and weights manifest.
+  #   with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
+  #     model_json = json.load(f)
+  #   self.assertTrue(model_json['modelTopology'])
+  #   self.assertIsNot(model_json['modelTopology']['versions'], None)
+  #   signature = model_json['signature']
+  #   self.assertIsNot(signature, None)
+  #   self.assertIsNot(signature['inputs'], None)
+  #   self.assertIsNot(signature['outputs'], None)
+
+  #   weights_manifest = model_json['weightsManifest']
+  #   self.assertCountEqual(weights_manifest[0]['paths'],
+  #                         ['group1-shard1of1.bin'])
+  #   self.assertIn('weights', weights_manifest[0])
+
+  #   self.assertTrue(
+  #       glob.glob(
+  #           os.path.join(self._tmp_dir, SAVED_MODEL_DIR, 'group*-*')))
+
+  # def test_convert_hub_module_v2_with_metadata(self):
+  #   self._create_saved_model()
+  #   module_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+  #   tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+
+  #   metadata_json = {'a': 1}
+  #   tf_saved_model_conversion_v2.convert_tf_hub_module(
+  #       module_path, tfjs_path, "serving_default", "serve",
+  #       metadata={'key': metadata_json})
+
+  #   # Check model.json and weights manifest.
+  #   with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
+  #     model_json = json.load(f)
+  #   self.assertEqual(metadata_json, model_json['userDefinedMetadata']['key'])
+
+  # def test_convert_frozen_model(self):
+  #   self.create_frozen_model()
+  #   print(glob.glob(
+  #       os.path.join(self._tmp_dir, FROZEN_MODEL_DIR, '*')))
+
+  #   tf_saved_model_conversion_v2.convert_tf_frozen_model(
+  #       os.path.join(self._tmp_dir, FROZEN_MODEL_DIR, 'model.frozen'),
+  #       'Softmax',
+  #       os.path.join(self._tmp_dir, FROZEN_MODEL_DIR))
+
+  #   tfjs_path = os.path.join(self._tmp_dir, FROZEN_MODEL_DIR)
+  #   # Check model.json and weights manifest.
+  #   with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
+  #     model_json = json.load(f)
+  #   self.assertTrue(model_json['modelTopology'])
+  #   self.assertIsNot(model_json['modelTopology']['versions'], None)
+  #   signature = model_json['signature']
+  #   self.assertIsNot(signature, None)
+  #   # frozen model signature has no input nodes.
+  #   self.assertIsNot(signature['outputs'], None)
+
+  #   weights_manifest = model_json['weightsManifest']
+  #   self.assertCountEqual(weights_manifest[0]['paths'],
+  #                         ['group1-shard1of1.bin'])
+  #   self.assertIn('weights', weights_manifest[0])
+  #   self.assertTrue(
+  #       glob.glob(
+  #           os.path.join(self._tmp_dir, FROZEN_MODEL_DIR, 'group*-*')))
+
+  # def test_convert_frozen_model_with_metadata(self):
+  #   self.create_frozen_model()
+  #   print(glob.glob(
+  #       os.path.join(self._tmp_dir, FROZEN_MODEL_DIR, '*')))
+
+  #   metadata_json = {'a': 1}
+  #   tf_saved_model_conversion_v2.convert_tf_frozen_model(
+  #       os.path.join(self._tmp_dir, FROZEN_MODEL_DIR, 'model.frozen'),
+  #       'Softmax',
+  #       os.path.join(self._tmp_dir, FROZEN_MODEL_DIR),
+  #       metadata={'key': metadata_json})
+
+  #   tfjs_path = os.path.join(self._tmp_dir, FROZEN_MODEL_DIR)
+  #   # Check model.json and weights manifest.
+  #   with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
+  #     model_json = json.load(f)
+  #   self.assertEqual(metadata_json, model_json['userDefinedMetadata']['key'])
+
+  # def test_convert_keras_model_to_saved_model(self):
+  #   keras_model = tf.keras.Sequential(
+  #       [tf.keras.layers.Dense(1, input_shape=[2])])
+
+  #   tfjs_path = os.path.join(self._tmp_dir, SAVED_MODEL_DIR)
+  #   tf_saved_model_conversion_v2.convert_keras_model_to_graph_model(
+  #       keras_model, tfjs_path)
+
+  #   # Check model.json and weights manifest.
+  #   with open(os.path.join(tfjs_path, 'model.json'), 'rt') as f:
+  #     model_json = json.load(f)
+  #   self.assertTrue(model_json['modelTopology'])
+  #   self.assertIsNot(model_json['modelTopology']['versions'], None)
+  #   signature = model_json['signature']
+  #   self.assertIsNot(signature, None)
+  #   self.assertIsNot(signature['inputs'], None)
+  #   self.assertIsNot(signature['outputs'], None)
+
+  #   weights_manifest = model_json['weightsManifest']
+  #   self.assertCountEqual(weights_manifest[0]['paths'],
+  #                         ['group1-shard1of1.bin'])
+  #   self.assertIn('weights', weights_manifest[0])
+  #   self.assertTrue(
+  #       glob.glob(
+  #           os.path.join(self._tmp_dir, SAVED_MODEL_DIR, 'group*-*')))
 
   def test_convert_saved_model_above_2gb(self):
     input_dir = self._create_big_model()

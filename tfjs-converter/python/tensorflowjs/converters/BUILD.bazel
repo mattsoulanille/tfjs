@@ -1,3 +1,5 @@
+load("@tensorflowjs_dev_deps//:requirements.bzl", "requirement")
+
 package(
     default_visibility = [
         "//tfjs-converter/python/tensorflowjs:__subpackages__",
@@ -169,6 +171,7 @@ py_test(
     srcs_version = "PY3",
     tags = ["ci"],
     deps = [
+        requirement("debugpy"),
         ":tf_saved_model_conversion_v2",
         "//tfjs-converter/python/tensorflowjs:expect_tensorflow_hub_installed",
         "//tfjs-converter/python/tensorflowjs:expect_tensorflow_installed",
