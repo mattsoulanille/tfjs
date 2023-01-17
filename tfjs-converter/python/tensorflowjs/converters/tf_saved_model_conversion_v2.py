@@ -516,10 +516,9 @@ def _find_signature_def_name(tensor, signature_map):
   else:
     return names[0]
 
-def _build_signature_def(frozen_graph, input_nodes, output_nodes,
+def _build_signature_def(frozen_graph_def, input_nodes, output_nodes,
                          signature_def=None):
   signature = meta_graph_pb2.SignatureDef()
-  frozen_graph_def = frozen_graph.as_graph_def()
   nodes = {node.name: node for node in frozen_graph_def.node}
   for input_tensor in input_nodes:
     op_name = input_tensor.name.split(':')[0]
@@ -589,7 +588,7 @@ def convert_tf_frozen_model(frozen_model_path,
 
   graph = load_graph(frozen_model_path)
   signature = _build_signature_def(
-      graph, [], output_node_names.split(','))
+      graph.as_graph_def(), [], output_node_names.split(','))
 
   optimized_graph = optimize_graph(graph, signature,
                                    skip_op_check=skip_op_check,
@@ -870,7 +869,7 @@ def _convert_tf_saved_model(output_dir,
       f.write(frozen_graph.as_graph_def().SerializeToString())
 
   signature = _build_signature_def(
-      frozen_graph, concrete_func.inputs, concrete_func.outputs, saved_model_sigature)
+      frozen_graph.as_graph_def(), concrete_func.inputs, concrete_func.outputs, saved_model_sigature)
 
   define_transform_graph_func()
 
@@ -898,7 +897,7 @@ def _convert_tf_saved_model(output_dir,
   if frozen_initializer_graph:
     initializer_graph_def = frozen_initializer_graph.as_graph_def()
     if hasattr(frozen_initializer_graph, 'outputs'):
-      initializer_signature_def = _build_signature_def(frozen_initializer_graph, [], frozen_initializer_graph.outputs)
+      initializer_signature_def = _build_signature_def(frozen_initializer_graph.as_graph_def(), [], frozen_initializer_graph.outputs)
 
   weights = extract_weights(graph_def, initializer_graph_def)
 
@@ -1132,7 +1131,7 @@ def convert_tf_hub_module_v1(module_path, output_dir,
       f.write(frozen_graph_def.SerializeToString())
 
     frozen_graph = load_graph(frozen_file)
-    signature = _build_signature_def(frozen_graph,
+    signature = _build_signature_def(frozen_graph.as_graph_def(),
                                      inputs.values(), outputs.values())
 
     optimized_graph = optimize_graph(frozen_graph, signature,
