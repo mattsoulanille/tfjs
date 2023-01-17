@@ -399,11 +399,15 @@ def _is_assets_required(model_ops):
     opNames = frozenset([x['tfOpName'] for x in ops])
     return not opNames.isdisjoint(model_ops)
 
+def _get_graph_def_ops(graph_def):
+  if graph_def is None:
+    return []
+  return [node.op for node in graph_def.node]
+
 def _get_frozen_graph_ops(frozen_graph):
   if frozen_graph is None:
     return []
-  return [node.op for node in frozen_graph.as_graph_def().node]
-
+  return _get_graph_def_ops(frozen_graph.as_graph_def())
 
 def _freeze_saved_model_v1(saved_model_dir, saved_model_tags,
                            output_node_names):
@@ -464,6 +468,35 @@ def _freeze_saved_model_v2(concrete_func, control_flow_v2=False):
   return convert_to_constants.convert_variables_to_constants_v2(
       concrete_func, lower_control_flow=not control_flow_v2,
       aggressive_inlining=True).graph
+  """
+  from tensorflow.python.framework.convert_to_constants import _FunctionConverterDataInEager, _construct_concrete_function, _replace_variables_by_constants, _GraphDef
+  converter_data = _FunctionConverterDataInEager(
+      func=concrete_func,
+      lower_control_flow=not control_flow_v2,
+      aggressive_inlining=version.parse(tf.__version__) >= version.parse('2.2.0')
+  )
+
+  output_graph_def, converted_input_indices = _replace_variables_by_constants(
+     converter_data=converter_data)
+
+  input_graph = _GraphDef(converter_data.graph_def)
+
+  for tensor_name, tensor_data in converter_data.tensor_data.items():
+    input_graph.nodes[tensor_name].convert_variable_to_constant(
+        None, tensor_data)
+
+  converted_graph = input_graph.converted_self().graph_def
+
+  converted_input_indices = {
+      t.index
+      for t in converter_data.tensor_data.values()
+      if t.index is not None
+  }
+
+  #return converted_graph, converted_input_indices
+  return _construct_concrete_function(concrete_func, converted_graph,
+                                      converted_input_indices)
+  """
 
 def _find_signature_def_name(tensor, signature_map):
   if not signature_map:
@@ -486,13 +519,17 @@ def _find_signature_def_name(tensor, signature_map):
 def _build_signature_def(frozen_graph, input_nodes, output_nodes,
                          signature_def=None):
   signature = meta_graph_pb2.SignatureDef()
+  frozen_graph_def = frozen_graph.as_graph_def()
+  nodes = {node.name: node for node in frozen_graph_def.node}
   for input_tensor in input_nodes:
     op_name = input_tensor.name.split(':')[0]
     # The graph freezing may turn the original inputs into constants, or remove
     # them from the graph, so we need to ignore those.
     try:
-      op = frozen_graph.get_operation_by_name(op_name)
-      if op.type != 'Const':
+      node = nodes[op_name]
+      #op = frozen_graph.get_operation_by_name(op_name)
+      if node.op != 'Const':
+      #if op.type != 'Const':
         name = input_tensor.name
         if hasattr(signature_def, 'inputs'):
           name = _find_signature_def_name(input_tensor, signature_def.inputs)
@@ -804,8 +841,11 @@ def _convert_tf_saved_model(output_dir,
   # the graph using V1 utils.
   frozen_initializer_graph = None
   resource_ids_maps = None
+  graph_def = None
   try:
+    #optimized_unfrozen = optimize_graph(concrete_func, signature_def)
     frozen_graph = _freeze_saved_model_v2(concrete_func, control_flow_v2)
+    #graph_def = _freeze_saved_model_v2(concrete_func, control_flow_v2)
     resource_initializer_concrete_func = _get_resource_initializer_concrete_function(model)
 
     if resource_initializer_concrete_func:
@@ -821,8 +861,6 @@ def _convert_tf_saved_model(output_dir,
     else:
       print('Can not freeze saved model v1.')
       return
-
-  breakpoint()
 
   if frozen_graph_dir:
     output_graph = os.path.join(frozen_graph_dir,
@@ -850,7 +888,7 @@ def _convert_tf_saved_model(output_dir,
       if _is_assets_required(model_ops):
         _copy_assets(saved_model_dir, output_dir)
 
-  optimized_graph = optimize_graph(frozen_graph, signature,
+  graph_def = optimize_graph(frozen_graph, signature,
                                    skip_op_check=skip_op_check,
                                    strip_debug_ops=strip_debug_ops,
                                    experiments=experiments)
@@ -862,9 +900,9 @@ def _convert_tf_saved_model(output_dir,
     if hasattr(frozen_initializer_graph, 'outputs'):
       initializer_signature_def = _build_signature_def(frozen_initializer_graph, [], frozen_initializer_graph.outputs)
 
-  weights = extract_weights(optimized_graph, initializer_graph_def)
+  weights = extract_weights(graph_def, initializer_graph_def)
 
-  write_artifacts(MessageToDict(optimized_graph),
+  write_artifacts(MessageToDict(graph_def),
       weights,
       output_graph,
       tf_version, signature,

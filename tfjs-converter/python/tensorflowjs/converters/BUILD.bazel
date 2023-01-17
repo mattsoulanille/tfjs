@@ -170,6 +170,7 @@ py_test(
     tags = ["ci"],
     deps = [
         ":tf_saved_model_conversion_v2",
+        "//tfjs-converter/python/tensorflowjs:expect_debugpy_installed",
         "//tfjs-converter/python/tensorflowjs:expect_tensorflow_hub_installed",
         "//tfjs-converter/python/tensorflowjs:expect_tensorflow_installed",
     ],

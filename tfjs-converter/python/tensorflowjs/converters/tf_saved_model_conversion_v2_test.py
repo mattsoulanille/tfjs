@@ -41,6 +41,11 @@ from tensorflowjs.converters import graph_rewrite_util
 from tensorflowjs.converters import tf_saved_model_conversion_v2
 from tensorflowjs.converters.common import ASSETS_DIRECTORY_NAME
 
+import debugpy
+debugpy.listen(('localhost', 5724))
+print("Waiting for debugger to connect. See tfjs-converter python README")
+debugpy.wait_for_client()
+
 SAVED_MODEL_DIR = 'saved_model'
 BIG_MODEL_DIR = 'big_model'
 HUB_MODULE_DIR = 'hub_module'
@@ -224,11 +229,14 @@ class ConvertTest(tf.test.TestCase):
 
   def _create_big_model(self):
       # Save a big model for testing above 2gb model conversion
+      #width = 2**27
+      width = 2
       big_model = keras.Sequential(
           [
-              #keras.layers.Input((1, 2**29)),
-              keras.layers.Input((1, 2**10)),
-              keras.layers.Dense(1) # just a really simple model
+              keras.layers.Input((1, width)),
+              keras.layers.Dense(1), # just a really simple model
+              keras.layers.Dense(width),
+              keras.layers.Dense(1),
           ]
       )
       model_dir = os.path.join(self._tmp_dir, BIG_MODEL_DIR)
