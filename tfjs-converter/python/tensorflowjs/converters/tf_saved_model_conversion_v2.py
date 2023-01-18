@@ -461,6 +461,7 @@ def _freeze_saved_model_v1(saved_model_dir, saved_model_tags,
       return frozen_graph, frozen_initializer_graph
 
 def _freeze_saved_model_v2(concrete_func, control_flow_v2=False):
+  """
   if version.parse(tf.__version__) < version.parse('2.2.0'):
     return convert_to_constants.convert_variables_to_constants_v2(
         concrete_func, lower_control_flow=not control_flow_v2).graph
@@ -493,10 +494,9 @@ def _freeze_saved_model_v2(concrete_func, control_flow_v2=False):
       if t.index is not None
   }
 
-  #return converted_graph, converted_input_indices
-  return _construct_concrete_function(concrete_func, converted_graph,
-                                      converted_input_indices)
-  """
+  return converted_graph #, converted_input_indices
+  """ return _construct_concrete_function(concrete_func, converted_graph,
+                                      converted_input_indices) """
 
 def _find_signature_def_name(tensor, signature_map):
   if not signature_map:
@@ -839,16 +839,19 @@ def _convert_tf_saved_model(output_dir,
   # reliable way. Try to freeze the graph using V2 utils. If that fails, freeze
   # the graph using V1 utils.
   frozen_initializer_graph = None
+  frozen_initializer_graph_def = None
   resource_ids_maps = None
-  graph_def = None
+  frozen_graph_def = None
+  resource_initializer_concrete_func = None
   try:
     #optimized_unfrozen = optimize_graph(concrete_func, signature_def)
-    frozen_graph = _freeze_saved_model_v2(concrete_func, control_flow_v2)
-    #graph_def = _freeze_saved_model_v2(concrete_func, control_flow_v2)
+    #frozen_graph = _freeze_saved_model_v2(concrete_func, control_flow_v2)
+    frozen_graph_def = _freeze_saved_model_v2(concrete_func, control_flow_v2)
     resource_initializer_concrete_func = _get_resource_initializer_concrete_function(model)
 
     if resource_initializer_concrete_func:
-      frozen_initializer_graph = _freeze_saved_model_v2(resource_initializer_concrete_func, control_flow_v2)
+      #frozen_initializer_graph = _freeze_saved_model_v2(resource_initializer_concrete_func, control_flow_v2)
+      frozen_initializer_graph_def = _freeze_saved_model_v2(resource_initializer_concrete_func, control_flow_v2)
       resource_ids_maps = _get_resource_ids_maps(model, concrete_func, resource_initializer_concrete_func)
 
   except BaseException:
@@ -857,6 +860,9 @@ def _convert_tf_saved_model(output_dir,
        frozen_initializer_graph) = _freeze_saved_model_v1(saved_model_dir,
                                                           saved_model_tags_list,
                                                           output_node_names)
+      frozen_graph_def = frozen_graph.as_graph_def()
+      frozen_initializer_graph_def = frozen_initializer_graph.as_graph_def()
+
     else:
       print('Can not freeze saved model v1.')
       return
@@ -866,10 +872,10 @@ def _convert_tf_saved_model(output_dir,
                                 common.ARTIFACT_MODEL_JSON_FILE_NAME)
     frozen_file = output_graph + '.frozen'
     with tf.compat.v1.gfile.GFile(frozen_file, 'wb') as f:
-      f.write(frozen_graph.as_graph_def().SerializeToString())
+      f.write(frozen_graph_def.SerializeToString())
 
   signature = _build_signature_def(
-      frozen_graph.as_graph_def(), concrete_func.inputs, concrete_func.outputs, saved_model_sigature)
+      frozen_graph_def, concrete_func.inputs, concrete_func.outputs, saved_model_sigature)
 
   define_transform_graph_func()
 
@@ -882,32 +888,38 @@ def _convert_tf_saved_model(output_dir,
     tf_version = tf.__version__
 
   if saved_model_dir:
-      model_ops = set(_get_frozen_graph_ops(frozen_graph)) |\
-                  set(_get_frozen_graph_ops(frozen_initializer_graph))
+      model_ops = set(_get_graph_def_ops(frozen_graph_def)) |\
+                  set(_get_graph_def_ops(frozen_initializer_graph_def))
       if _is_assets_required(model_ops):
         _copy_assets(saved_model_dir, output_dir)
 
-  graph_def = optimize_graph(frozen_graph, signature,
+  """ frozen_graph_def = optimize_graph(frozen_graph, signature,
                                    skip_op_check=skip_op_check,
                                    strip_debug_ops=strip_debug_ops,
                                    experiments=experiments)
-
-  initializer_graph_def = None
+  """
   initializer_signature_def = None
+  """
+  initializer_graph_def = None
+
   if frozen_initializer_graph:
     initializer_graph_def = frozen_initializer_graph.as_graph_def()
     if hasattr(frozen_initializer_graph, 'outputs'):
       initializer_signature_def = _build_signature_def(frozen_initializer_graph.as_graph_def(), [], frozen_initializer_graph.outputs)
+  """
+  if resource_initializer_concrete_func and hasattr(resource_initializer_concrete_func, 'outputs'):
+    outputs = resource_initializer_concrete_func.outputs
+    initializer_signature_def = _build_signature_def(frozen_initializer_graph_def, [], outputs)
 
-  weights = extract_weights(graph_def, initializer_graph_def)
+  weights = extract_weights(frozen_graph_def, frozen_initializer_graph_def)
 
-  write_artifacts(MessageToDict(graph_def),
+  write_artifacts(MessageToDict(frozen_graph_def),
       weights,
       output_graph,
       tf_version, signature,
       quantization_dtype_map=quantization_dtype_map,
       weight_shard_size_bytes=weight_shard_size_bytes,
-      initializer_graph_def=initializer_graph_def,
+      initializer_graph_def=frozen_initializer_graph_def,
       initializer_signature_def=initializer_signature_def,
       resource_ids_maps=resource_ids_maps,
       metadata=metadata)
