@@ -174,17 +174,17 @@ http_archive(
     ],
 )
 
-# cpuinfo library, used for detecting processor characteristics
-http_archive(
-    name = "cpuinfo",
-    build_file = "@xnnpack//third_party:cpuinfo.BUILD",
-    patches = ["@xnnpack//third_party:cpuinfo.patch"],
-    sha256 = "a7f9a188148a1660149878f737f42783e72f33a4f842f3e362fee2c981613e53",
-    strip_prefix = "cpuinfo-ed8b86a253800bafdb7b25c5c399f91bff9cb1f3",
-    urls = [
-        "https://github.com/pytorch/cpuinfo/archive/ed8b86a253800bafdb7b25c5c399f91bff9cb1f3.zip",
-    ],
-)
+# # cpuinfo library, used for detecting processor characteristics
+# http_archive(
+#     name = "cpuinfo",
+#     build_file = "@xnnpack//third_party:cpuinfo.BUILD",
+#     patches = ["@xnnpack//third_party:cpuinfo.patch"],
+#     sha256 = "a7f9a188148a1660149878f737f42783e72f33a4f842f3e362fee2c981613e53",
+#     strip_prefix = "cpuinfo-ed8b86a253800bafdb7b25c5c399f91bff9cb1f3",
+#     urls = [
+#         "https://github.com/pytorch/cpuinfo/archive/ed8b86a253800bafdb7b25c5c399f91bff9cb1f3.zip",
+#     ],
+# )
 
 # psimd library, used for fallback 128-bit SIMD micro-kernels
 http_archive(
@@ -204,14 +204,14 @@ git_repository(
     shallow_since = "1570558426 -0400",
 )
 
-http_archive(
-    name = "rules_cc",
-    sha256 = "90d5a66950b492cbf86201cdc49c4b59796a85a4eb9fd63c07afe5f7132ea623",
-    strip_prefix = "rules_cc-8346df34b6593b051403b8e429db15c7f4ead937",
-    urls = [
-        "https://github.com/bazelbuild/rules_cc/archive/8346df34b6593b051403b8e429db15c7f4ead937.zip",
-    ],
-)
+# http_archive(
+#     name = "rules_cc",
+#     sha256 = "90d5a66950b492cbf86201cdc49c4b59796a85a4eb9fd63c07afe5f7132ea623",
+#     strip_prefix = "rules_cc-8346df34b6593b051403b8e429db15c7f4ead937",
+#     urls = [
+#         "https://github.com/bazelbuild/rules_cc/archive/8346df34b6593b051403b8e429db15c7f4ead937.zip",
+#     ],
+# )
 
 http_archive(
     name = "rules_python",
@@ -262,3 +262,40 @@ tflite_repositories()
 load("//tfjs-tfdf:tfdf_repositories.bzl", "tfdf_repositories")
 
 tfdf_repositories()
+
+git_repository(
+    name = "org_tensorflow_lite_support",
+    commit = "f08a570580d1f89a5e14ccc20521ced5e3d3eb7c",
+    remote = "https://github.com/tensorflow/tflite-support.git",
+    shallow_since = "1666909302 -0700",
+)
+
+load("@org_tensorflow_lite_support//:workspace9.bzl", "tflite_support_workspace9")
+tflite_support_workspace9()
+
+load("@org_tensorflow_lite_support//:workspace8.bzl", "tflite_support_workspace8")
+tflite_support_workspace8()
+
+load("@org_tensorflow_lite_support//:workspace7.bzl", "tflite_support_workspace7")
+tflite_support_workspace7()
+
+load("@org_tensorflow_lite_support//:workspace6.bzl", "tflite_support_workspace6")
+tflite_support_workspace6()
+
+load("@org_tensorflow_lite_support//:workspace5.bzl", "tflite_support_workspace5")
+tflite_support_workspace5()
+
+load("@org_tensorflow_lite_support//:workspace4.bzl", "tflite_support_workspace4")
+tflite_support_workspace4()
+
+load("@org_tensorflow_lite_support//:workspace3.bzl", "tflite_support_workspace3")
+tflite_support_workspace3()
+
+load("@org_tensorflow_lite_support//:workspace2.bzl", "tflite_support_workspace2")
+tflite_support_workspace2()
+
+load("@org_tensorflow_lite_support//:workspace1.bzl", "tflite_support_workspace1")
+tflite_support_workspace1()
+
+load("@org_tensorflow_lite_support//:workspace0.bzl", "tflite_support_workspace0")
+tflite_support_workspace0()
