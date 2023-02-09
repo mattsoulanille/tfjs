@@ -601,6 +601,7 @@ limitations under the License.
 
       let timeInfo;
       const numRuns = state.numRuns;
+
       if (state.benchmark === 'custom') {
         const input = generateInputFromDef(state.inputs, model instanceof tf.GraphModel);
         try {
@@ -619,6 +620,7 @@ limitations under the License.
 
       await showMsg(null);
       appendRow(timeTable, `Subsequent average(${state.numRuns} runs)`, printTime(timeInfo.averageTime));
+      appendRow(timeTable, `Throughput average time`, printTime(timeInfo.throughputAverageTime));
       appendRow(timeTable, 'Best time', printTime(timeInfo.minTime));
       // Add an empty row at the end of a round of benchmark.
       appendRow(timeTable, '', '');

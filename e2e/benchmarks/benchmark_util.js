@@ -245,17 +245,29 @@ async function timeInference(predict, numRuns = 1) {
       `a(n) ${typeof predict} is found.`);
   }
 
-  const times = [];
-  for (let i = 0; i < numRuns; i++) {
-    const start = performance.now();
-    const res = await predict();
-    // The prediction can be tf.Tensor|tf.Tensor[]|{[name: string]: tf.Tensor}.
-    const value = await downloadValuesFromTensorContainer(res);
-    const elapsedTime = performance.now() - start;
+  const queue = new PromiseQueue(1);
+  const promises = [];
+  // const times = [];
 
-    tf.dispose(res);
-    times.push(elapsedTime);
+  const startTime = performance.now();
+  for (let i = 0; i < numRuns; i++) {
+    promises.push(queue.add(async () => {
+      //console.log(`Run ${i} start`);
+      const start = performance.now();
+      const res = await predict();
+      //console.log(`Run ${i} prediction done`);
+      // The prediction can be tf.Tensor|tf.Tensor[]|{[name: string]: tf.Tensor}.
+      const value = await downloadValuesFromTensorContainer(res);
+      //console.log(`Run ${i} Downloaded tensor`);
+      const elapsedTime = performance.now() - start;
+
+      tf.dispose(res);
+      //console.log(`Run ${i} finished`);
+      return elapsedTime;
+    }));
   }
+  times = await Promise.all(promises);
+  const throughputAverageTime = (performance.now() - startTime) / numRuns;
 
   const averageTime = times.reduce((acc, curr) => acc + curr, 0) / times.length;
   const averageTimeExclFirst = times.length > 1 ?
@@ -268,10 +280,40 @@ async function timeInference(predict, numRuns = 1) {
     averageTime,
     averageTimeExclFirst,
     minTime,
-    maxTime
-
+    maxTime,
+    throughputAverageTime,
   };
   return timeInfo;
+}
+
+class PromiseQueue {
+  queue = [];
+  running = 0;
+
+  constructor(concurrency = Infinity) {
+    this.concurrency = concurrency;
+  }
+
+  add(func) {
+    return new Promise((resolve, reject) => {
+      this.queue.push(async () => {
+	this.running++;
+	try {
+	  resolve(await func());
+	} finally {
+	  this.running--;
+	  this.run();
+	}
+      });
+      this.run();
+    });
+  }
+
+  run() {
+    while (this.running < this.concurrency && this.queue.length > 0) {
+      this.queue.shift()();
+    }
+  }
 }
 
 /**
