@@ -202,9 +202,9 @@ function getPredictFnForModel(model, input) {
  * @param input The input tensor container for model inference.
  * @param numRuns The number of rounds for timing the inference process.
  */
-async function timeModelInference(model, input, numRuns = 1) {
+async function timeModelInference(model, input, numRuns = 1, pipelineConcurrency = 1) {
   const predict = getPredictFnForModel(model, input);
-  return timeInference(predict, numRuns);
+  return timeInference(predict, numRuns, pipelineConcurrency);
 }
 
 /**
@@ -238,35 +238,29 @@ async function timeModelInference(model, input, numRuns = 1) {
  * @param predict The predict function to execute and time.
  * @param numRuns The number of rounds for `predict` to execute and time.
  */
-async function timeInference(predict, numRuns = 1) {
+async function timeInference(predict, numRuns = 1, pipelineConcurrency = 1) {
   if (typeof predict !== 'function') {
     throw new Error(
       'The first parameter should be a function, while ' +
       `a(n) ${typeof predict} is found.`);
   }
 
-  const queue = new PromiseQueue(1);
-  const promises = [];
-  // const times = [];
-
+  const queue = new PromiseQueue(pipelineConcurrency);
+  const timePromises = [];
   const startTime = performance.now();
   for (let i = 0; i < numRuns; i++) {
-    promises.push(queue.add(async () => {
-      //console.log(`Run ${i} start`);
+    timePromises.push(queue.add(async () => {
       const start = performance.now();
       const res = await predict();
-      //console.log(`Run ${i} prediction done`);
       // The prediction can be tf.Tensor|tf.Tensor[]|{[name: string]: tf.Tensor}.
       const value = await downloadValuesFromTensorContainer(res);
-      //console.log(`Run ${i} Downloaded tensor`);
       const elapsedTime = performance.now() - start;
 
       tf.dispose(res);
-      //console.log(`Run ${i} finished`);
       return elapsedTime;
     }));
   }
-  times = await Promise.all(promises);
+  const times = await Promise.all(timePromises);
   const throughputAverageTime = (performance.now() - startTime) / numRuns;
 
   const averageTime = times.reduce((acc, curr) => acc + curr, 0) / times.length;

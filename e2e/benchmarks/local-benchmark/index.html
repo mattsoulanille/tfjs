@@ -94,6 +94,7 @@ limitations under the License.
     let runTimes = 50;
     let profileTimes = 1;
     let warmupTimes = 1;
+    let pipelineConcurrency = 1;
     // Default do not run any task.
     let task = '';
     function getURLState(url) {
@@ -110,6 +111,9 @@ limitations under the License.
       if (params.has('warmup')) {
         warmupTimes = Number(params.get('warmup'));
       }
+      if (params.has('pipelineConcurrency')) {
+        pipelineConcurrency = Number(params.get('pipelineConcurrency'));
+      }
       if (params.has('task')) {
         task = params.get('task');
       }
@@ -120,6 +124,7 @@ limitations under the License.
     let numWarmupsController = null;
     let numRunsController = null;
     let numProfilesController = null;
+    let pipelineConcurrencyController = null;
     let modelParameterFolder = null;
     let runButton = null;
     let correctnessButton = null;
@@ -162,6 +167,8 @@ limitations under the License.
         numRunsController.setValue(urlState.get('run'));
       if (numProfilesController != null && urlState.has('profile'))
         numProfilesController.setValue(urlState.get('profile'));
+      if (pipelineConcurrencyController != null && urlState.has('pipelineConcurrency'))
+        pipelineConcurrencyController.setValue(urlState.get('pipelineConcurrency'));
       // Only auto run when URI component exists.
       if (correctnessButton != null && task == 'correctness') {
         correctnessButton.domElement.click();
@@ -189,6 +196,7 @@ limitations under the License.
       numWarmups: warmupTimes,
       numRuns: runTimes,
       numProfiles: profileTimes,
+      pipelineConcurrency: pipelineConcurrency,
       benchmark: 'MobileNetV3',
       run: (v) => {
         runBenchmark().catch(e => {
@@ -349,6 +357,7 @@ limitations under the License.
       }
       appendRow(parameterTable, 'numRuns', state.numRuns);
       appendRow(parameterTable, 'numProfiles', state.numProfiles);
+      appendRow(parameterTable, 'pipelineConcurrency', state.pipelineConcurrency);
       appendRow(parameterTable, 'backend', state.backend);
       appendRow(parameterTable, 'kernelTiming', state.kernelTiming);
       if (isParameterDefined('inputSizes')) {
@@ -386,6 +395,7 @@ limitations under the License.
       }
       appendRow(parameterTable, 'numRuns', 1);
       appendRow(parameterTable, 'numProfiles', 1);
+      appendRow(parameterTable, 'pipelineConcurrency', 1);
       appendRow(parameterTable, 'backend', state.backend);
 
       await tf.nextFrame();
@@ -512,6 +522,8 @@ limitations under the License.
         state.numRuns = Number(urlState.get('run'));
       if (urlState.has('profile'))
         state.numProfiles = Number(urlState.get('profile'));
+      if (urlState.has('pipelineConcurrency'))
+        state.pipelineConcurrency = Number(urlState.get('pipelineConcurrency'));
       if (urlState.has('benchmark'))
         state.benchmark = urlState.get('benchmark');
       if (urlState.has('modelUrl'))
@@ -606,13 +618,13 @@ limitations under the License.
         const input = generateInputFromDef(state.inputs, model instanceof tf.GraphModel);
         try {
           timeInfo = isTflite() ?
-              await timeInference(()=>predict(input), numRuns) :
-              await timeModelInference(model, input, numRuns);
+              await timeInference(()=>predict(input), numRuns, state.pipelineConcurrency) :
+              await timeModelInference(model, input, numRuns, state.pipelineConcurrency);
         } finally {
           tf.dispose(input);
         }
       } else {
-        timeInfo = await timeInference(() => predict(model), numRuns);
+        timeInfo = await timeInference(() => predict(model), numRuns, state.pipelineConcurrency);
       }
 
       const forceInferenceTrendYMinToZero = true;
@@ -915,6 +927,7 @@ limitations under the License.
       numWarmupsController = parameterFolder.add(state, 'numWarmups');
       numRunsController = parameterFolder.add(state, 'numRuns');
       numProfilesController = parameterFolder.add(state, 'numProfiles');
+      pipelineConcurrencyController = parameterFolder.add(state, 'pipelineConcurrency');
       parameterFolder.add(state, 'kernelTiming', ['aggregate', 'individual']);
       parameterFolder.open();
 
