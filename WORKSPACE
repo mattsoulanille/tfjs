@@ -133,35 +133,35 @@ git_repository(
 # explicitly enumerate here. See https://docs.bazel.build/versions/master/external.html#transitive-dependencies
 
 # FP16 library, used for half-precision conversions
-http_archive(
-    name = "FP16",
-    build_file = "@xnnpack//third_party:FP16.BUILD",
-    sha256 = "0d56bb92f649ec294dbccb13e04865e3c82933b6f6735d1d7145de45da700156",
-    strip_prefix = "FP16-3c54eacb74f6f5e39077300c5564156c424d77ba",
-    urls = [
-        "https://github.com/Maratyszcza/FP16/archive/3c54eacb74f6f5e39077300c5564156c424d77ba.zip",
-    ],
-)
+# http_archive(
+#     name = "FP16",
+#     build_file = "@xnnpack//third_party:FP16.BUILD",
+#     sha256 = "0d56bb92f649ec294dbccb13e04865e3c82933b6f6735d1d7145de45da700156",
+#     strip_prefix = "FP16-3c54eacb74f6f5e39077300c5564156c424d77ba",
+#     urls = [
+#         "https://github.com/Maratyszcza/FP16/archive/3c54eacb74f6f5e39077300c5564156c424d77ba.zip",
+#     ],
+# )
 
 # FXdiv library, used for repeated integer division by the same factor
-http_archive(
-    name = "FXdiv",
-    sha256 = "ab7dfb08829bee33dca38405d647868fb214ac685e379ec7ef2bebcd234cd44d",
-    strip_prefix = "FXdiv-b408327ac2a15ec3e43352421954f5b1967701d1",
-    urls = [
-        "https://github.com/Maratyszcza/FXdiv/archive/b408327ac2a15ec3e43352421954f5b1967701d1.zip",
-    ],
-)
+# http_archive(
+#     name = "FXdiv",
+#     sha256 = "ab7dfb08829bee33dca38405d647868fb214ac685e379ec7ef2bebcd234cd44d",
+#     strip_prefix = "FXdiv-b408327ac2a15ec3e43352421954f5b1967701d1",
+#     urls = [
+#         "https://github.com/Maratyszcza/FXdiv/archive/b408327ac2a15ec3e43352421954f5b1967701d1.zip",
+#     ],
+# )
 
 # pthreadpool library, used for parallelization
-http_archive(
-    name = "pthreadpool",
-    sha256 = "8461f6540ae9f777ce20d1c0d1d249e5e61c438744fb390c0c6f91940aa69ea3",
-    strip_prefix = "pthreadpool-545ebe9f225aec6dca49109516fac02e973a3de2",
-    urls = [
-        "https://github.com/Maratyszcza/pthreadpool/archive/545ebe9f225aec6dca49109516fac02e973a3de2.zip",
-    ],
-)
+# http_archive(
+#     name = "pthreadpool",
+#     sha256 = "8461f6540ae9f777ce20d1c0d1d249e5e61c438744fb390c0c6f91940aa69ea3",
+#     strip_prefix = "pthreadpool-545ebe9f225aec6dca49109516fac02e973a3de2",
+#     urls = [
+#         "https://github.com/Maratyszcza/pthreadpool/archive/545ebe9f225aec6dca49109516fac02e973a3de2.zip",
+#     ],
+# )
 
 # clog library, used for logging
 http_archive(
@@ -174,28 +174,28 @@ http_archive(
     ],
 )
 
-# cpuinfo library, used for detecting processor characteristics
-http_archive(
-    name = "cpuinfo",
-    build_file = "@xnnpack//third_party:cpuinfo.BUILD",
-    patches = ["@xnnpack//third_party:cpuinfo.patch"],
-    sha256 = "a7f9a188148a1660149878f737f42783e72f33a4f842f3e362fee2c981613e53",
-    strip_prefix = "cpuinfo-ed8b86a253800bafdb7b25c5c399f91bff9cb1f3",
-    urls = [
-        "https://github.com/pytorch/cpuinfo/archive/ed8b86a253800bafdb7b25c5c399f91bff9cb1f3.zip",
-    ],
-)
+# # cpuinfo library, used for detecting processor characteristics
+# http_archive(
+#     name = "cpuinfo",
+#     build_file = "@xnnpack//third_party:cpuinfo.BUILD",
+#     patches = ["@xnnpack//third_party:cpuinfo.patch"],
+#     sha256 = "a7f9a188148a1660149878f737f42783e72f33a4f842f3e362fee2c981613e53",
+#     strip_prefix = "cpuinfo-ed8b86a253800bafdb7b25c5c399f91bff9cb1f3",
+#     urls = [
+#         "https://github.com/pytorch/cpuinfo/archive/ed8b86a253800bafdb7b25c5c399f91bff9cb1f3.zip",
+#     ],
+# )
 
 # psimd library, used for fallback 128-bit SIMD micro-kernels
-http_archive(
-    name = "psimd",
-    build_file = "@xnnpack//third_party:psimd.BUILD",
-    sha256 = "dc615342bcbe51ca885323e51b68b90ed9bb9fa7df0f4419dbfa0297d5e837b7",
-    strip_prefix = "psimd-072586a71b55b7f8c584153d223e95687148a900",
-    urls = [
-        "https://github.com/Maratyszcza/psimd/archive/072586a71b55b7f8c584153d223e95687148a900.zip",
-    ],
-)
+# http_archive(
+#     name = "psimd",
+#     build_file = "@xnnpack//third_party:psimd.BUILD",
+#     sha256 = "dc615342bcbe51ca885323e51b68b90ed9bb9fa7df0f4419dbfa0297d5e837b7",
+#     strip_prefix = "psimd-072586a71b55b7f8c584153d223e95687148a900",
+#     urls = [
+#         "https://github.com/Maratyszcza/psimd/archive/072586a71b55b7f8c584153d223e95687148a900.zip",
+#     ],
+# )
 
 git_repository(
     name = "com_google_googletest",
@@ -263,9 +263,9 @@ load("//tfjs-tfdf:tfdf_repositories.bzl", "tfdf_repositories")
 
 tfdf_repositories()
 
-TENSORFLOW_COMMIT = "d5b57ca93e506df258271ea00fc29cf98383a374"
+TENSORFLOW_COMMIT = "5d37bd0350f0144632629c1aa2ebaef6ca76300b"
 
-TENSORFLOW_SHA256 = "37abf3d45a34e11012ef60ee6dcd79e317384b62d319b6346cc2a94eb447e172"
+TENSORFLOW_SHA256 = "aefecbc982586a731f179c730cff5307c5906b8bebb7474da92ad974ae228a8d"
 
 http_archive(
     name = "org_tensorflow",
