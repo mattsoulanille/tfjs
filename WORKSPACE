@@ -204,14 +204,14 @@ git_repository(
     shallow_since = "1570558426 -0400",
 )
 
-http_archive(
-    name = "rules_cc",
-    sha256 = "90d5a66950b492cbf86201cdc49c4b59796a85a4eb9fd63c07afe5f7132ea623",
-    strip_prefix = "rules_cc-8346df34b6593b051403b8e429db15c7f4ead937",
-    urls = [
-        "https://github.com/bazelbuild/rules_cc/archive/8346df34b6593b051403b8e429db15c7f4ead937.zip",
-    ],
-)
+# http_archive(
+#     name = "rules_cc",
+#     sha256 = "90d5a66950b492cbf86201cdc49c4b59796a85a4eb9fd63c07afe5f7132ea623",
+#     strip_prefix = "rules_cc-8346df34b6593b051403b8e429db15c7f4ead937",
+#     urls = [
+#         "https://github.com/bazelbuild/rules_cc/archive/8346df34b6593b051403b8e429db15c7f4ead937.zip",
+#     ],
+# )
 
 http_archive(
     name = "rules_python",
@@ -262,3 +262,38 @@ tflite_repositories()
 load("//tfjs-tfdf:tfdf_repositories.bzl", "tfdf_repositories")
 
 tfdf_repositories()
+
+TENSORFLOW_COMMIT = "d5b57ca93e506df258271ea00fc29cf98383a374"
+
+TENSORFLOW_SHA256 = "37abf3d45a34e11012ef60ee6dcd79e317384b62d319b6346cc2a94eb447e172"
+
+http_archive(
+    name = "org_tensorflow",
+    sha256 = TENSORFLOW_SHA256,
+    strip_prefix = "tensorflow-" + TENSORFLOW_COMMIT,
+    urls = [
+        "https://github.com/tensorflow/tensorflow/archive/" + TENSORFLOW_COMMIT +
+        ".tar.gz",
+    ],
+    # patches = [
+    #     # We need to rename lite/ios/BUILD.apple to lite/ios/BUILD.
+    #     Label("//third_party:tensorflow_lite_ios_build.patch"),
+    # ],
+    # patch_args = ["-p1"],
+)
+
+load("@org_tensorflow//tensorflow:workspace3.bzl", "tf_workspace3")
+
+tf_workspace3()
+
+load("@org_tensorflow//tensorflow:workspace2.bzl", "tf_workspace2")
+
+tf_workspace2()
+
+load("@org_tensorflow//tensorflow:workspace1.bzl", "tf_workspace1")
+
+tf_workspace1()
+
+load("@org_tensorflow//tensorflow:workspace0.bzl", "tf_workspace0")
+
+tf_workspace0()
