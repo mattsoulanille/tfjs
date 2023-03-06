@@ -17,6 +17,10 @@ cc_library(
         "@org_tensorflow//tensorflow/lite/kernels:builtin_ops",
         "@org_tensorflow//tensorflow/lite/kernels:kernel_util",
         "@org_tensorflow//tensorflow/lite/kernels/internal:tensor",
+        "@org_tensorflow//tensorflow/lite/profiling:profile_buffer",
+        "@org_tensorflow//tensorflow/lite/profiling:profile_summarizer",
+        "@org_tensorflow//tensorflow/lite/profiling:profile_summary_formatter",
+        "@org_tensorflow//tensorflow/lite/profiling:profiler",
         "@org_tensorflow//tensorflow/lite/schema:schema_fbs",
     ],
 )

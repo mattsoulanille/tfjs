@@ -33,6 +33,41 @@ using absl::StatusOr;
 namespace tfweb {
 namespace generic {
 
+std::string GetTensorName(const tflite::Interpreter& interpreter,
+                          int tensor_index) {
+  const auto tensor = interpreter.tensor(tensor_index);
+  if (tensor == nullptr || tensor->name == nullptr) {
+    return "Unknown";
+  }
+  return tensor->name;
+}
+
+std::vector<std::string> GetTensorNames(const tflite::Interpreter& interpreter,
+                                        const TfLiteIntArray* tensor_indices) {
+  std::vector<std::string> tensors;
+  tensors.reserve(tensor_indices->size);
+  for (int i = 0; i < tensor_indices->size; i++) {
+    tensors.push_back(GetTensorName(interpreter, tensor_indices->data[i]));
+  }
+  return tensors;
+}
+
+std::string ToString(const std::vector<std::string>& str_vector) {
+  std::stringstream stream;
+  stream << "[";
+  bool first = true;
+  for (const auto& s : str_vector) {
+    if (!first) {
+      stream << ", ";
+    } else {
+      first = false;
+    }
+    stream << s;
+  }
+  stream << "]";
+  return stream.str();
+}
+
 absl::StatusOr<std::unique_ptr<TFLiteWebModelRunner>>
 TFLiteWebModelRunner::CreateFromBufferAndOptions(
     const char* model_buffer_data, const size_t model_buffer_size,
@@ -48,13 +83,71 @@ TFLiteWebModelRunner::CreateFromBufferAndOptions(
 }
 
 bool TFLiteWebModelRunner::Infer() {
+  if (options_.enable_profiling) {
+    profiler_.StartProfiling();
+  }
   auto status = interpreter_->Invoke();
+  if (options_.enable_profiling) {
+    profiler_.StopProfiling();
+  }
   if (status != kTfLiteOk) {
     // TODO(jingjin): return error status to JS.
     printf("Failed to run the model\n");
     return false;
   }
   return true;
+}
+
+std::vector<ProfileItem> TFLiteWebModelRunner::GetProfilingResults() {
+  std::vector<ProfileItem> profileItems;
+  if (!options_.enable_profiling) {
+    return profileItems;
+  }
+
+  // Process events from collected by profiler.
+  auto profile_events = profiler_.GetProfileEvents();
+  std::vector<const tflite::profiling::ProfileEvent*> events;
+  // Only keep events whose end time > begin time.
+  std::copy_if(profile_events.begin(), profile_events.end(),
+               std::back_inserter(events),
+               [](const tflite::profiling::ProfileEvent* e) {
+                 return e->elapsed_time >= 0;
+               });
+  if (events.empty()) {
+    return profileItems;
+  }
+
+  // Extract node name and execution time from all events.
+  //
+  // This is a simplified version of ProcessProfiles method from
+  // //third_party/tensorflow/lite/profiling/profile_summarizer.cc.
+  for (auto event : events) {
+    const auto subgraph_index = event->extra_event_metadata;
+    int node_exec_ms = static_cast<int>((event->elapsed_time) / 1000);
+    // Only process events related to ops.
+    if (event->event_type ==
+        tflite::Profiler::EventType::OPERATOR_INVOKE_EVENT) {
+      const auto node_index = event->event_metadata;
+      auto subgraph = const_cast<tflite::Interpreter&>(*interpreter_)
+                          .subgraph(subgraph_index);
+      auto node_reg = subgraph->node_and_registration(node_index);
+      auto outputs = node_reg->first.outputs;
+      const std::string node_name =
+          ToString(GetTensorNames(*interpreter_, outputs));
+      const std::string node_type(event->tag);
+      profileItems.push_back({node_type, node_name, node_exec_ms});
+    }
+  }
+  return profileItems;
+}
+
+std::string TFLiteWebModelRunner::GetProfilingSummary() {
+  if (options_.enable_profiling) {
+    auto profile_events = profiler_.GetProfileEvents();
+    profile_summarizer_.ProcessProfiles(profile_events, *interpreter_);
+    return profile_summarizer_.GetOutputString();
+  }
+  return "";
 }
 
 std::vector<TFLiteWebModelRunnerTensorInfo> TFLiteWebModelRunner::GetInputs() {
@@ -99,6 +192,10 @@ TfLiteStatus TFLiteWebModelRunner::InitFromBuffer(
     return kTfLiteError;
   }
 
+  if (options_.enable_profiling) {
+    interpreter_->SetProfiler(&profiler_);
+    profiler_.Reset();
+  }
   // Allocate memory for the tensors in the model.
   return interpreter_->AllocateTensors();
 }

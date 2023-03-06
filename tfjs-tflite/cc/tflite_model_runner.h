@@ -22,19 +22,27 @@ limitations under the License.
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/interpreter.h"
 #include "tensorflow/lite/kernels/register.h"
-//#include "tensorflow_lite_support/cc/port/statusor.h"
+#include "tensorflow/lite/profiling/buffered_profiler.h"
+#include "tensorflow/lite/profiling/profile_summarizer.h"
+#include "tensorflow/lite/profiling/profile_summary_formatter.h"
 #include "absl/status/statusor.h"  // from @com_google_absl
 
 namespace tfweb {
 namespace generic {
 
 constexpr int kDefaultNumThreads = -1;
+constexpr bool kEnableProfiling = false;
+constexpr int kDefaultMaxProfilingBufferEntries = 1024;
 
 // Available options.
 struct TFLiteWebModelRunnerOptions {
   // Set the number of threads available to the interpreter.
   // -1 means to let interpreter set the threads count available to itself.
   int num_threads = kDefaultNumThreads;
+  // Whether to enable profiling.
+  bool enable_profiling = kEnableProfiling;
+  // Maximum number of entries that the profiler can keep.
+  int max_profiling_buffer_entries = kDefaultMaxProfilingBufferEntries;
 
   // TODO(jingjin): Add more as needed.
 };
@@ -62,6 +70,15 @@ struct TFLiteWebModelRunnerTensorInfo {
   std::string data_type;
 };
 
+struct ProfileItem {
+  // The type of the node, e.g. "CONV_2D".
+  std::string node_type;
+  // The name of the node, e.g. "MobilenetV1/MobilenetV1/Conv2d_0/Relu6".
+  std::string node_name;
+  // The execution time (in ms) of the node.
+  int node_exec_ms;
+};
+
 // A class to run arbitary TFLite model.
 //
 // This is essentially a thin wrapper around TFLite's Interpreter. It provides a
@@ -72,7 +89,11 @@ struct TFLiteWebModelRunnerTensorInfo {
 class TFLiteWebModelRunner {
  public:
   explicit TFLiteWebModelRunner(const TFLiteWebModelRunnerOptions& options)
-      : options_(options) {}
+      : options_(options),
+        profiler_(options.max_profiling_buffer_entries),
+        profile_summarizer_(
+            std::make_shared<
+                tflite::profiling::ProfileSummaryDefaultFormatter>()) {}
 
   // A factory function to create a TFLiteWebModelRunner from the given model
   // buffer and options.
@@ -90,6 +111,18 @@ class TFLiteWebModelRunner {
   // Runs the model.
   bool Infer();
 
+  // Gets per-node profiling results.
+  //
+  // This is only useful when TFLiteWebModelRunnerOptions.enable_profiling is
+  // set to true.
+  std::vector<ProfileItem> GetProfilingResults();
+
+  // Gets the profiling summary.
+  //
+  // This is only useful when TFLiteWebModelRunnerOptions.enable_profiling is
+  // set to true.
+  std::string GetProfilingSummary();
+
  private:
   TfLiteStatus InitFromBuffer(const char* model_buffer_data,
                               size_t model_buffer_size,
@@ -99,6 +132,8 @@ class TFLiteWebModelRunner {
   const TFLiteWebModelRunnerOptions& options_;
   std::unique_ptr<::tflite::Interpreter> interpreter_;
   std::unique_ptr<::tflite::FlatBufferModel> model_;
+  tflite::profiling::BufferedProfiler profiler_;
+  tflite::profiling::ProfileSummarizer profile_summarizer_;
 };
 
 }  // namespace generic
