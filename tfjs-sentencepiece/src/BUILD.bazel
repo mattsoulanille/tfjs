@@ -16,6 +16,7 @@ cc_binary(
     ],
     linkopts = [
         "--bind",
+        "-s MODULARIZE=1",
     ],
     linkstatic = 1,
     deps = [

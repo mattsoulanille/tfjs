@@ -1,7 +1,7 @@
-import * as wasm from './sentencepiece';
+import moduleFactory from './sentencepiece';
 
-export function hello() {
-  console.log('hello!!!');
+async function main() {
+  (window as any).sentencepiece = await moduleFactory();
 }
-console.log(wasm);
-hello();
+
+main();
