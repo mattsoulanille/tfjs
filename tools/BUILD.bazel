@@ -95,3 +95,25 @@ ts_library(
         "@npm//typescript",
     ],
 )
+
+ts_library(
+    name = "base64_bundle_lib",
+    srcs = [
+        "base64_bundle.ts",
+    ],
+    deps = [
+        "@npm//@types/argparse",
+        "@npm//@types/brotli",
+        "@npm//@types/node",
+        "@npm//argparse",
+        "@npm//brotli",
+    ],
+)
+
+nodejs_binary(
+    name = "base64_bundle_bin",
+    data = [
+        ":base64_bundle_lib",
+    ],
+    entry_point = "base64_bundle.ts",
+)
