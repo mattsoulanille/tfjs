@@ -13,7 +13,9 @@
 # limitations under the License.
 # =============================================================================
 load("@build_bazel_rules_nodejs//:index.bzl", "nodejs_binary")
+load("@npm//@bazel/jasmine:index.bzl", "jasmine_node_test")
 load("//tools:defaults.bzl", "ts_library")
+load("//tools:base64_bundle.bzl", "base64_bundle")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -103,10 +105,8 @@ ts_library(
     ],
     deps = [
         "@npm//@types/argparse",
-        "@npm//@types/brotli",
         "@npm//@types/node",
         "@npm//argparse",
-        "@npm//brotli",
     ],
 )
 
@@ -116,4 +116,32 @@ nodejs_binary(
         ":base64_bundle_lib",
     ],
     entry_point = "base64_bundle.ts",
+)
+
+base64_bundle(
+    name = "testfile",
+    src = ":testfile.bin",
+)
+
+ts_library(
+    name = "base64_bundle_test_lib",
+    srcs = [
+        "base64_bundle_test.ts",
+        ":testfile",
+    ],
+    module_name = "base64_bundle_test",
+    deps = [
+        "@npm//@types/jasmine",
+        "@npm//@types/node",
+    ],
+)
+
+jasmine_node_test(
+    name = "base64_bundle_test",
+    data = [
+        "testfile.bin",
+    ],
+    deps = [
+        ":base64_bundle_test_lib",
+    ],
 )
