@@ -16,20 +16,18 @@
 load("@build_bazel_rules_nodejs//:providers.bzl", "run_node")
 
 def _base64_bundle_impl(ctx):
-    print("Hello")
     output_file = ctx.actions.declare_file(ctx.attr.name + ".ts")
-    input_paths = [src.path for src in ctx.files.srcs]
-    print(input_paths)
 
     run_node(
         ctx,
         executable = "base64_bundle_bin",
-        inputs = ctx.files.srcs,
+        inputs = ctx.files.src,
         outputs = [output_file],
         arguments = [
             "-o",
             output_file.path,
-        ] + input_paths,
+            ctx.file.src.path,
+        ],
     )
 
     return [DefaultInfo(files = depset([output_file]))]
@@ -43,9 +41,9 @@ base64_bundle = rule(
             default = Label("@//tools:base64_bundle_bin"),
             doc = "The script that generates the bundle",
         ),
-        "srcs": attr.label_list(
-            doc = "Files to bundle",
-            allow_files = True,
+        "src": attr.label(
+            doc = "The file to bundle",
+            allow_single_file = True,
             mandatory = True,
         ),
     },
