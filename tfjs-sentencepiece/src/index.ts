@@ -3,15 +3,38 @@ import {Tensor, tensor, tensor1d, util} from '@tensorflow/tfjs-core';
 
 import sentencePieceModuleFactory from './sentencepiece';
 import {SentencePieceModule, Vector} from './sentencepiece';
+import * as wasmData from './wasm_bundle';
 
 type MultiDimsNumberArray = number|number[]|number[][]|number[][][]|
     number[][][][]|number[][][][][]|number[][][][][][];
 
-export async function loadModule() {
-  return await sentencePieceModuleFactory({});
+let modulePromise: Promise<SentencePieceModule> | undefined;  
+let wasmPath = 'todo';
+/**
+ * Get the SentencePiece WASM module.
+ *
+ * Load the WASM module if it hasn't already been loaded.
+ */
+export async function getSentencePiece(): Promise<SentencePieceModule> {
+  // Returns a function that will only load the model after it's requested
+  // (manually or by a SentencePiece op).
+  if (!modulePromise) {
+    modulePromise = sentencePieceModuleFactory({
+      mainScriptUrlOrBlob: new Blob([wasmData.data]),
+    });
+  }
+  return modulePromise;
 }
 
-const modulePromise: Promise<SentencePieceModule> = loadModule();
+export function setWasmPath(newWasmPath: string) {
+  if (modulePromise != null) {
+    console.warn(`SentencePiece is already loading wasm from ${wasmPath}. ` +
+      `The new path will not be used. Make sure to call setWasmPath before ` +
+      `loadModule or any other sentencepiece functions or ops.`);
+    return;
+  }
+  wasmPath = newWasmPath;
+}
 
 function vectorPush<T>(vec: Vector<T>, values: T[]): Vector<T> {
   for (const value of values) vec.push_back(value);

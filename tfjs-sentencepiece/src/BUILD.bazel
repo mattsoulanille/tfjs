@@ -4,6 +4,7 @@ load("@rules_cc//cc:defs.bzl", "cc_binary")
 load("//tools:copy_to_dist.bzl", "copy_to_dist")
 load("//tools:defaults.bzl", "ts_library")
 load("//tools:get_extension.bzl", "get_extension")
+load("//tools:base64_bundle.bzl", "base64_bundle")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -56,6 +57,24 @@ get_extension(
     ],
 )
 
+get_extension(
+    name = "wasm_extension_only",
+    srcs = [
+        ":sentencepiece_wasm",
+    ],
+    include = [
+        ".wasm",
+    ],
+    exclude = [
+        ".debug.wasm",
+    ],
+)
+
+base64_bundle(
+    name = "wasm_bundle",
+    src = ":wasm_extension_only",
+)
+
 # Copy the wasm files out of their directory into dist/ because when the rollup
 # bundle is loaded by the browser, it will look for the .wasm file in the same
 # directory it's in.
@@ -82,8 +101,11 @@ js_library(
 ts_library(
     name = "tfjs-sentencepiece_lib",
     srcs = glob(
-        ["**/*.ts"],
-    ),
+        [
+            "**/*.ts",
+        ],
+        exclude = ["*_test.ts"],
+    ) + [":wasm_bundle"],
     module_name = "@tensorflow/tfjs-sentencepiece",
     deps = [
         ":sentencepiece_wasm_lib",
