@@ -69,6 +69,8 @@ const TEST_FILTERS: TestFilter[] = [
     excludes: [
       'gradients',  // Failing on MacOS
       //'gradient with clones', // Failing on MacOS
+      // https://github.com/tensorflow/tfjs/issues/7618
+      'numbers exceed float32 precision',
     ],
   },
   {
@@ -123,6 +125,12 @@ const TEST_FILTERS: TestFilter[] = [
       'HTMLVideoElement',        // Device is lost on Linux
       'canvas and image match',  // Failing on Linux
     ],
+  },
+  {
+    startsWith: 'Draw',
+    excludes: [
+      'on 2d context',
+    ]
   },
   {
     startsWith: 'sign ',
