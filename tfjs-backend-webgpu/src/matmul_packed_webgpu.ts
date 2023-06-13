@@ -16,8 +16,9 @@
  */
 
 import {backend_util, TensorInfo, util} from '@tensorflow/tfjs-core';
-import {activationFnSnippet, biasActivationSnippet, typeSnippet} from './activation_util';
-import {getMainHeaderString as main, WebGPUProgram} from './webgpu_program';
+
+import {activationFnSnippet, biasActivationSnippet} from './activation_util';
+import {getMainHeaderString as main, typeSnippet, WebGPUProgram} from './webgpu_program';
 import {computeDispatch, computeWorkgroupInfoForMatMul} from './webgpu_util';
 
 export function matMulReadFnSource(
@@ -37,9 +38,8 @@ export function matMulReadFnSource(
                                `value = getB(batch, row, col);`;
 
   return `
-  fn mm_readA(batch: i32, row: i32, colIn: i32) -> ${typeSnippet(component)} {
+  fn mm_readA(batch: i32, row: i32, col: i32) -> ${typeSnippet(component)} {
     var value = ${typeSnippet(component)}(0.0);
-    let col = colIn * ${component};
     ${
       fitAOuter && fitInner ?
           sampleA :
@@ -55,8 +55,7 @@ export function matMulReadFnSource(
     return value;
   }
 
-  fn mm_readB(batch: i32, row: i32, colIn: i32) -> ${typeSnippet(component)} {
-    let col = colIn * ${component};
+  fn mm_readB(batch: i32, row: i32, col: i32) -> ${typeSnippet(component)} {
     var value = ${typeSnippet(component)}(0.0);
     ${sampleB}
     return value;
@@ -72,9 +71,8 @@ export function matMulReadWriteFnSource(
   ${
       matMulReadFnSource(
           transposeA, transposeB, fitAOuter, fitBOuter, fitInner, component)}
-  fn mm_write(batch: i32, row: i32, colIn: i32, valueIn: ${
+  fn mm_write(batch: i32, row: i32, col: i32, valueIn: ${
       typeSnippet(component)}) {
-    let col = colIn * ${component};
     ${
       fitAOuter && fitBOuter ?
           '' :
@@ -95,49 +93,47 @@ const writeDataToSubAVec4Snippet =
         return `
         mm_Asub[inputRow][inputCol] = mm_readA(batchA,
           kStart + inputRow,
-          globalRowStart / ${innerElementSize} + inputCol);
+          globalRowStart + inputCol * ${innerElementSize});
         `;
 
       } else {
         return `
         mm_Asub[inputRow][inputCol] = mm_readA(batchA,
           globalRow + innerRow,
-          kStart / ${innerElementSize} + inputCol);
+          kStart + inputCol * ${innerElementSize});
         `;
       }
     };
 
 const calculateResultSnippet =
-    (transposeA: boolean, innerElementSize: number, rowPerThread: number) => {
+    (transposeA: boolean, innerElementSize: number, rowPerThread: number,
+     tileInner: number) => {
       if (transposeA) {
         return `
-        let ACached0 = mm_Asub[k * ${innerElementSize}][localRow];
-        let ACached1 = mm_Asub[k * ${innerElementSize} + 1][localRow];
-        let ACached2 = mm_Asub[k * ${innerElementSize} + 2][localRow];
-        ${
-            innerElementSize === 3 ? '' :
-                                     `let ACached3 = mm_Asub[k * ${
-                                         innerElementSize} + 3][localRow];`}
+      for (var k = 0; k < ${tileInner}; k++) {
+        let BCached0 = mm_Bsub[k][tileCol];
+        let ACached0 = mm_Asub[k][localRow];
         for (var i = 0; i < ${rowPerThread}; i++) {
-          acc[i] = BCached0 * ACached0[i] + acc[i];
-          acc[i] = BCached1 * ACached1[i] + acc[i];
-          acc[i] = BCached2 * ACached2[i] + acc[i];
-          ${
-            innerElementSize === 3 ?
-                '' :
-                'acc[i] = BCached3 * ACached3[i] + acc[i];'}
-        }`;
+          acc[i] = fma(BCached0, vec4<f32>(ACached0[i]), acc[i]);
+        }
+      }`;
       } else {
+        let bCachedStr = '';
+        let accStr = '';
+        for (let i = 0; i < innerElementSize; i++) {
+          bCachedStr += `let BCached${i} = mm_Bsub[k * ${innerElementSize} + ${
+              i}][tileCol];`;
+          accStr +=
+              `acc[i] = fma(BCached${i}, vec4<f32>(ACached[${i}]), acc[i]);`;
+        }
         return `
+      for (var k = 0; k < ${tileInner / innerElementSize}; k++) {
+        ${bCachedStr}
         for (var i = 0; i < ${rowPerThread}; i++) {
           let ACached = mm_Asub[tileRow + i][k];
-          acc[i] = BCached0 * ACached.x + acc[i];
-          acc[i] = BCached1 * ACached.y + acc[i];
-          acc[i] = BCached2 * ACached.z + acc[i];
-          ${
-            innerElementSize === 3 ? '' :
-                                     'acc[i] = BCached3 * ACached.w + acc[i];'}
-        }`;
+          ${accStr}
+        }
+      }`;
       }
     };
 
@@ -152,6 +148,7 @@ export function makeMatMulPackedVec4Source(
   const innerElementSize = tileAWidth / workgroupSize[0];
   const rowPerThreadB = tileInner / workgroupSize[1];
   const rowPerThread = workPerThread[1];
+  const colPerThread = workPerThread[0];
   util.assert(
       ((transposeA && innerElementSize === 4 && workPerThread[1] === 4) ||
        (!transposeA && (innerElementSize === 3 || innerElementSize === 4))) &&
@@ -176,7 +173,7 @@ export function makeMatMulPackedVec4Source(
     let tileCol = i32(localId.x);
 
     let globalRow = i32(globalId.y) * ${rowPerThread};
-    let globalCol = i32(globalId.x);
+    let globalCol = i32(globalId.x) * ${colPerThread};
     let batch = ${splitK ? '0' : 'i32(globalId.z)'};
     let batchA = ${
       splitK || !broadcastBatch ? 'batch' : 'batch % uniforms.aShape[0]'};
@@ -211,19 +208,9 @@ export function makeMatMulPackedVec4Source(
         workgroupBarrier();
 
         // Compute acc values for a single thread.
-        for (var k = 0; k < ${tileInner / innerElementSize}; k++) {
-            let BCached0 = mm_Bsub[k * ${innerElementSize}][tileCol];
-            let BCached1 = mm_Bsub[k * ${innerElementSize} + 1][tileCol];
-            let BCached2 = mm_Bsub[k * ${innerElementSize} + 2][tileCol];
-            ${
-      innerElementSize === 3 ?
-          '' :
-          `let BCached3 = mm_Bsub[k * ${innerElementSize} + 3][tileCol];`}
-
-            ${
-      calculateResultSnippet(transposeA, innerElementSize, rowPerThread)}
-        }
-
+        ${
+      calculateResultSnippet(
+          transposeA, innerElementSize, rowPerThread, tileInner)}
         workgroupBarrier();
     }
 
@@ -322,8 +309,8 @@ export function makeMatMulPackedSource(
               `mm_Asub[k][localRow + innerRow * ${workgroupSize[1]}];` :
               `mm_Asub[localRow + innerRow * ${workgroupSize[1]}][k];`}
             for (var innerCol = 0; innerCol < ${colPerThread}; innerCol++) {
-              acc[innerRow][innerCol] = acc[innerRow][innerCol] +
-                  ACached * BCached[innerCol];
+              acc[innerRow][innerCol] =
+                  fma(ACached, BCached[innerCol], acc[innerRow][innerCol]);
             }
           }
         }
@@ -382,7 +369,8 @@ export function makeMatMulPackedSource(
       for (var innerRow = 0; innerRow < ${rowPerThread}; innerRow++) {
         ${readDataFromSubASnippet(transposeA)}
         for (var innerCol = 0; innerCol < ${colPerThread}; innerCol++) {
-          acc[innerRow][innerCol] = acc[innerRow][innerCol] + ACached * BCached[innerCol];
+          acc[innerRow][innerCol] =
+              fma(ACached, BCached[innerCol], acc[innerRow][innerCol]);
         }
       }
     }
@@ -509,6 +497,7 @@ export class MatMulPackedProgram implements WebGPUProgram {
   tileInner: number;
   isVectorA: boolean;
   isVec4: boolean;
+  outputComponent: number;
   private sequentialAccessByThreads: boolean;
 
   constructor(
@@ -523,6 +512,7 @@ export class MatMulPackedProgram implements WebGPUProgram {
     this.isVec4 = ((dimInner % 4 === 0 && !transposeA) ||
                    (outputShape[1] % 4 === 0 && transposeA)) &&
         outputShape[2] % 4 === 0 && !transposeB;
+    this.outputComponent = this.isVec4 ? 4 : 1;
     this.isVectorA = outputShape[1] === 1 && !transposeA;
 
     if (!this.isVec4 && this.isVectorA) {

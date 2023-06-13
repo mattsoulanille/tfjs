@@ -25,10 +25,12 @@
 
 import * as argparse from 'argparse';
 import chalk from 'chalk';
+import semver from 'semver';
 import * as fs from 'fs';
 import * as shell from 'shelljs';
 import {TMP_DIR, $, question, makeReleaseDir, createPR, TFJS_RELEASE_UNIT, updateTFJSDependencyVersions, ALPHA_RELEASE_UNIT, getMinorUpdateVersion, getPatchUpdateVersion, E2E_PHASE, getReleaseBlockers, getNightlyVersion} from './release-util';
 import * as path from 'path';
+import {findDeps} from './graph_utils';
 
 const parser = new argparse.ArgumentParser({
   description: 'Create a release PR for the tfjs monorepo.',
@@ -57,8 +59,8 @@ parser.addArgument(['--commit-hash', '--hash'], {
 
 parser.addArgument(['--use-local-changes'], {
   action: 'storeTrue',
-  help: 'Use local changes to the repo instead of a remote branch. Only for'
-      + ' testing and debugging.',
+  help: 'Use local changes to the repo instead of a remote branch. Only for' +
+      ' testing and debugging.',
 });
 
 parser.addArgument('--force', {
@@ -66,15 +68,17 @@ parser.addArgument('--force', {
   help: 'Force a release even if there are release blockers.',
 });
 
-async function getNewVersion(packageName: string,
-                             incrementVersion: (version: string) => string,
-                             ask = true) {
-
-  let newVersion: string | undefined;
+async function getNewVersion(
+    packageName: string, incrementVersion: (version: string) => string,
+    ask = true) {
+  let newVersion: string|undefined;
   try {
-    const latestVersion =
-      $(`npm view @tensorflow/${packageName} dist-tags.latest`);
-    newVersion = incrementVersion(latestVersion);
+    const versions: string[] =
+        JSON.parse($(`npm view @tensorflow/${packageName} versions --json`));
+    if (Array.isArray(versions) && versions.length !== 0) {
+      const latestVersion = semver.rsort(versions)[0];
+      newVersion = incrementVersion(latestVersion);
+    }
   } catch (e) {
     // Suppress errors when guessing the version.
   }
@@ -83,36 +87,38 @@ async function getNewVersion(packageName: string,
     if (!ask) {
       return newVersion;
     }
-    newVersion = await question(
-      `New version for ${packageName} (leave empty for ${newVersion}): `)
-      || newVersion;
+    newVersion = await question(`New version for ${
+                     packageName} (leave empty for ${newVersion}): `) ||
+        newVersion;
     return newVersion;
   }
 
   if (!ask) {
-    console.warn('Guessing version 0.0.1 for unpublished package '
-      + `${packageName}`);
+    console.warn(
+        'Guessing version 0.0.1 for unpublished package ' +
+        `${packageName}`);
     return '0.0.1';
   }
 
   // Repeat until the user answers.
   while (true) {
     newVersion = await question(
-      `New Version for ${packageName} (no current version found on npm): `);
+        `New Version for ${packageName} (no current version found on npm): `);
     if (newVersion !== '') {
       return newVersion;
     }
-    console.log(`${packageName} has no version on npm. `
-      + 'Please provide an initial version.');
+    console.log(
+        `${packageName} has no version on npm. ` +
+        'Please provide an initial version.');
   }
 }
 
 async function main() {
   const args = parser.parseArgs();
 
-  let incrementVersion: ((version: string) => string) | undefined;
+  let incrementVersion: ((version: string) => string)|undefined;
   if (args.guess_version === 'nightly') {
-    incrementVersion = getNightlyVersion;
+    incrementVersion = v => getNightlyVersion(getMinorUpdateVersion(v));
   }
 
   if (args.use_local_changes) {
@@ -134,8 +140,9 @@ async function main() {
   }
 
   // Guess release version from tfjs-core's latest version, with a minor update.
-  const newVersion = await getNewVersion('tfjs-core',
-      incrementVersion ?? getMinorUpdateVersion, !args.guess_version);
+  const newVersion = await getNewVersion(
+      'tfjs-core', incrementVersion ?? getMinorUpdateVersion,
+      !args.guess_version);
 
   // Populate the versions map with new versions for monorepo packages.
   const versions = new Map<string /* package name */, string /* version */>();
@@ -149,8 +156,9 @@ async function main() {
   // version as the other monorepo packages.
   for (const phase of ALPHA_RELEASE_UNIT.phases) {
     for (const packageName of phase.packages) {
-      const newVersion = await getNewVersion(packageName,
-          incrementVersion ?? getPatchUpdateVersion, !args.guess_version);
+      const newVersion = await getNewVersion(
+          packageName, incrementVersion ?? getPatchUpdateVersion,
+          !args.guess_version);
       versions.set(packageName, newVersion);
     }
   }
@@ -161,7 +169,7 @@ async function main() {
     if (!commit) {
       commit = await question(
           'Commit of release candidate (the last ' +
-            'successful nightly build): ');
+          'successful nightly build): ');
     }
     if (commit === '') {
       console.log(chalk.red('Commit cannot be empty.'));
@@ -177,8 +185,8 @@ async function main() {
   if (args.use_local_changes) {
     shell.cd(path.join(__dirname, '../'));
     console.log(chalk.magenta.bold(
-        '~~~ Copying current changes to a new release branch'
-         + ` ${releaseBranch} ~~~`));
+        '~~~ Copying current changes to a new release branch' +
+        ` ${releaseBranch} ~~~`));
     // Avoid copying `.git/` because this script will `git push`
     // to origin, which it expects to be the tfjs repo as was set
     // up when the script ran 'git clone' above.
@@ -196,25 +204,63 @@ async function main() {
   }
 
   // Update versions in package.json files.
-  const phases = [
-    ...TFJS_RELEASE_UNIT.phases, ...ALPHA_RELEASE_UNIT.phases, E2E_PHASE
-  ];
+  const phases =
+      [...TFJS_RELEASE_UNIT.phases, ...ALPHA_RELEASE_UNIT.phases, E2E_PHASE];
+  const errors: Error[] = [];
   for (const phase of phases) {
     for (const packageName of phase.packages) {
       shell.cd(packageName);
 
-      // Update the version.
-      const packageJsonPath = `${dir}/${packageName}/package.json`;
-      let pkg = `${fs.readFileSync(packageJsonPath)}`;
+      // Update the version number of the package.json
+      const packagePath = path.join(dir, packageName);
+      const packageJsonPath = path.join(packagePath, 'package.json');
+      let pkg = fs.readFileSync(packageJsonPath, 'utf8');
       const parsedPkg = JSON.parse(`${pkg}`);
 
       console.log(chalk.magenta.bold(`~~~ Processing ${packageName} ~~~`));
       const newVersion = versions.get(packageName);
       pkg = `${pkg}`.replace(
-        `"version": "${parsedPkg.version}"`, `"version": "${newVersion}"`);
-      pkg = updateTFJSDependencyVersions(pkg, versions, phase.deps || []);
+          `"version": "${parsedPkg.version}"`, `"version": "${newVersion}"`);
 
       fs.writeFileSync(packageJsonPath, pkg);
+
+      // Update dependency versions of all package.json files found in the
+      // package to use the new verison numbers (except ones in node_modules).
+      const subpackages =
+          $(`find ${
+                packagePath} -name package.json -not -path \'*/node_modules/*\'`)
+              .split('\n');
+      for (const packageJsonPath of subpackages) {
+        const pkg = fs.readFileSync(packageJsonPath, 'utf8');
+        console.log(chalk.magenta.bold(
+            `~~~ Update dependency versions for ${packageJsonPath} ~~~`));
+
+        // Only update versions that are a (possibly transitive) dependency of
+        // the package and are listed in the phase deps (we throw an error
+        // if we find a dependency that doesn't satisfy these conditions).
+        const transitiveDeps = [...findDeps([packageName])].filter(
+            dep => phase.deps.includes(dep));
+
+        // Also add the package itself so subpackages can use it.
+        // Some packages, like e2e, are never published to npm, so check first.
+        if (versions.has(packageName)) {
+          transitiveDeps.push(packageName);
+        }
+
+        const packageDependencyVersions =
+            new Map(transitiveDeps.map(dep => [dep, versions.get(dep)!]));
+
+        try {
+          const updated =
+              updateTFJSDependencyVersions(pkg, packageDependencyVersions);
+
+          fs.writeFileSync(packageJsonPath, updated);
+        } catch (e) {
+          e.message = `For ${packageJsonPath}, ${packageName} ${e.message}`;
+          console.error(e.stack);
+          errors.push(e);
+        }
+      }
 
       shell.cd('..');
 
@@ -224,6 +270,10 @@ async function main() {
       }
     }
   }
+  if (errors.length > 0) {
+    throw new Error('Some package version updates had errors' + errors);
+  }
+
 
   // Use dev prefix to avoid branch being locked.
   const devBranchName = `dev_${releaseBranch}`;

@@ -17,9 +17,9 @@
 
 import {backend_util} from '@tensorflow/tfjs-core';
 
-import {activationFnSnippet, biasActivationSnippet, typeSnippet} from './activation_util';
+import {activationFnSnippet, biasActivationSnippet} from './activation_util';
 import {makeMatMulPackedSource, makeMatMulPackedVec4Source} from './matmul_packed_webgpu';
-import {WebGPUProgram} from './webgpu_program';
+import {typeSnippet, WebGPUProgram} from './webgpu_program';
 import {computeDispatch, computeWorkgroupSizeForConv2d, computeWorkPerThreadForConv2d} from './webgpu_util';
 
 function conv2dCommonSnippet(
@@ -44,9 +44,9 @@ function conv2dCommonSnippet(
   const getWSnippet = (innerElementSize: number) => {
     switch (innerElementSize) {
       case 1:
-        return 'return W[row * uniforms.wShape[3] + colIn];';
+        return 'return W[row * uniforms.wShape[3] + col];';
       case 4:
-        return 'return W[row * uniforms.wShape[3] / 4 + colIn];';
+        return 'return W[(row * uniforms.wShape[3] + col) / 4];';
       default:
         throw new Error(
             `innerElementSize ${innerElementSize} is not supported.`);
@@ -87,8 +87,8 @@ function conv2dCommonSnippet(
 
       let WRow = ${col} / (uniforms.filterDims[1] * inChannels);
       let WCol = ${col} / inChannels % uniforms.filterDims[1];
-      let xRow = outRow * uniforms.stride[0] + uniforms.dilation[0] * WRow - uniforms.pad[0];
-      let xCol = outCol * uniforms.stride[1] + uniforms.dilation[1] * WCol - uniforms.pad[1];
+      let xRow = outRow * uniforms.strides[0] + uniforms.dilations[0] * WRow - uniforms.pads[0];
+      let xCol = outCol * uniforms.strides[1] + uniforms.dilations[1] * WCol - uniforms.pads[1];
       let xCh = ${col} % inChannels;
       var resData = ${typeSnippet(innerElementSizeX)}(0.0);
       // The bounds checking is always needed since we use it to pad zero for
@@ -101,19 +101,15 @@ function conv2dCommonSnippet(
       return resData;`;
 
   const sampleX = isChannelsLast ? (fitAOuter && fitInner ? `
-      let col = colIn * ${innerElementSizeX};
       ${readXSnippet}` :
                                                             `
-      let col = colIn * ${innerElementSizeX};
       if (row < uniforms.dimAOuter && col < uniforms.dimInner) {
         ${readXSnippet}
       }
       return ${typeSnippet(innerElementSizeX)}(0.0);`) :
                                    (fitInner && fitBOuter ? `
-      let col = colIn * ${innerElementSizeX};
       ${readXSnippet}` :
                                                             `
-      let col = colIn * ${innerElementSizeX};
       if (row < uniforms.dimInner && col < uniforms.dimBOuter) {
         ${readXSnippet}
       }
@@ -130,16 +126,15 @@ function conv2dCommonSnippet(
       ${
       activationFnSnippet(
           activation, hasPreluActivationWeights, innerElementSize === 4, 4)}
-      fn mm_readA(batch: i32, row : i32, colIn : i32) -> ${aType} {
+      fn mm_readA(batch: i32, row : i32, col : i32) -> ${aType} {
         ${isChannelsLast ? sampleX : sampleW}
       }
 
-      fn mm_readB(batch: i32, row : i32, colIn : i32) -> ${bType} {
+      fn mm_readB(batch: i32, row : i32, col : i32) -> ${bType} {
         ${isChannelsLast ? sampleW : sampleX}
       }
 
-      fn mm_write(batch: i32, row : i32, colIn : i32, valueIn : ${resType}) {
-        let col = colIn * ${innerElementSize};
+      fn mm_write(batch: i32, row : i32, col : i32, valueIn : ${resType}) {
         if (row < uniforms.dimAOuter && col < uniforms.dimBOuter)
         {
         var value = valueIn;
@@ -159,9 +154,9 @@ export class Conv2DMMProgram implements WebGPUProgram {
   dispatchLayout: {x: number[], y: number[], z: number[]};
   dispatch: [number, number, number];
   variableNames = ['x', 'W'];
-  variableTypes: string[];
+  variableComponents: number[];
   uniforms =
-      `filterDims : vec2<i32>, pad : vec2<i32>, stride : vec2<i32>, dilation : vec2<i32>, dimAOuter : i32, dimBOuter : i32, dimInner : i32,`;
+      `filterDims : vec2<i32>, pads : vec2<i32>, strides : vec2<i32>, dilations : vec2<i32>, dimAOuter : i32, dimBOuter : i32, dimInner : i32,`;
   workgroupSize: [number, number, number];
   elementsPerThread: [number, number, number];
   addBias: boolean;
@@ -176,6 +171,7 @@ export class Conv2DMMProgram implements WebGPUProgram {
   tileInner: number;
   innerElementSize: number;
   isVec4?: boolean;
+  outputComponent: number;
   private sequentialAccessByThreads: boolean;
 
   constructor(
@@ -202,22 +198,23 @@ export class Conv2DMMProgram implements WebGPUProgram {
         this.elementsPerThread);
 
     if (this.isVec4) {
+      this.outputComponent = 4;
       if (this.isChannelsLast && convInfo.inChannels % 4 !== 0) {
         this.innerElementSize = 3;
-        this.variableTypes = ['f32', 'vec4<f32>'];
+        this.variableComponents = [1, 4];
       } else {
         this.innerElementSize = 4;
-        this.variableTypes = ['vec4<f32>', 'vec4<f32>'];
+        this.variableComponents = [4, 4];
       }
 
       if (addBias) {
         this.variableNames.push('bias');
-        this.variableTypes.push('vec4<f32>');
+        this.variableComponents.push(4);
       }
 
       if (hasPreluActivationWeights) {
         this.variableNames.push('preluActivationWeights');
-        this.variableTypes.push('vec4<f32>');
+        this.variableComponents.push(4);
       }
     } else {
       this.innerElementSize = this.elementsPerThread[0];
