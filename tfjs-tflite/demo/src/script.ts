@@ -37,7 +37,8 @@ async function start() {
   //const tfliteModel = await tflite.loadTFLiteModel(
   const tfliteModel = await loadTFLiteModel(
     'https://tfhub.dev/sayakpaul/lite-model/cartoongan/fp16/1', {
-      delegatePath: '/dummy_external_delegate_wasm.wasm',
+      //delegatePath: '../../../../dummy_external_delegate_wasm.wasm',
+      delegatePath: '../../../../webnn_external_delegate_wasm.wasm',
     }
   );
   ele('.loading-msg').innerHTML = `Loaded WASM module and <a href='${

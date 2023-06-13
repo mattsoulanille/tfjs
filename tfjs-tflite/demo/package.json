@@ -15,7 +15,7 @@
     "cross-env": "^7.0.3",
     "esbuild": "^0.15.13",
     "process": "^0.11.10",
-    "typescript": "4.8.4"
+    "typescript": "4.9.4"
   },
   "scripts": {
     "build-deps": "cd ../../link-package && yarn build-deps-for tfjs-tflite/demo",
