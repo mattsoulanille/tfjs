@@ -59,11 +59,6 @@ from tensorflowjs.converters import fuse_depthwise_conv2d
 from tensorflowjs.converters import graph_rewrite_util
 from tensorflowjs import resource_loader
 
-import debugpy
-debugpy.listen(('localhost', 5724))
-print("Waiting for debugger to connect. See tfjs-converter python README")
-debugpy.wait_for_client()
-
 CLEARED_TENSOR_FIELDS = (
     'tensor_content', 'half_val', 'float_val', 'double_val', 'int_val',
     'string_val', 'scomplex_val', 'int64_val', 'bool_val',
@@ -629,13 +624,9 @@ def _get_resource_initializer_concrete_function(model):
     # the _initialize function initializes the resource, so one of its captured
     # inputs must be the resource, so search for that input.
     captured_inputs = model_resource._initialize.get_concrete_function()._captured_inputs
-    found = False
     for captured_input_index in range(len(captured_inputs)):
       if captured_inputs[captured_input_index]._id == resource_handle_id:
-        found = True
         model_resources_with_captured_input_index.append((model_resource, captured_input_index))
-
-    print(found)
 
   @tf.function()
   def resource_initializer():
@@ -657,8 +648,6 @@ def _get_resource_initializer_concrete_function(model):
     return new_resources
 
   # Add resource_initializer to the output graph.
-  breakpoint
-  print("In the resource graph thing")
   captured_model_resources = [resource for (resource, index)
                               in model_resources_with_captured_input_index]
   return resource_initializer.get_concrete_function(), captured_model_resources
@@ -690,16 +679,12 @@ def _get_resource_ids_maps(model, concrete_func, resource_init_concrete_func, or
   model_input_to_resource_id = {}
   init_output_to_resource_id = {}
 
-  # required_resources =
-  # all_resources = set(_get_resources(model))
-
   for i, resource in enumerate(ordered_resources):
     _id = resource.resource_handle._id
 
     # Skip unused resources.
     if not _id in resource_id_to_captured_input_index:
       # The concrete function does not use the resource.
-      print(f'skipping resource {_id}')
       continue
 
     # Get input from inference graph corresponding to this resource.
@@ -713,10 +698,6 @@ def _get_resource_ids_maps(model, concrete_func, resource_init_concrete_func, or
     # corresponding input in inference input).
     model_input_to_resource_id[model_input.name] = _id
     init_output_to_resource_id[init_output.name] = _id
-
-
-
-
 
   return (model_input_to_resource_id, init_output_to_resource_id)
 
@@ -834,24 +815,23 @@ def _convert_tf_saved_model(output_dir,
   # the graph using V1 utils.
   frozen_initializer_graph = None
   resource_ids_maps = None
-  # try:
-  frozen_graph = _freeze_saved_model_v2(concrete_func, control_flow_v2)
-  resource_initializer_concrete_func, ordered_resources = _get_resource_initializer_concrete_function(model)
+  try:
+    frozen_graph = _freeze_saved_model_v2(concrete_func, control_flow_v2)
+    resource_initializer_concrete_func, ordered_resources = _get_resource_initializer_concrete_function(model)
 
-  if resource_initializer_concrete_func:
-    frozen_initializer_graph = _freeze_saved_model_v2(resource_initializer_concrete_func, control_flow_v2)
-    resource_ids_maps = _get_resource_ids_maps(model, concrete_func, resource_initializer_concrete_func,
-                                               ordered_resources)
-
-  # except BaseException:
-  #   if saved_model_dir:
-  #     (frozen_graph,
-  #      frozen_initializer_graph) = _freeze_saved_model_v1(saved_model_dir,
-  #                                                         saved_model_tags_list,
-  #                                                         output_node_names)
-  #   else:
-  #     print('Can not freeze saved model v1.')
-  #     return
+    if resource_initializer_concrete_func:
+      frozen_initializer_graph = _freeze_saved_model_v2(resource_initializer_concrete_func, control_flow_v2)
+      resource_ids_maps = _get_resource_ids_maps(model, concrete_func, resource_initializer_concrete_func,
+                                                 ordered_resources)
+  except BaseException:
+    if saved_model_dir:
+      (frozen_graph,
+       frozen_initializer_graph) = _freeze_saved_model_v1(saved_model_dir,
+                                                          saved_model_tags_list,
+                                                          output_node_names)
+    else:
+      print('Can not freeze saved model v1.')
+      return
 
   if frozen_graph_dir:
     output_graph = os.path.join(frozen_graph_dir,
