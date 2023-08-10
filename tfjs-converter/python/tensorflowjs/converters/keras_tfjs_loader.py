@@ -96,6 +96,7 @@ def _deserialize_keras_model(model_topology_json,
 
     model.set_weights(weights_list)
 
+  model.use_legacy_config = True
   return model
 
 def _deserialize_keras_keras_model(model_topology_json,

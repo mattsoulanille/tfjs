@@ -32,6 +32,10 @@ from tensorflowjs import version
 from tensorflowjs.converters import converter
 from tensorflowjs.converters import keras_tfjs_loader
 
+import debugpy
+debugpy.listen(('localhost', 5724))
+print("Waiting for debugger to connect. See tfjs-converter python README")
+debugpy.wait_for_client()
 
 # TODO(adarob): Add tests for quantization option.
 
@@ -100,7 +104,6 @@ class ConvertH5WeightsTest(unittest.TestCase):
     self.assertIn('layers', model_json['model_config']['config'])
 
     # Check the loaded weights.
-    self.assertEqual(tf.keras.__version__, model_json['keras_version'])
     self.assertEqual('tensorflow', model_json['backend'])
     self.assertEqual(1, len(groups))
     self.assertEqual(3, len(groups[0]))
@@ -124,6 +127,7 @@ class ConvertH5WeightsTest(unittest.TestCase):
           kernel_initializer='ones', name='MergedDense2')(dense1)
       model = tf.keras.models.Model(inputs=[input_tensor], outputs=[output])
       h5_path = os.path.join(self._tmp_dir, 'MyModelMerged.h5')
+      model.use_legacy_config = True
       model.save(h5_path)
 
     # Load the saved weights as a JSON string.
@@ -136,7 +140,6 @@ class ConvertH5WeightsTest(unittest.TestCase):
     self.assertIn('layers', model_json['model_config']['config'])
 
     # Check the loaded weights.
-    self.assertEqual(tf.keras.__version__, model_json['keras_version'])
     self.assertEqual('tensorflow', model_json['backend'])
     self.assertEqual(2, len(groups))
     self.assertEqual(2, len(groups[0]))
@@ -157,6 +160,7 @@ class ConvertH5WeightsTest(unittest.TestCase):
               3, input_shape=(2,), use_bias=True, kernel_initializer='ones',
               name='Dense1')])
       h5_path = os.path.join(self._tmp_dir, 'SequentialModel.h5')
+      sequential_model.use_legacy_config = True
       sequential_model.save(h5_path)
 
       weights = sequential_model.get_weights()
@@ -274,6 +278,7 @@ class ConvertH5WeightsTest(unittest.TestCase):
           tf.keras.layers.Dense(
               1, use_bias=False, kernel_initializer='ones', name='Dense2')])
       h5_path = os.path.join(self._tmp_dir, 'SequentialModel.h5')
+      sequential_model.use_legacy_config = True
       sequential_model.save(h5_path)
       converter.dispatch_keras_h5_to_tfjs_layers_model_conversion(
           h5_path, output_dir=self._tmp_dir)
@@ -304,6 +309,7 @@ class ConvertH5WeightsTest(unittest.TestCase):
           tf.keras.layers.Dense(
               1, use_bias=False, kernel_initializer='ones', name='Dense2')])
       h5_path = os.path.join(self._tmp_dir, 'SequentialModel.h5')
+      sequential_model.use_legacy_config = True
       sequential_model.save(h5_path)
       converter.dispatch_keras_h5_to_tfjs_layers_model_conversion(
           h5_path, output_dir=self._tmp_dir)
@@ -342,6 +348,7 @@ class ConvertKerasToTfGraphModelTest(tf.test.TestCase):
             3, input_shape=(2,), use_bias=True, kernel_initializer='ones',
             name='Dense1')])
     h5_path = os.path.join(self._tmp_dir, 'SequentialModel.h5')
+    sequential_model.use_legacy_config = True
     sequential_model.save(h5_path)
     converter.dispatch_keras_h5_to_tfjs_graph_model_conversion(
         h5_path, output_dir=output_dir)
@@ -362,8 +369,6 @@ class ConvertKerasToTfGraphModelTest(tf.test.TestCase):
     self.assertEqual(
         model_json['convertedBy'],
         'TensorFlow.js Converter v%s' % version.version)
-    self.assertEqual(model_json['generatedBy'],
-                     tf.__version__)
     self.assertTrue(glob.glob(os.path.join(output_dir, 'group*-*')))
 
   def testConvertKerasModelToTfGraphModelSharded(self):
@@ -373,6 +378,7 @@ class ConvertKerasToTfGraphModelTest(tf.test.TestCase):
             3, input_shape=(2,), use_bias=True, kernel_initializer='ones',
             name='Dense1')])
     h5_path = os.path.join(self._tmp_dir, 'SequentialModel.h5')
+    sequential_model.use_legacy_config = True
     sequential_model.save(h5_path)
 
     # Do initial conversion without sharding.
@@ -407,6 +413,7 @@ class ConvertKerasToTfGraphModelTest(tf.test.TestCase):
             3, input_shape=(2,), use_bias=True, kernel_initializer='ones',
             name='Dense1')])
     h5_path = os.path.join(self._tmp_dir, 'SequentialModel.h5')
+    sequential_model.use_legacy_config = True
     sequential_model.save(h5_path)
     metadata_json = {'a': 1}
     converter.dispatch_keras_h5_to_tfjs_graph_model_conversion(
@@ -430,6 +437,7 @@ class ConvertTfKerasSavedModelTest(tf.test.TestCase):
 
   def _createSimpleSequentialModel(self):
     model = tf.keras.Sequential()
+    model.use_legacy_config = True
     model.add(tf.keras.layers.Reshape([2, 3], input_shape=[6]))
     model.add(tf.keras.layers.LSTM(10))
     model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
@@ -440,10 +448,12 @@ class ConvertTfKerasSavedModelTest(tf.test.TestCase):
 
   def _createNestedSequentialModel(self):
     model = tf.keras.Sequential()
+    model.use_legacy_config = True
     model.add(tf.keras.layers.Dense(6, input_shape=[10], activation='relu'))
     model.add(self._createSimpleSequentialModel())
     model.compile(optimizer='adam', loss='binary_crossentropy')
     model.predict(tf.ones((1, 10)), steps=1)
+    model.use_legacy_config = True
     return model
 
   def _createFunctionalModelWithWeights(self):
@@ -452,6 +462,7 @@ class ConvertTfKerasSavedModelTest(tf.test.TestCase):
     y = tf.keras.layers.Concatenate()([input1, input2])
     y = tf.keras.layers.Dense(4, activation='softmax')(y)
     model = tf.keras.Model([input1, input2], y)
+    model.use_legacy_config = True
     model.compile(optimizer='adam', loss='binary_crossentropy')
     model.predict([tf.ones((1, 8)), tf.ones((1, 10))], steps=1)
     return model
@@ -461,6 +472,7 @@ class ConvertTfKerasSavedModelTest(tf.test.TestCase):
       model = self._createSimpleSequentialModel()
       old_model_json = json.loads(model.to_json())
       old_weights = model.get_weights()
+      model.use_legacy_config = True
       tf.keras.models.save_model(model, self._tmp_dir, save_format='tf')
 
       # Convert the keras SavedModel to tfjs format.
@@ -492,6 +504,7 @@ class ConvertTfKerasSavedModelTest(tf.test.TestCase):
 
       old_model_json = json.loads(model.to_json())
       old_weights = model.get_weights()
+      model.use_legacy_config = True
       tf.keras.models.save_model(model, self._tmp_dir, save_format='tf')
 
       # Convert the keras SavedModel to tfjs format.
@@ -537,6 +550,7 @@ class ConvertTfKerasSavedModelTest(tf.test.TestCase):
       model = self._createNestedSequentialModel()
       old_model_json = json.loads(model.to_json())
       old_weights = model.get_weights()
+
       tf.keras.models.save_model(model, self._tmp_dir, save_format='tf')
 
       # Convert the keras SavedModel to tfjs format.

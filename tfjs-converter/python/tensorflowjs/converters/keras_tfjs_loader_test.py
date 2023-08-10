@@ -46,6 +46,7 @@ class LoadKerasModelTest(tf.test.TestCase):
 
   def _saveKerasModelForTest(self, path):
     model = tf.keras.Sequential()
+    model.use_legacy_config = True
     model.add(tf.keras.layers.Dense(
         2, input_shape=[12], bias_initializer='random_normal', name='dense'))
     model.add(tf.keras.layers.Dense(
