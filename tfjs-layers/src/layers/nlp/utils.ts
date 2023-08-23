@@ -15,13 +15,13 @@
  * =============================================================================
  */
 
-import { ModelPredictConfig, Scalar, Tensor, tensorScatterUpdate, tidy } from '@tensorflow/tfjs-core';
+import {ModelPredictConfig, Scalar, Tensor, tensorScatterUpdate, tidy} from '@tensorflow/tfjs-core';
 
-import { History } from '../../base_callbacks';
-import { ContainerArgs } from '../../engine/container';
-import { LayersModel, ModelEvaluateArgs } from '../../engine/training';
-import { ModelFitArgs } from '../../engine/training_tensors';
-import { NotImplementedError } from '../../errors';
+import {History} from '../../base_callbacks';
+import {ContainerArgs} from '../../engine/container';
+import {LayersModel, ModelEvaluateArgs} from '../../engine/training';
+import {ModelFitArgs} from '../../engine/training_tensors';
+import {NotImplementedError} from '../../errors';
 
 export function tensorToArr(input: Tensor): unknown[] {
   return Array.from(input.dataSync()) as unknown as unknown[];
@@ -67,12 +67,11 @@ export function sliceUpdate(
     updates = updates.reshape([updates.size]);
     return tensorScatterUpdate(inputs, indices, updates);
   });
+  // return clone(inputs);
 }
 
 function packXYSampleWeight(x: Tensor, y?: Tensor, sampleWeight?: Tensor):
-  Tensor
-  | [Tensor, Tensor]
-  | [Tensor, Tensor, Tensor] {
+    Tensor|[Tensor, Tensor]|[Tensor, Tensor, Tensor] {
   if (y === undefined) {
     return x;
   } else if (sampleWeight === undefined) {
@@ -83,21 +82,19 @@ function packXYSampleWeight(x: Tensor, y?: Tensor, sampleWeight?: Tensor):
 }
 
 function unPackXYSampleWeight(
-  data: [Tensor]|[Tensor, Tensor]|[Tensor, Tensor, Tensor]
-) {
+    data: [Tensor]|[Tensor, Tensor]|[Tensor, Tensor, Tensor]) {
   throw new NotImplementedError();
 }
 
 function convertInputsToDataset(
-  x?: Tensor, y?: Tensor, sampleWeight?: Tensor, batchSize?: number
-): Tensor[] {
+    x?: Tensor, y?: Tensor, sampleWeight?: Tensor,
+    batchSize?: number): Tensor[] {
   throw new NotImplementedError();
 }
 
 function trainValidationSplit(
-  arrays: [Tensor, Tensor, Tensor],
-  validationSplit: number
-): [Tensor, Tensor, Tensor] {
+    arrays: [Tensor, Tensor, Tensor],
+    validationSplit: number): [Tensor, Tensor, Tensor] {
   throw new NotImplementedError();
 }
 
@@ -119,7 +116,7 @@ export class PipelineModel extends LayersModel {
 
   constructor(args: PipelineModelArgs) {
     super(args);
-    this.includePreprocessing = args.includePreprocessing ?? true;
+    this.includePreprocessing = args.includePreprocessing || true;
   }
 
   /**
@@ -139,10 +136,8 @@ export class PipelineModel extends LayersModel {
   /**
    * An overridable function which preprocesses entire samples.
    */
-  preprocessSamples(x: Tensor, y?: Tensor, sampleWeight?: Tensor):
-    Tensor
-    | [Tensor, Tensor]
-    | [Tensor, Tensor, Tensor] {
+  preprocessSamples(x: Tensor, y?: Tensor, sampleWeight?: Tensor): Tensor
+      |[Tensor, Tensor]|[Tensor, Tensor, Tensor] {
     x = this.preprocessFeatures(x);
     if (y != null) {
       y = this.preprocessLabels(y);
@@ -153,27 +148,21 @@ export class PipelineModel extends LayersModel {
   // ---------------------------------------------------------------------------
   // Below are overrides to LayersModel methods to apply the functions above.
   // ---------------------------------------------------------------------------
-  override fit(
-    x: Tensor|Tensor[],
-    y: Tensor|Tensor[],
-    args: ModelFitArgs = {}
-  ): Promise<History> {
+  override fit(x: Tensor|Tensor[], y: Tensor|Tensor[], args: ModelFitArgs = {}):
+      Promise<History> {
     throw new NotImplementedError(
-      `Uses ${convertInputsToDataset}, ${trainValidationSplit} ` +
-      `${packXYSampleWeight}, and ${unPackXYSampleWeight}`);
+        `Uses ${convertInputsToDataset}, ${trainValidationSplit} ` +
+        `${packXYSampleWeight}, and ${unPackXYSampleWeight}`);
   }
 
   override evaluate(
-    x: Tensor|Tensor[],
-    y: Tensor|Tensor[],
-    args?: ModelEvaluateArgs
-  ): Scalar | Scalar[] {
+      x: Tensor|Tensor[], y: Tensor|Tensor[], args?: ModelEvaluateArgs): Scalar
+      |Scalar[] {
     throw new NotImplementedError();
   }
 
-  override predict(
-    x: Tensor | Tensor[], args?: ModelPredictConfig
-  ): Tensor | Tensor[] {
+  override predict(x: Tensor|Tensor[], args?: ModelPredictConfig): Tensor
+      |Tensor[] {
     x = Array.isArray(x) ? x : [x];
     if (this.includePreprocessing) {
       x = x.map(t => this.preprocessSamples(t) as Tensor);
@@ -182,10 +171,9 @@ export class PipelineModel extends LayersModel {
   }
 
   override trainOnBatch(
-    x: Tensor|Tensor[]|{[inputName: string]: Tensor},
-    y: Tensor|Tensor[]|{[inputName: string]: Tensor},
-    sampleWeight?: Tensor
-  ): Promise<number|number[]> {
+      x: Tensor|Tensor[]|{[inputName: string]: Tensor},
+      y: Tensor|Tensor[]|{[inputName: string]: Tensor},
+      sampleWeight?: Tensor): Promise<number|number[]> {
     throw new NotImplementedError();
   }
 

@@ -79,7 +79,10 @@ export function reduce(
     const batchSize = xSize / inSize;
 
     const reduceInfo = {windowSize: inSize, inSize, batchSize, outSize: 1};
-    const dtype = reduceType === 'mean' ? 'float32' : sumOutType(x.dtype);
+    const dtype = reduceType === 'mean' ?
+        'float32' :
+        reduceType === 'all' || reduceType === 'any' ? 'bool' :
+                                                       sumOutType(x.dtype);
     const uniformData = [
       {type: 'int32', data: [inSize]},
     ];

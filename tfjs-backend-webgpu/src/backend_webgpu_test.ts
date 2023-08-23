@@ -488,6 +488,12 @@ function createStagingGPUBufferFromData(
   const bytesPerElement = 4;
   const sizeInBytes = data.length * bytesPerElement;
 
+  const limit = device.limits.maxBufferSize;
+  if (sizeInBytes > limit) {
+    throw new Error(`Requested ${
+        sizeInBytes} buffer size is larger than the limit, ${limit}`);
+  }
+
   const gpuWriteBuffer = device.createBuffer({
     mappedAtCreation: true,
     size: sizeInBytes,
@@ -515,6 +521,13 @@ function createGPUBufferFromData(
   const sizeInBytes = data.length * bytesPerElement;
 
   const gpuWriteBuffer = createStagingGPUBufferFromData(device, data, dtype);
+
+  const limit = device.limits.maxBufferSize;
+  if (sizeInBytes > limit) {
+    throw new Error(`Requested ${
+        sizeInBytes} buffer size is larger than the limit, ${limit}`);
+  }
+
   const gpuReadBuffer = device.createBuffer(
       {mappedAtCreation: false, size: sizeInBytes, usage: bufferUsage});
 

@@ -372,10 +372,21 @@ export function makeShaderKey<R extends Rank>(
 
   const flatDispatchString = isFlatDispatch(program) ? 'flatDispatch' : '';
 
-  key += '_' + (program.workgroupSize ? program.workgroupSize.join(',') : '') +
-      shapes.map(shape => shape.length).join(',') + types.join(',') +
-      program.variableNames.join(',') + broadcastDimsKey +
-      inputShapesEqualsOutShape + flatDispatchString;
+  if (program.shaderKey.search('scatter') !== -1) {
+    key += '_' +
+        (program.workgroupSize ? program.workgroupSize.join(',') : '') +
+        // shapes.map(shape => shape.length).join(',') + types.join(',') +
+        shapes.map(shape => shape.join('/')).join(',') + types.join(',') +
+        program.variableNames.join(',') + broadcastDimsKey +
+        inputShapesEqualsOutShape + flatDispatchString;
+  } else {
+    key += '_' +
+        (program.workgroupSize ? program.workgroupSize.join(',') : '') +
+        shapes.map(shape => shape.length).join(',') + types.join(',') +
+        // shapes.map(shape => shape.join('/')).join(',') + types.join(',') +
+        program.variableNames.join(',') + broadcastDimsKey +
+        inputShapesEqualsOutShape + flatDispatchString;
+  }
 
   return key;
 }

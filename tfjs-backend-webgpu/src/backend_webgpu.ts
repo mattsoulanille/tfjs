@@ -287,6 +287,7 @@ export class WebGPUBackend extends KernelBackend {
   }
 
   submitQueue() {
+    this.device.pushErrorScope('validation');
     this.queue.submit([this.commandEncoder.finish()]);
     this.commandEncoder = null;
     this.dispatchCountInPass = 0;
@@ -306,6 +307,12 @@ export class WebGPUBackend extends KernelBackend {
     this.tensorDataPendingDisposal = [];
     this.uniformPendingDisposal = [];
     this.stagingPendingDisposal = [];
+    this.device.popErrorScope().then((error: {message: any;}) => {
+      if (error) {
+        console.error(
+            `An error occurred while creating sampler: ${error.message}`);
+      }
+    });
   }
 
   ensureCommandEncoderReady() {
@@ -886,11 +893,17 @@ export class WebGPUBackend extends KernelBackend {
         webgpu_program.makeShaderKey(program, inputsData, output);
 
     const parallelCompilation = env().getBool('WEBGPU_ENGINE_COMPILE_ONLY');
-    if (!(program.shaderKey in this.pipelineCache)) {
-      this.pipelineCache[program.shaderKey] = webgpu_program.compileProgram(
+    if (
+        !(program.shaderKey in this.pipelineCache)
+        // || program.shaderKey.search('scatter') !== -1
+    ) {
+      const binary = webgpu_program.compileProgram(
           this.device, program, inputsData, output, parallelCompilation);
+      this.pipelineCache[program.shaderKey] = binary;
+      program.pipeline = binary;
+    } else {
+      program.pipeline = this.pipelineCache[program.shaderKey];
     }
-    program.pipeline = this.pipelineCache[program.shaderKey];
 
     if (!parallelCompilation) {
       this.recordAndSubmit(program, output, inputs, programDefinedUniform);
@@ -945,9 +958,16 @@ export class WebGPUBackend extends KernelBackend {
     });
     this.commandQueueOwnedIds.add(output.dataId);
 
+    this.device.pushErrorScope('validation');
     const bindGroup = this.device.createBindGroup({
       layout: program.pipeline.getBindGroupLayout(0),
       entries: bindings.map((b, i) => ({binding: i, resource: b})),
+      label: program.shaderKey
+    });
+    this.device.popErrorScope().then((error: {message: any;}) => {
+      if (error) {
+        console.error(`An error occurred while creating: ${error.message}`);
+      }
     });
 
     const shouldTimeProgram = this.activeTimers != null;
