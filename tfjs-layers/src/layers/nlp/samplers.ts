@@ -20,7 +20,7 @@
  */
 
 /* Original source: keras_nlp/samplers/sampler.py */
-import { Tensor, serialization, softmax, tensor, topk, where, zerosLike } from '@tensorflow/tfjs-core';
+import { Tensor, serialization, softmax, tensor, tidy, topk, where, zerosLike } from '@tensorflow/tfjs-core';
 import { sliceUpdate } from './utils';
 
 export type NextFn =
@@ -113,24 +113,32 @@ export abstract class Sampler {
     let logits: Tensor;
     const maxIterations = maxLength - index;
     while (iter <= maxIterations && cond(prompt, index)) {
-      // Compute the softmax distribution for the next token.
-      [logits, hiddenStates, cache] = next(prompt, cache, index);
-      const probabilities = softmax(logits.div(this.temperature));
-      // Compute next token.
-      let nextToken = this.getNextToken(probabilities);
-      // Don't overwrite anywhere mask is True.
-      nextToken = nextToken.cast(prompt.dtype);
-      nextToken = where(
-        mask.gather(index, 1),
-        prompt.gather(index, 1),
-        nextToken,
-      );
-      // Update the prompt with the next token.
-      nextToken = nextToken.expandDims(-1);
-      prompt = sliceUpdate(prompt, [0, index], nextToken);
+      tidy(() => {
+        // Compute the softmax distribution for the next token.
+        const oldCache = cache;
+        [logits, hiddenStates, cache] = next(prompt, cache, index);
+        oldCache.dispose();
+        const probabilities = softmax(logits.div(this.temperature));
+        // Compute next token.
+        let nextToken = this.getNextToken(probabilities);
+        // Don't overwrite anywhere mask is True.
+        nextToken = nextToken.cast(prompt.dtype);
+        nextToken = where(
+          mask.gather(index, 1),
+          prompt.gather(index, 1),
+          nextToken,
+        );
+        // Update the prompt with the next token.
+        nextToken = nextToken.expandDims(-1);
+        const oldPrompt = prompt;
+        prompt = sliceUpdate(prompt, [0, index], nextToken);
+        oldPrompt.dispose();
 
-      index += 1;
-      iter += 1;
+        index += 1;
+        iter += 1;
+        // Keep these
+        return {prompt, cache};
+      });
     }
     return prompt;
   }

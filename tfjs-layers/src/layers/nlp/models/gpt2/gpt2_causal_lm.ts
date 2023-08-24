@@ -22,24 +22,19 @@
 /* Original source: keras-nlp/models/gpt2/gpt2_causal_lm.py */
 import { AdamOptimizer, NamedTensorMap, Tensor, logicalAnd, onesLike, serialization, stack, zeros } from '@tensorflow/tfjs-core';
 
-import {LayerArgs, SymbolicTensor} from '../../../../engine/topology';
-import {NotImplementedError} from '../../../../errors';
-import {Layer} from '../../../../exports_layers';
-import {Shape} from '../../../../keras_format/common';
-import {Embedding} from '../../../../layers/embeddings';
-import {sparseCategoricalCrossentropy} from '../../../../losses';
-import {Kwargs} from '../../../../types';
-import {TransformerDecoder} from '../../modeling/transformer_decoder';
-import {sliceUpdate} from '../../utils';
-import {GenerativeTask, GPT2TensorMap} from '../generative_task';
-
-import { GenerativeTask } from '../generative_task';
-import { GPT2Backbone } from './gpt2_backbone';
+import { LayerArgs, SymbolicTensor } from '../../../../engine/topology';
+import { NotImplementedError } from '../../../../errors';
+import { Layer } from '../../../../exports_layers';
+import { Shape } from '../../../../keras_format/common';
+import { Embedding } from '../../../../layers/embeddings';
 import { sparseCategoricalCrossentropy } from '../../../../losses';
 import { Kwargs } from '../../../../types';
 import { TransformerDecoder } from '../../modeling/transformer_decoder';
-import { GPT2CausalLMPreprocessor } from './gpt2_causal_lm_preprocessor';
+import { GenerativeTask } from '../generative_task';
+
 import { Sampler, TopKSampler } from '../../samplers';
+import { GPT2Backbone } from './gpt2_backbone';
+import { GPT2CausalLMPreprocessor } from './gpt2_causal_lm_preprocessor';
 
 declare interface ReverseEmbeddingArgs extends LayerArgs {
   embedding: Embedding;
