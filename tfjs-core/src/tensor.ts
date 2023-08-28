@@ -422,6 +422,22 @@ export class Tensor<R extends Rank = Rank> implements TensorInfo {
     return data as DataTypeMap[D];
   }
 
+  /**
+   * Download the tensor as a binary file to the user's computer. This is used
+   * for debugging.
+   *
+   * ```js
+   * const t = tf.range(0, 10, 1, 'int32').square();
+   * t.print();
+   * t.download('example.bin');
+   * // The downloaded file can be loaded in python with
+   * // `np.fromfile('./example.bin', dtype=np.int32)`
+   * ```
+   */
+  async download(): Promise<void> {
+
+  }
+
   /** Returns the underlying bytes of the tensor's data. */
   async bytes(): Promise<Uint8Array[]|Uint8Array> {
     this.throwIfDisposed();
