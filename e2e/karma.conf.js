@@ -118,6 +118,9 @@ const chromeWebgpuFlags = [
   '--disable-vulkan-fallback-to-gl-for-testing',
 ];
 
+const {getCustomLaunchers} = require('../tools/custom_launchers');
+const CUSTOM_LAUNCHERS = getCustomLaunchers();
+
 module.exports = function(config) {
   const args = [];
 
@@ -161,52 +164,14 @@ module.exports = function(config) {
     browserDisconnectTimeout: 3e5,
     browserDisconnectTolerance: 0,
     browserSocketTimeout: 1.2e5,
-    customLaunchers: {
-      bs_chrome_mac: {
-        base: 'BrowserStack',
-        browser: 'chrome',
-        browser_version: 'latest',
-        os: 'OS X',
-        os_version: 'High Sierra',
-        flags: chromeWebgpuFlags,
-      },
-      bs_firefox_mac: {
-        base: 'BrowserStack',
-        browser: 'firefox',
-        browser_version: 'latest',
-        os: 'OS X',
-        os_version: 'High Sierra'
-      },
-      bs_safari_mac: {
-        base: 'BrowserStack',
-        browser: 'safari',
-        browser_version: 'latest',
-        os: 'OS X',
-        os_version: 'Mojave'
-      },
-      bs_ios_12: {
-        base: 'BrowserStack',
-        device: 'iPhone XS',
-        os: 'ios',
-        os_version: '12.3',
-        real_mobile: true
-      },
-      bs_android_10: {
-        base: 'BrowserStack',
-        device: 'Google Pixel 4 XL',
-        os: 'android',
-        os_version: '10.0',
-        real_mobile: true
-      },
-      win_10_chrome: {
-        base: 'BrowserStack',
-        browser: 'chrome',
-        browser_version: '101.0',
-        os: 'Windows',
-        os_version: '10',
-        flags: chromeWebgpuFlags,
-      }
-    },
+    customLaunchers: Object.fromEntries([
+      'bs_chrome_mac',
+      'bs_firefox_mac',
+      'bs_safari_mac',
+      'bs_ios_12',
+      'bs_android_10',
+      'win_10_chrome',
+    ].map(key => [key, CUSTOM_LAUNCHERS[key]])),
     client: {jasmine: {random: false}, args: args, captureConsole: true},
     logLevel: 'info'
   });

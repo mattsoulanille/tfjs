@@ -56,4 +56,5 @@ else
 fi
 
 echo "Loading tensorflowjs pip from source ...."
-pip3 install -e ../../tfjs-converter/python
+#pip3 install -e ../../tfjs-converter/python
+pip3 install ../../dist/bin/tfjs-converter/python/tensorflowjs-0.0.0-py3-none-any.whl
