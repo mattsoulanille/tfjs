@@ -207,6 +207,9 @@ async function publish(pkg: string, registry: string, otp?: string,
       // to GCP as well. Only do this when publishing to NPM.
       if (registry === NPM_REGISTRY && pkg.startsWith('tfjs-node')) {
         $('yarn build-and-upload-addon publish');
+      } else {
+        // Test building the addon
+        $('yarn build-and-upload-addon');
       }
 
       // Publish the package to the registry.

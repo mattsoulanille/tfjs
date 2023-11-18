@@ -22,7 +22,7 @@
     "build-deps": "yarn build-link-package && yarn build-union",
     "build-deps-ci": "yarn build-link-package && yarn build-union-ci",
     "build-npm": "yarn prep-gpu && ./scripts/build-npm.sh",
-    "build-and-upload-addon": "./scripts/build-and-upload-addon.sh",
+    "build-and-upload-addon": "node ./scripts/build-and-upload-addon.js",
     "build-addon-from-source": "node-pre-gyp install --build-from-source",
     "clean-deps": "rm -rf deps && rm -rf lib",
     "coverage": "nyc yarn ts-node -P tsconfig.test.json src/run_tests.ts",
