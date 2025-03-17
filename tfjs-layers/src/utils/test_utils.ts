@@ -14,21 +14,9 @@
 
 import {memory, Tensor, test_util, util} from '@tensorflow/tfjs-core';
 // tslint:disable-next-line: no-imports-from-dist
-import {ALL_ENVS, describeWithFlags, registerTestEnv} from '@tensorflow/tfjs-core/dist/jasmine_util';
+import {ALL_ENVS, describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
 
 import {ValueError} from '../errors';
-
-// Register backends.
-registerTestEnv({name: 'cpu', backendName: 'cpu'});
-registerTestEnv({
-  name: 'webgl2',
-  backendName: 'webgl',
-  flags: {
-    'WEBGL_VERSION': 2,
-    'WEBGL_CPU_FORWARD': false,
-    'WEBGL_SIZE_UPLOAD_UNIFORM': 0
-  }
-});
 
 /**
  * Expect values are close between a Tensor or number array.
@@ -64,6 +52,21 @@ export function expectTensorsClose(
 }
 
 /**
+ * Expect values are not close between a Tensor or number array.
+ * @param t1
+ * @param t2
+ */
+export function expectTensorsNotClose(
+  t1: Tensor|number[], t2: Tensor|number[], epsilon?: number) {
+try {
+  expectTensorsClose(t1, t2, epsilon);
+} catch (error) {
+  return;
+}
+throw new Error('The two values are close at all elements.');
+}
+
+/**
  * Expect values in array are within a specified range, boundaries inclusive.
  * @param actual
  * @param expected
@@ -95,7 +98,10 @@ export function describeMathCPUAndGPU(testName: string, tests: () => void) {
  */
 export function describeMathCPUAndWebGL2(testName: string, tests: () => void) {
   describeWithFlags(
-      testName, {predicate: testEnv => testEnv.flags['WEBGL_VERSION'] !== 1},
+      testName, {
+        predicate: testEnv =>
+            (testEnv.flags == null || testEnv.flags['WEBGL_VERSION'] === 2)
+      },
       () => {
         tests();
       });
@@ -134,7 +140,8 @@ export function describeMathWebGL2(testName: string, tests: () => void) {
   describeWithFlags(
       testName, {
         predicate: testEnv => testEnv.backendName === 'webgl' &&
-            testEnv.flags['WEBGL_VERSION'] !== 1
+            (testEnv.flags == null || testEnv.flags['WEBGL_VERSION'] === 2)
+
       },
       () => {
         tests();

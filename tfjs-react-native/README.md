@@ -31,13 +31,16 @@ On macOS (to develop iOS applications) You will also need to use CocoaPods to in
 Note that if you are using in a managed expo app the install instructions may be different.
 
   - Install and configure [react-native-unimodules](https://github.com/unimodules/react-native-unimodules) (can be skipped if in an expo app)
-  - Install and configure [expo-gl-cpp](https://github.com/expo/expo/tree/master/packages/expo-gl-cpp) and [expo-gl](https://github.com/expo/expo/tree/master/packages/expo-gl)
+  - Install and configure [expo-gl](https://github.com/expo/expo/tree/master/packages/expo-gl)
   - Install and configure [expo-camera](https://www.npmjs.com/package/expo-camera)
   - Install and configure [async-storage](https://github.com/react-native-community/async-storage)
   - Install and configure [react-native-fs](https://www.npmjs.com/package/react-native-fs)
   - **Install @tensorflow/tfjs** - `npm install @tensorflow/tfjs`
   - **Install @tensorflow/tfjs-react-native** - `npm install @tensorflow/tfjs-react-native`
 
+If you encounter dependency conflict error in npm install, you can either:
+- Follow the instructions to use `--force` or `--legacy-peer-deps`
+- Or use yarn to install
 
 > After this point, if you are using Xcode to build for ios, you should use a ‘.workspace’ file instead of the ‘.xcodeproj’
 

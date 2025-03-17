@@ -19,8 +19,8 @@ import {ClipByValue, ClipByValueAttrs, ClipByValueInputs, KernelConfig, KernelFu
 
 import {WebGPUBackend} from '../backend_webgpu';
 
-import {ClipVec4Program} from './clip_vec4_webgpu';
-import {ClipProgram} from './clip_webgpu';
+import {ClipVec4Program} from '../clip_vec4_webgpu';
+import {ClipProgram} from '../clip_webgpu';
 
 export function clipByValue(args: {
   inputs: ClipByValueInputs,
@@ -47,5 +47,5 @@ export function clipByValue(args: {
 export const clipByValueConfig: KernelConfig = {
   kernelName: ClipByValue,
   backendName: 'webgpu',
-  kernelFunc: clipByValue as {} as KernelFunc
+  kernelFunc: clipByValue as unknown as KernelFunc
 };

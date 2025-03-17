@@ -77,7 +77,8 @@ function fusedBatchMatMul(args: {
       0 :
       backend.dataIdMap.get(preluActivationWeights.dataId).id;
   const fusedActivation =
-      FusableActivation[activation as {} as keyof typeof FusableActivation];
+      FusableActivation[activation as unknown as
+                        keyof typeof FusableActivation];
   if (fusedActivation == null) {
     throw new Error(
         `${activation} activation not yet supported for FusedConv2D ` +
@@ -103,9 +104,9 @@ function fusedBatchMatMul(args: {
   return out;
 }
 
-export const fusedMatMulConfig: KernelConfig = {
+export const _fusedMatMulConfig: KernelConfig = {
   kernelName: _FusedMatMul,
   backendName: 'wasm',
   setupFunc: setup,
-  kernelFunc: fusedBatchMatMul as {} as KernelFunc
+  kernelFunc: fusedBatchMatMul as unknown as KernelFunc
 };

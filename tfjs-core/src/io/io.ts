@@ -22,26 +22,33 @@ import './local_storage';
 
 import {browserFiles} from './browser_files';
 import {browserHTTPRequest, http, isHTTPScheme} from './http';
-import {concatenateArrayBuffers, decodeWeights, encodeWeights, getModelArtifactsForJSON, getModelArtifactsInfoForJSON} from './io_utils';
-import {fromMemory, withSaveHandler} from './passthrough';
+import {concatenateArrayBuffers, decodeWeights, decodeWeightsStream, encodeWeights, getModelArtifactsForJSON, getModelArtifactsForJSONSync, getModelArtifactsInfoForJSON, getWeightSpecs} from './io_utils';
+import {fromMemory, fromMemorySync, withSaveHandler, withSaveHandlerSync} from './passthrough';
 import {getLoadHandlers, getSaveHandlers, registerLoadRouter, registerSaveRouter} from './router_registry';
-import {IOHandler, LoadHandler, LoadOptions, ModelArtifacts, ModelArtifactsInfo, ModelJSON, ModelStoreManager, OnProgressCallback, RequestDetails, SaveConfig, SaveHandler, SaveResult, TrainingConfig, WeightGroup, WeightsManifestConfig, WeightsManifestEntry} from './types';
+import {IOHandler, IOHandlerSync, LoadHandler, LoadOptions, ModelArtifacts, ModelArtifactsInfo, ModelJSON, ModelStoreManager, OnProgressCallback, RequestDetails, SaveConfig, SaveHandler, SaveResult, TrainingConfig, WeightGroup, WeightsManifestConfig, WeightsManifestEntry, WeightData} from './types';
 import {loadWeights, weightsLoaderFactory} from './weights_loader';
+import {CompositeArrayBuffer} from './composite_array_buffer';
 
 export {copyModel, listModels, moveModel, removeModel} from './model_management';
 export {
   browserFiles,
   browserHTTPRequest,
+  CompositeArrayBuffer,
   concatenateArrayBuffers,
   decodeWeights,
+  decodeWeightsStream,
   encodeWeights,
   fromMemory,
+  fromMemorySync,
   getLoadHandlers,
   getModelArtifactsForJSON,
+  getModelArtifactsForJSONSync,
   getModelArtifactsInfoForJSON,
   getSaveHandlers,
+  getWeightSpecs,
   http,
   IOHandler,
+  IOHandlerSync,
   isHTTPScheme,
   LoadHandler,
   LoadOptions,
@@ -58,9 +65,11 @@ export {
   SaveHandler,
   SaveResult,
   TrainingConfig,
+  WeightData,
   WeightGroup,
   weightsLoaderFactory,
   WeightsManifestConfig,
   WeightsManifestEntry,
-  withSaveHandler
+  withSaveHandler,
+  withSaveHandlerSync,
 };

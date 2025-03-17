@@ -12,6 +12,7 @@ the following models from our
 - MobileNet
 - PoseDetection
 - Q&A
+- Universal sentence encoder
 - AutoML Image classification
 - AutoML Object detection
 
@@ -32,7 +33,7 @@ tf.setBackend('wasm').then(() => main());
 
 ```html
 <!-- Import @tensorflow/tfjs or @tensorflow/tfjs-core -->
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs/dist/tf.min.js"> </script>
 
 <!-- Adds the WASM backend to the global backend registry -->
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm/dist/tf-backend-wasm.js"></script>
@@ -46,7 +47,7 @@ tf.setBackend('wasm').then(() => main());
 Starting from Chrome 92 (to be released around July 2021), **cross-origin
 isolation** needs to be set up in your site in order to take advantage of
 the multi-threading support in WASM backend. Without this, the backend
-will fallback to the WASM binary with SIMD-only support (or the vanila version
+will fallback to the WASM binary with SIMD-only support (or the vanilla version
 if SIMD is not enabled). Without multi-threading support, certain models might
 not achieve the best performance.
 
@@ -117,7 +118,7 @@ tf.setBackend('wasm').then(() => {
 ```js
 tf.wasm.setThreadsCount(2);
 tf.setBackend('wasm').then(() => {
-  consosle.log(tf.wasm.getThreadsCount());
+  console.log(tf.wasm.getThreadsCount());
 });
 ```
 
@@ -244,7 +245,7 @@ which will prevent the Angular compiler from automatically adding
 The benchmarks below show inference times (ms) for two different edge-friendly
 models: MobileNet V2 (a medium-sized model) and Face Detector (a lite model).
 All the benchmarks were run in Chrome 79.0 using
-[this benchmark page](../tfjs-core/benchmarks/index.html) across our three
+[this benchmark page](https://tfjs-benchmarks.web.app/local-benchmark/) across our three
 backends: Plain JS (CPU), WebGL and WASM. Inference times are averaged
 across 200 runs.
 

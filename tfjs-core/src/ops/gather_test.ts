@@ -19,7 +19,7 @@ import * as tf from '../index';
 import {ALL_ENVS, describeWithFlags} from '../jasmine_util';
 import {expectArraysClose} from '../test_util';
 
-describeWithFlags('gather', ALL_ENVS, () => {
+describeWithFlags('gather', ALL_ENVS, (env) => {
   it('1D (gather), scalar indices', async () => {
     const t = tf.tensor1d([1, 2, 3]);
 
@@ -312,6 +312,22 @@ describeWithFlags('gather', ALL_ENVS, () => {
     expectArraysClose(await gradients.data(), [26, 36, 0, 0]);
   });
 
+  it('gradient 2D (gather) axis=1 shape=[4, 2] 1D indices batchDims 1',
+     async () => {
+       const t = tf.variable(tf.tensor([[0, 1],
+                                        [1, 2],
+                                        [2, 3],
+                                        [3, 4]]));
+       const indices = tf.tensor([0, 1, 0, 1], [4, 1], 'int32');
+       const dy = tf.tensor([1, 1, 1, 1], [4, 1]);
+       const axis = 1;
+
+       const gradients = tf.grad(t => tf.gather(t, indices, axis, 1))(t, dy);
+
+       expect(gradients.shape).toEqual(t.shape);
+       expectArraysClose(await gradients.data(), [1, 0, 0, 1, 1, 0, 0, 1]);
+     });
+
   it('gradient 2D (gather) axis=1 shape=[2, 2] 1D indices', async () => {
     const t = tf.tensor2d([1, 11, 2, 22], [2, 2]);
     const indices = tf.tensor1d([1, 0, 0, 1], 'int32');
@@ -578,5 +594,20 @@ describeWithFlags('gather', ALL_ENVS, () => {
     const numDataIdAfter = tf.engine().backend.numDataIds();
     expect(numTensorsAfter).toBe(numTensorsBefore);
     expect(numDataIdAfter).toBe(numDataIdBefore);
+  });
+
+  it('fills with zero when index is out of bound', async () => {
+    if (env.backendName === 'webgl' || env.backendName === 'webgpu') {
+      const t = tf.tensor2d([1, 11, 2, 22], [2, 2]);
+      const tInt = tf.tensor2d([1, 11, 2, 22], [2, 2], 'int32');
+
+      const index = tf.tensor1d([0, 1, 100, -1, 2, -4], 'int32');
+      const res = tf.gather(t, index);
+      const resInt = tf.gather(tInt, index);
+
+      const expected = [1, 11, 2, 22, 0, 0, 0, 0, 0, 0, 0, 0];
+      expectArraysClose(await res.data(), expected);
+      expectArraysClose(await resInt.data(), expected);
+    }
   });
 });

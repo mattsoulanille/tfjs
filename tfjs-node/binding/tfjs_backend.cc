@@ -23,6 +23,11 @@
 #include <set>
 #include <string>
 #include "napi_auto_ref.h"
+#include "tensorflow/c/eager/c_api.h"
+#include "tensorflow/c/tf_datatype.h"
+#include "tensorflow/c/tf_status.h"
+#include "tensorflow/c/tf_tensor.h"
+#include "tensorflow/core/platform/ctstring_internal.h"
 #include "tf_auto_tensor.h"
 #include "tfe_auto_op.h"
 #include "utils.h"
@@ -130,7 +135,7 @@ TFE_TensorHandle *CreateTFE_TensorHandleFromTypedArray(napi_env env,
   if (dtype == TF_INT64) {
     // Currently, int64-type Tensors are represented as Int32Arrays.
     // To represent a int64-type Tensor of `n` elements, an Int32Array of
-    // length `2 * n` is requried. This is why the length-match checking
+    // length `2 * n` is required. This is why the length-match checking
     // logic is special-cased for int64.
     if (array_length != num_elements * 2) {
       NAPI_THROW_ERROR(
@@ -374,7 +379,7 @@ void CopyTFE_TensorHandleDataToResourceArray(
 
   TF_AutoStatus status;
 
-  // Create a JS string to stash the resouce handle into.
+  // Create a JS string to stash the resource handle into.
   napi_status nstatus;
   size_t byte_length = TF_TensorByteSize(tensor.tensor);
   nstatus = napi_create_array_with_length(env, byte_length, result);
@@ -781,8 +786,31 @@ void TFJSBackend::DeleteTensor(napi_env env, napi_value tensor_id_value) {
     return;
   }
 
+  TFE_TensorHandle *tensor_handle = tensor_entry->second;
+  if (TFE_TensorHandleDataType(tensor_handle) == TF_STRING) {
+    TF_AutoStatus tf_status;
+    TF_AutoTensor tensor(
+        TFE_TensorHandleResolve(tensor_handle, tf_status.status));
+    ENSURE_TF_OK(env, tf_status);
+    size_t num_elements = GetTensorNumElements(tensor.tensor);
+    TF_TString *data = reinterpret_cast<TF_TString *>(TF_TensorData(tensor.tensor));
+
+    // Deallocate each string
+    for (size_t i = 0; i < num_elements; i++) {
+      TF_TString_Dealloc(data + i);
+    }
+  };
   TFE_DeleteTensorHandle(tensor_entry->second);
   tfe_handle_map_.erase(tensor_entry);
+}
+
+napi_value TFJSBackend::GetNumOfTensors(napi_env env) {
+  napi_status nstatus;
+  napi_value num_of_tensors;
+  nstatus =
+      napi_create_int32(env, tfe_handle_map_.size(), &num_of_tensors);
+  ENSURE_NAPI_OK_RETVAL(env, nstatus, nullptr);
+  return num_of_tensors;
 }
 
 napi_value TFJSBackend::GetTensorData(napi_env env,

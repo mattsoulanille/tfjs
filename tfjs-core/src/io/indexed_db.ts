@@ -22,6 +22,7 @@ import {env} from '../environment';
 import {getModelArtifactsInfoForJSON} from './io_utils';
 import {IORouter, IORouterRegistry} from './router_registry';
 import {IOHandler, ModelArtifacts, ModelArtifactsInfo, ModelStoreManager, SaveResult} from './types';
+import {CompositeArrayBuffer} from './composite_array_buffer';
 
 const DATABASE_NAME = 'tensorflowjs';
 const DATABASE_VERSION = 1;
@@ -157,23 +158,41 @@ export class BrowserIndexedDB implements IOHandler {
           modelTx.oncomplete = () => db.close();
         } else {
           // Put model into object store.
+
+          // Concatenate all the model weights into a single ArrayBuffer. Large
+          // models (~1GB) have problems saving if they are not concatenated.
+          // TODO(mattSoulanille): Save large models to multiple indexeddb
+          // records.
+          modelArtifacts.weightData = CompositeArrayBuffer.join(
+              modelArtifacts.weightData);
           const modelArtifactsInfo: ModelArtifactsInfo =
               getModelArtifactsInfoForJSON(modelArtifacts);
           // First, put ModelArtifactsInfo into info store.
           const infoTx = db.transaction(INFO_STORE_NAME, 'readwrite');
           let infoStore = infoTx.objectStore(INFO_STORE_NAME);
-          const putInfoRequest =
+          let putInfoRequest: IDBRequest<IDBValidKey>;
+          try {
+            putInfoRequest =
               infoStore.put({modelPath: this.modelPath, modelArtifactsInfo});
+          } catch (error) {
+            return reject(error);
+          }
           let modelTx: IDBTransaction;
           putInfoRequest.onsuccess = () => {
             // Second, put model data into model store.
             modelTx = db.transaction(MODEL_STORE_NAME, 'readwrite');
             const modelStore = modelTx.objectStore(MODEL_STORE_NAME);
-            const putModelRequest = modelStore.put({
-              modelPath: this.modelPath,
-              modelArtifacts,
-              modelArtifactsInfo
-            });
+            let putModelRequest: IDBRequest<IDBValidKey>;
+            try {
+              putModelRequest = modelStore.put({
+                modelPath: this.modelPath,
+                modelArtifacts,
+                modelArtifactsInfo
+              });
+            } catch (error) {
+              // Sometimes, the serialized value is too large to store.
+              return reject(error);
+            }
             putModelRequest.onsuccess = () => resolve({modelArtifactsInfo});
             putModelRequest.onerror = error => {
               // If the put-model request fails, roll back the info entry as
@@ -236,7 +255,7 @@ IORouterRegistry.registerLoadRouter(indexedDBRouter);
  *
  * @param modelPath A unique identifier for the model to be saved. Must be a
  *   non-empty string.
- * @returns An instance of `BrowserIndexedDB` (sublcass of `IOHandler`),
+ * @returns An instance of `BrowserIndexedDB` (subclass of `IOHandler`),
  *   which can be used with, e.g., `tf.Model.save`.
  */
 export function browserIndexedDB(modelPath: string): IOHandler {

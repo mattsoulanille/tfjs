@@ -14,9 +14,7 @@
  * limitations under the License.
  * =============================================================================
  */
-import {DataType, util} from '@tensorflow/tfjs-core';
-
-import {MAX_COMPUTE_PER_DIMENSION_DISPATCH_SIZE} from './constants';
+import {DataType, TensorInfo, util} from '@tensorflow/tfjs-core';
 
 const arrayProduct = (arr: number[]) => {
   let product = 1;
@@ -39,50 +37,66 @@ export function tilesFitEvenlyIntoShape(
 }
 
 // Computes dispatch geometry based on layout of output dimensions and
-// workGroupSize.
+// workgroupSize.
 export function computeDispatch(
     layout: {x: number[], y?: number[], z?: number[]}, outputShape: number[],
-    workGroupSize: [number, number, number] = [1, 1, 1],
+    workgroupSize: [number, number, number] = [1, 1, 1],
     elementsPerThread: [number, number, number] =
         [1, 1, 1]): [number, number, number] {
   const [dispatchX, dispatchY, dispatchZ] = [
     Math.ceil(
         arrayProduct(layout.x.map(d => outputShape[d])) /
-        (workGroupSize[0] * elementsPerThread[0])),
+        (workgroupSize[0] * elementsPerThread[0])),
     layout.y ? Math.ceil(
                    arrayProduct(layout.y.map(d => outputShape[d])) /
-                   (workGroupSize[1] * elementsPerThread[1])) :
+                   (workgroupSize[1] * elementsPerThread[1])) :
                1,
     layout.z ? Math.ceil(
                    arrayProduct(layout.z.map(d => outputShape[d])) /
-                   (workGroupSize[2] * elementsPerThread[2])) :
+                   (workgroupSize[2] * elementsPerThread[2])) :
                1
   ];
-
-  if (dispatchX <= MAX_COMPUTE_PER_DIMENSION_DISPATCH_SIZE &&
-      dispatchY <= MAX_COMPUTE_PER_DIMENSION_DISPATCH_SIZE &&
-      dispatchZ <= MAX_COMPUTE_PER_DIMENSION_DISPATCH_SIZE) {
-    return [dispatchX, dispatchY, dispatchZ];
-  }
-
-  util.assert(dispatchX > MAX_COMPUTE_PER_DIMENSION_DISPATCH_SIZE &&
-      layout.y === undefined && layout.z === undefined, () =>
-      'Dispatch size exceeds WebGPU limits in Y or Z dimension.');
-
-  let dispatchAverage = Math.ceil(Math.sqrt(dispatchX));
-  if (dispatchAverage > MAX_COMPUTE_PER_DIMENSION_DISPATCH_SIZE) {
-    dispatchAverage = Math.ceil(Math.cbrt(dispatchX));
-    util.assert(dispatchAverage <= MAX_COMPUTE_PER_DIMENSION_DISPATCH_SIZE,
-        () => 'Total dispatch size exceeds WebGPU maximum.');
-    return [dispatchAverage, dispatchAverage, dispatchAverage];
-  } else {
-    return [dispatchAverage, dispatchAverage, 1];
-  }
+  return [dispatchX, dispatchY, dispatchZ];
 }
 
-export function computeWorkGroupSizeForConv2d(
-    layout: {x: number[], y?: number[], z?: number[]},
-    outputShape: number[]): [number, number, number] {
+export type WorkgroupInfo = {
+  workgroupSize: [number, number, number],
+  elementsPerThread: [number, number, number],
+};
+
+export function computeWorkgroupInfoForMatMul(
+    dimAOuter: number, dimInner: number, dimBOuter: number,
+    transposeA = false): WorkgroupInfo {
+  // These are experimental values. Usually, we need to adjust the work group
+  // size based on the input shapes to improve the EU occupancy.
+  // TODO: WebGPU limits the maximum allowed shared memory size as 16K. To make
+  // sure it doesn't exceed this limitations. Temporarily reduce the work group
+  // size to [8, 8, 1] and the work per thread size is [4, 4, 1]. But we should
+  // revisit it and find the balance between work group size and work per thread
+  // size.
+  const workgroupSize: [number, number, number] = [8, 8, 1];
+  const elementsPerThread: [number, number, number] = [4, 4, 1];
+
+  if (!transposeA) {
+    if (dimAOuter <= 8) {
+      elementsPerThread[1] = 1;
+    }
+
+    if (dimInner <= 16 && dimBOuter <= 16) {
+      workgroupSize[0] = 4;
+    }
+  }
+
+  return {workgroupSize, elementsPerThread};
+}
+
+export function computeWorkgroupSizeForConv2d(
+    layout: {x: number[], y?: number[], z?: number[]}, outputShape: number[],
+    isVec4 = false): [number, number, number] {
+  if (isVec4) {
+    return [8, 8, 1];
+  }
+
   const dim0 = arrayProduct(layout.x.map(d => outputShape[d]));
   const dim1 = arrayProduct(layout.y.map(d => outputShape[d]));
   // TODO(jiajia.qin@intel.com): More fine tune based on outputShape.
@@ -103,33 +117,18 @@ export function computeWorkGroupSizeForConv2d(
   return [16, 16, 1];
 }
 
-export function computeWorkGroupSizeForMatMul(
-    dimAOuter: number, dimInner: number,
-    dimBOuter: number): [number, number, number] {
-  // These are experimental values. Usually, we need to adjust the work group
-  // size based on the input shapes to improve the EU occupancy.
-  // TODO: WebGPU limits the maximum allowed shared memory size as 16K. To make
-  // sure it doesn't exceed this limitations. Temporarily reduce the work group
-  // size to [8, 8, 1] and the work per thread size is [4, 4, 1]. But we should
-  // revisit it and find the balance between work group size and work per thread
-  // size.
-  if (dimAOuter === 1) {
-    return [32, 1, 1];
-  } else if (dimBOuter === 1) {
-    return [1, 32, 1];
+export function computeWorkPerThreadForConv2d(
+    layout: {x: number[], y?: number[], z?: number[]}, outputShape: number[],
+    isVec4 = false): [number, number, number] {
+  if (isVec4) {
+    return [4, 4, 1];
   }
 
-  return [8, 8, 1];
-}
-
-export function computeWorkPerThreadForConv2d(
-    layout: {x: number[], y?: number[], z?: number[]},
-    outputShape: number[]): [number, number, number] {
   const dim0 = arrayProduct(layout.x.map(d => outputShape[d]));
   const dim1 = arrayProduct(layout.y.map(d => outputShape[d]));
   // TODO(jiajia.qin@intel.com): More fine tune based on outputShape.
   // The following conditions correspond to the values set in
-  // computeWorkGroupSizeForConv2d.
+  // computeWorkgroupSizeForConv2d.
   if (dim0 <= 4) {
     return [1, 2, 1];
   }
@@ -155,32 +154,30 @@ export function GPUBytesPerElement(dtype: DataType): number {
   }
 }
 
-export function ArrayBufferToTypedArray(data: ArrayBuffer, dtype: DataType) {
-  if (dtype === 'float32') {
-    return new Float32Array(data);
-  } else if (dtype === 'int32') {
-    return new Int32Array(data);
-  } else if (dtype === 'bool' || dtype === 'string') {
-    const dataAsInt32Array = new Int32Array(data);
-    const boolData = new ArrayBuffer(dataAsInt32Array.length);
-    const dataAsTypedArray = new Uint8Array(boolData);
-    for (let i = 0; i < dataAsInt32Array.length; i++) {
-      dataAsTypedArray[i] = dataAsInt32Array[i];
-    }
-    return dataAsTypedArray;
-  } else {
-    throw new Error(`Unknown dtype ${dtype}`);
-  }
-}
-
 export function isWebGPUSupported(): boolean {
-  if (!navigator.gpu) {
-    return false;
-  }
-  return true;
+  return !!(typeof globalThis !== 'undefined' && (globalThis.navigator)
+    && (globalThis.navigator.gpu));
 }
 
-export interface WebGPULayout {
-  bindGroupLayout: GPUBindGroupLayout;
-  pipelineLayout: GPUPipelineLayout;
+export function assertNotComplex(
+    tensor: TensorInfo|TensorInfo[], opName: string): void {
+  if (!Array.isArray(tensor)) {
+    tensor = [tensor];
+  }
+  tensor.forEach(t => {
+    if (t != null) {
+      util.assert(
+          t.dtype !== 'complex64',
+          () => `${opName} does not support complex64 tensors ` +
+              'in the WebGPU backend.');
+    }
+  });
+}
+
+export enum MatMulProgramType {
+  MatMulReduceProgram,
+  MatMulSplitKProgram,
+  MatMulSmallOutputSizeProgram,
+  MatMulPackedProgram,
+  MatMulMax
 }

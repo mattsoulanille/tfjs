@@ -63,7 +63,7 @@ function fusedMatMul_({
   bias,
   activation = 'linear',
   preluActivationWeights,
-  leakyreluAlpha,
+  leakyreluAlpha = 0.2,
 }: {
   a: Tensor|TensorLike,
   b: Tensor|TensorLike,
@@ -184,8 +184,8 @@ function fusedMatMul_({
             const res =
                 // tslint:disable-next-line: no-unnecessary-type-assertion
                 ENGINE.runKernel(
-                    _FusedMatMul, inputs as {} as NamedTensorMap,
-                    attrs as {} as NamedAttrMap) as Tensor;
+                    _FusedMatMul, inputs as unknown as NamedTensorMap,
+                    attrs as unknown as NamedAttrMap) as Tensor;
 
             save([a3D, b3D, res]);
 
@@ -198,8 +198,8 @@ function fusedMatMul_({
             const res =
                 // tslint:disable-next-line: no-unnecessary-type-assertion
                 ENGINE.runKernel(
-                    _FusedMatMul, inputs as {} as NamedTensorMap,
-                    attrs as {} as NamedAttrMap) as Tensor;
+                    _FusedMatMul, inputs as unknown as NamedTensorMap,
+                    attrs as unknown as NamedAttrMap) as Tensor;
 
             save([a3D, b3D, res, $bias]);
 
@@ -210,4 +210,4 @@ function fusedMatMul_({
     }
   }
 
-  export const matMul = op({fusedMatMul_});
+  export const matMul = /* @__PURE__ */ op({fusedMatMul_});

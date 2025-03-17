@@ -39,6 +39,7 @@ export {batchNorm2d} from './batchnorm2d';
 export {batchNorm3d} from './batchnorm3d';
 export {batchNorm4d} from './batchnorm4d';
 export {bincount} from './bincount';
+export {bitwiseAnd} from './bitwise_and';
 export {broadcastArgs} from './broadcast_args';
 export {broadcastTo} from './broadcast_to';
 export {buffer} from './buffer';
@@ -59,6 +60,7 @@ export {conv3d} from './conv3d';
 export {conv3dTranspose} from './conv3d_transpose';
 export {cos} from './cos';
 export {cosh} from './cosh';
+export {cumprod} from './cumprod';
 export {cumsum} from './cumsum';
 export {denseBincount} from './dense_bincount';
 export {depthToSpace} from './depth_to_space';
@@ -70,8 +72,10 @@ export {divNoNan} from './div_no_nan';
 export {dot} from './dot';
 export {einsum} from './einsum';
 export {elu} from './elu';
+export {ensureShape} from './ensure_shape';
 export {equal} from './equal';
 export {erf} from './erf';
+export {euclideanNorm} from './euclidean_norm';
 export {exp} from './exp';
 export {expandDims} from './expand_dims';
 export {expm1} from './expm1';
@@ -100,6 +104,7 @@ export {logicalAnd} from './logical_and';
 export {logicalNot} from './logical_not';
 export {logicalOr} from './logical_or';
 export {logicalXor} from './logical_xor';
+export {lowerBound} from './lower_bound';
 export {matMul} from './mat_mul';
 export {max} from './max';
 export {maxPool} from './max_pool';
@@ -132,10 +137,15 @@ export {pow} from './pow';
 export {prelu} from './prelu';
 export {print} from './print';
 export {prod} from './prod';
+export {raggedGather} from './ragged_gather';
+export {raggedRange} from './ragged_range';
+export {raggedTensorToTensor} from './ragged_tensor_to_tensor';
 export {rand} from './rand';
 export {randomGamma} from './random_gamma';
 export {randomNormal} from './random_normal';
+export {randomStandardNormal} from './random_standard_normal';
 export {randomUniform} from './random_uniform';
+export {randomUniformInt} from './random_uniform_int';
 export {range} from './range';
 export {real} from './real';
 export {reciprocal} from './reciprocal';
@@ -188,12 +198,14 @@ export {tensor3d} from './tensor3d';
 export {tensor4d} from './tensor4d';
 export {tensor5d} from './tensor5d';
 export {tensor6d} from './tensor6d';
+export {tensorScatterUpdate} from './tensor_scatter_update';
 export {tile} from './tile';
 export {topk} from './topk';
 export {truncatedNormal} from './truncated_normal';
 export {unique} from './unique';
 export {unsortedSegmentSum} from './unsorted_segment_sum';
 export {unstack} from './unstack';
+export {upperBound} from './upper_bound';
 export {variable} from './variable';
 export {where} from './where';
 export {whereAsync} from './where_async';
@@ -205,6 +217,7 @@ export * from './transpose';
 export * from './norm';
 export * from './moving_average';
 export * from './scatter_nd';
+export * from './search_sorted';
 export * from './sparse_to_dense';
 export * from './gather_nd';
 export * from './dropout';
@@ -241,6 +254,7 @@ const signal = {
 import {cropAndResize} from './image/crop_and_resize';
 import {flipLeftRight} from './image/flip_left_right';
 import {grayscaleToRGB} from './image/grayscale_to_rgb';
+import {rgbToGrayscale} from './image/rgb_to_grayscale';
 import {rotateWithOffset} from './image/rotate_with_offset';
 import {nonMaxSuppression} from './image/non_max_suppression';
 import {nonMaxSuppressionAsync} from './image/non_max_suppression_async';
@@ -257,6 +271,7 @@ const image = {
   grayscaleToRGB,
   resizeNearestNeighbor,
   resizeBilinear,
+  rgbToGrayscale,
   rotateWithOffset,
   cropAndResize,
   nonMaxSuppression,
@@ -315,11 +330,13 @@ const sparse = {
 import {stringNGrams} from './string/string_n_grams';
 import {stringSplit} from './string/string_split';
 import {stringToHashBucketFast} from './string/string_to_hash_bucket_fast';
+import {staticRegexReplace} from './string/static_regex_replace';
 // tslint:disable-next-line:variable-name
 const string = {
   stringNGrams,
   stringSplit,
-  stringToHashBucketFast
+  stringToHashBucketFast,
+  staticRegexReplace,
 };
 
 // Second level exports.

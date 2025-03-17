@@ -23,9 +23,10 @@
 import '../flags';
 import {env} from '../environment';
 
-import {basename, concatenateArrayBuffers, getModelArtifactsForJSON, getModelArtifactsInfoForJSON, getModelJSONForModelArtifacts} from './io_utils';
+import {basename, getModelArtifactsForJSON, getModelArtifactsInfoForJSON, getModelJSONForModelArtifacts} from './io_utils';
 import {IORouter, IORouterRegistry} from './router_registry';
-import {IOHandler, ModelArtifacts, ModelJSON, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
+import {IOHandler, ModelArtifacts, ModelJSON, SaveResult, WeightData, WeightsManifestConfig, WeightsManifestEntry} from './types';
+import {CompositeArrayBuffer} from './composite_array_buffer';
 
 const DEFAULT_FILE_NAME_PREFIX = 'model';
 const DEFAULT_JSON_EXTENSION_NAME = '.json';
@@ -70,8 +71,13 @@ export class BrowserDownloads implements IOHandler {
           'Browser downloads are not supported in ' +
           'this environment since `document` is not present');
     }
+
+    // TODO(mattsoulanille): Support saving models over 2GB that exceed
+    // Chrome's ArrayBuffer size limit.
+    const weightBuffer = CompositeArrayBuffer.join(modelArtifacts.weightData);
+
     const weightsURL = window.URL.createObjectURL(new Blob(
-        [modelArtifacts.weightData], {type: 'application/octet-stream'}));
+        [weightBuffer], {type: 'application/octet-stream'}));
 
     if (modelArtifacts.modelTopology instanceof ArrayBuffer) {
       throw new Error(
@@ -169,7 +175,7 @@ class BrowserFiles implements IOHandler {
   }
 
   private loadWeights(weightsManifest: WeightsManifestConfig): Promise<[
-    /* weightSpecs */ WeightsManifestEntry[], /* weightData */ ArrayBuffer
+    /* weightSpecs */ WeightsManifestEntry[], WeightData,
   ]> {
     const weightSpecs: WeightsManifestEntry[] = [];
     const paths: string[] = [];
@@ -185,7 +191,7 @@ class BrowserFiles implements IOHandler {
         paths.map(path => this.loadWeightsFile(path, pathToFile[path]));
 
     return Promise.all(promises).then(
-        buffers => [weightSpecs, concatenateArrayBuffers(buffers)]);
+        buffers => [weightSpecs, buffers]);
   }
 
   private loadWeightsFile(path: string, file: File): Promise<ArrayBuffer> {
@@ -318,7 +324,7 @@ export function browserDownloads(fileNamePrefix = 'model'): IOHandler {
  *   loading from files that contain Keras-style models (i.e., `tf.Model`s), for
  *   which an `Array` of `File`s is expected (in that order):
  *   - A JSON file containing the model topology and weight manifest.
- *   - Optionally, One or more binary files containing the binary weights.
+ *   - Optionally, one or more binary files containing the binary weights.
  *     These files must have names that match the paths in the `weightsManifest`
  *     contained by the aforementioned JSON file, or errors will be thrown
  *     during loading. These weights files have the same format as the ones

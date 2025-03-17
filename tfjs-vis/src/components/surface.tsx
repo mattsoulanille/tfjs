@@ -27,7 +27,7 @@ interface SurfaceProps extends SurfaceInfoStrict {
 }
 
 /**
- * A surface is container for visualizations and other rendered thigns.
+ * A surface is container for visualizations and other rendered things.
  * It consists of a containing DOM Element, a label and an empty drawArea.
  */
 export class SurfaceComponent extends Component<SurfaceProps> {
@@ -43,12 +43,12 @@ export class SurfaceComponent extends Component<SurfaceProps> {
   label: HTMLElement;
   drawArea: HTMLElement;
 
-  componentDidMount() {
+  override componentDidMount() {
     const { name, tab } = this.props;
     this.props.registerSurface(name, tab, this);
   }
 
-  componentDidUpdate() {
+    override componentDidUpdate() {
     // Prevent re-rendering of this component as it
     // is primarily controlled outside of this class
     return false;

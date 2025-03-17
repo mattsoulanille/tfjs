@@ -26,6 +26,15 @@ TEST_SRCS = [
     "image_test_util.ts",
 ]
 
+TEST_ENTRYPOINTS = [
+    "test_node.ts",
+    "setup_test.ts",
+    "worker_test.ts",
+    "worker_node_test.ts",
+    "platforms/platform_node_test.ts",
+    "ops/from_pixels_worker_test.ts",
+]
+
 # Used for test-snippets
 filegroup(
     name = "all_srcs",
@@ -35,25 +44,23 @@ filegroup(
 make_version_test_file(
     name = "version_test",
     package_json = "//tfjs-core:package.json",
+    version_name = "version_core",
 )
 
 filegroup(
-    name = "shared_test_entrypoints",
+    name = "shared_test_srcs",
     srcs = glob(
         ["**/*_test.ts"],
-        exclude = [
-            "setup_test.ts",
-            "worker_test.ts",
-            "worker_node_test.ts",
-            "ops/from_pixels_worker_test.ts",
-        ],
-    ) + [":version_test"],
+        exclude = TEST_ENTRYPOINTS,
+    ) + [
+        ":version_test",
+    ],
 )
 
 # Generates the 'tests.ts' file that imports all test entrypoints.
 enumerate_tests(
     name = "tests",
-    srcs = [":shared_test_entrypoints"],
+    srcs = [":shared_test_srcs"],
     root_path = "tfjs-core/src",
 )
 
@@ -63,11 +70,19 @@ ts_library(
     name = "tfjs-core_src_lib",
     srcs = glob(
         ["**/*.ts"],
-        exclude = TEST_SRCS + ["index.ts"],
+        exclude = TEST_SRCS + TEST_ENTRYPOINTS + ["index.ts"],
     ),
     module_name = "@tensorflow/tfjs-core/dist",
     deps = [
-        "@npm//@types",
+        "@npm//@types/jasmine",
+        "@npm//@types/long",
+        "@npm//@types/node",
+        "@npm//@types/offscreencanvas",
+        "@npm//@types/seedrandom",
+        "@npm//@webgpu/types",
+        "@npm//jasmine",
+        "@npm//long",
+        "@npm//node-fetch",
         "@npm//seedrandom",
     ],
 )
@@ -88,11 +103,7 @@ ts_library(
     name = "tfjs-core_test_lib",
     srcs = glob(
         TEST_SRCS,
-        exclude = [
-            "worker_test.ts",
-            "worker_node_test.ts",
-            "ops/from_pixels_worker_test.ts",
-        ],
+        exclude = TEST_ENTRYPOINTS,
     ) + [
         ":tests",
         ":version_test",
@@ -103,6 +114,31 @@ ts_library(
     deps = [
         ":tfjs-core_lib",
         ":tfjs-core_src_lib",
+    ],
+)
+
+ts_library(
+    name = "setup_test_lib",
+    srcs = [
+        "setup_test.ts",
+    ],
+    deps = [
+        ":tfjs-core_src_lib",
+        ":tfjs-core_test_lib",
+        "//tfjs-backend-cpu/src:tfjs-backend-cpu_lib",
+    ],
+)
+
+ts_library(
+    name = "test_node_lib",
+    srcs = [
+        "test_node.ts",
+    ],
+    deps = [
+        # test_node.ts depends on setup_test.js as a runtime dependency,
+        # so it is not listed here (it is listed in the nodejs_test, instead).
+        ":tfjs-core_src_lib",
+        ":tfjs-core_test_lib",
         "//tfjs-backend-cpu/src:tfjs-backend-cpu_lib",
     ],
 )
@@ -121,6 +157,7 @@ esbuild(
     ],
     sources_content = True,
     deps = [
+        ":setup_test_lib",
         ":tfjs-core_lib",
         ":tfjs-core_test_lib",
         "//tfjs-backend-cpu/src:tfjs-backend-cpu_lib",
@@ -150,6 +187,26 @@ jasmine_node_test(
 )
 
 ts_library(
+    name = "platform_node_test_lib",
+    srcs = [
+        "platforms/platform_node_test.ts",
+    ],
+    deps = [
+        ":tfjs-core_lib",
+        ":tfjs-core_src_lib",
+        "//tfjs-backend-cpu/src:tfjs-backend-cpu_lib",
+        "@npm//@types/node",
+    ],
+)
+
+jasmine_node_test(
+    name = "platform_node_test",
+    deps = [
+        ":platform_node_test_lib",
+    ],
+)
+
+ts_library(
     name = "worker_test_lib",
     srcs = [
         "worker_test.ts",
@@ -167,8 +224,11 @@ tfjs_web_test(
         "bs_chrome_mac",
         "bs_firefox_mac",
         "bs_safari_mac",
-        "bs_ios_11",
-        "bs_android_9",
+        # Temporarily disabled because BrowserStack does not support loading
+        # absolute paths in iOS, which is required for loading the worker.
+        # https://www.browserstack.com/question/39573
+        # "bs_ios_12",
+        "bs_android_10",
         "win_10_chrome",
     ],
     static_files = [
@@ -194,6 +254,7 @@ ts_library(
         ":tfjs-core_lib",
         ":tfjs-core_src_lib",
         "//tfjs-backend-cpu/src:tfjs-backend-cpu_lib",
+        "@npm//@types/offscreencanvas",
     ],
 )
 
@@ -203,8 +264,11 @@ tfjs_web_test(
         "bs_chrome_mac",
         # Omit Firefox since it does not support offscreen canvas.
         "bs_safari_mac",
-        "bs_ios_11",
-        "bs_android_9",
+        # Temporarily disabled because BrowserStack does not support loading
+        # absolute paths in iOS, which is required for loading the worker.
+        # https://www.browserstack.com/question/39573
+        # "bs_ios_12",
+        "bs_android_10",
         "win_10_chrome",
     ],
     static_files = [

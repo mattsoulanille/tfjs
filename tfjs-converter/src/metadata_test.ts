@@ -57,12 +57,15 @@ describe('kernel2op metadata file', () => {
       'TensorArrayV3',
       'TensorArrayWriteV3',
       'TensorListConcat',
+      'TensorListConcatV2',
       'TensorListFromTensor',
       'TensorListGather',
       'TensorListGetItem',
+      'TensorListLength',
       'TensorListPopBack',
       'TensorListPushBack',
       'TensorListReserve',
+      'TensorListResize',
       'TensorListScatter',
       'TensorListScatterV2',
       'TensorListSetItem',
@@ -76,7 +79,9 @@ describe('kernel2op metadata file', () => {
       'LookupTableFind',
       'LookupTableFindV2',
       'LookupTableSize',
-      'LookupTableSizeV2'
+      'LookupTableSizeV2',
+      'InitializeTable',
+      'InitializeTableV2',
     ];
     // tslint:disable-next-line:no-require-imports
     const kernel2op = require('tfjs-converter/metadata/kernel2op.json');

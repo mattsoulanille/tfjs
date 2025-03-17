@@ -353,7 +353,7 @@ describeMathCPUAndWebGL2('BatchNormalization Layers: Tensor', () => {
     const x = tensor2d([[1, 2], [3, 4]], [2, 2]);
     expectTensorsClose(layer.apply(x) as Tensor, x, 0.01);
     expect(layer.getWeights().length).toEqual(3);
-    // Firt weight is gamma.
+    // First weight is gamma.
     expectTensorsClose(layer.getWeights()[0], onesLike(layer.getWeights()[0]));
     // Second weight is moving mean.
     expectTensorsClose(layer.getWeights()[1], zerosLike(layer.getWeights()[1]));
@@ -366,7 +366,7 @@ describeMathCPUAndWebGL2('BatchNormalization Layers: Tensor', () => {
     const x = tensor2d([[1, 2], [3, 4]], [2, 2]);
     expectTensorsClose(layer.apply(x) as Tensor, x, 0.01);
     expect(layer.getWeights().length).toEqual(3);
-    // Firt weight is beta.
+    // First weight is beta.
     expectTensorsClose(layer.getWeights()[0], zerosLike(layer.getWeights()[0]));
     // Second weight is moving mean.
     expectTensorsClose(layer.getWeights()[1], zerosLike(layer.getWeights()[1]));
@@ -734,6 +734,15 @@ describeMathCPUAndGPU('LayerNormalization Layer: Tensor', () => {
     dispose(layer.apply(xs) as Tensor);  // Warm up.
     const numTensors0 = memory().numTensors;
     dispose(layer.apply(xs) as Tensor);
+    expect(memory().numTensors).toEqual(numTensors0);
+  });
+
+  it('Forward: configuration change', () => {
+    const layer = tfl.layers.layerNormalization({scale: false, center: false});
+    const xs = tensor2d([[1, 2, 3], [3, 6, 24]]);
+    dispose(layer.apply(xs) as Tensor);  // Warm up.
+    const numTensors0 = memory().numTensors;
+    dispose(layer.apply(xs, {scale: true, center: true}) as Tensor);
     expect(memory().numTensors).toEqual(numTensors0);
   });
 

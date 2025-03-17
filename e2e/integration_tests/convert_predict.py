@@ -37,12 +37,13 @@ import time
 
 import numpy as np
 import tensorflow as tf
+import tf_keras
 from tensorflow.python.eager import def_function
 from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import tensor_spec
 from tensorflow.python.ops import variables
-from tensorflow.python.training.tracking import tracking
+from tensorflow.python.trackable import autotrackable
 from tensorflow.python.saved_model.save import save
 import tensorflow_hub as hub
 import tensorflowjs as tfjs
@@ -182,7 +183,7 @@ def _create_saved_model_v2(save_dir):
     save_dir: directory name of where the saved model will be stored.
   """
   input_data = constant_op.constant(1., shape=[1])
-  root = tracking.AutoTrackable()
+  root = autotrackable.AutoTrackable()
   root.v1 = variables.Variable(3.)
   root.v2 = variables.Variable(2.)
   root.f = def_function.function(lambda x: root.v1 * root.v2 * x)
@@ -211,7 +212,7 @@ def _create_saved_model_v2_with_control_flow(save_dir):
       v = v + 1
     return v
 
-  root = tracking.AutoTrackable()
+  root = autotrackable.AutoTrackable()
   root.f = square_if_positive
   to_save = root.f.get_concrete_function(
       tensor_spec.TensorSpec([], dtypes.float32))
@@ -232,16 +233,16 @@ def _create_saved_model_with_conv2d(save_dir):
     save_dir: directory name of where the saved model will be stored.
   """
   layers = [
-      tf.keras.layers.Conv2D(
+      tf_keras.layers.Conv2D(
           16, [3, 3], padding='same', use_bias=False),
-      tf.keras.layers.BatchNormalization(),
-      tf.keras.layers.ReLU()
+      tf_keras.layers.BatchNormalization(),
+      tf_keras.layers.ReLU()
   ]
-  model = tf.keras.Sequential(layers)
+  model = tf_keras.Sequential(layers)
   result = model.predict(tf.ones((1, 24, 24, 3)))
   # set the learning phase to avoid keara learning placeholder, which
   # will cause error when saving.
-  tf.keras.backend.set_learning_phase(0)
+  #tf_keras.backend.set_learning_phase(0)
   tf.saved_model.save(model, save_dir)
   return {
       "async": False,
@@ -263,14 +264,14 @@ def _create_saved_model_with_prelu(save_dir):
   # set the bias and alpha intitialize to make them constant and ensure grappler
   # be able to fuse the op.
   layers = [
-      tf.keras.layers.Conv2D(
+      tf_keras.layers.Conv2D(
           16, [3, 3], padding='same', use_bias=True,
           bias_initializer=tf.initializers.constant(0.25)),
-      tf.keras.layers.PReLU(alpha_initializer=tf.initializers.constant(0.25))
+      tf_keras.layers.PReLU(alpha_initializer=tf.initializers.constant(0.25))
   ]
-  model = tf.keras.Sequential(layers)
+  model = tf_keras.Sequential(layers)
   result = model.predict(tf.ones((1, 24, 24, 3)))
-  tf.keras.backend.set_learning_phase(0)
+  #tf_keras.backend.set_learning_phase(0)
   tf.saved_model.save(model, save_dir)
   return {
       "async": False,
@@ -290,7 +291,7 @@ def _create_saved_model_v2_complex64(save_dir):
     save_dir: directory name of where the saved model will be stored.
   """
   input_data = constant_op.constant(1., shape=[1])
-  root = tracking.AutoTrackable()
+  root = autotrackable.AutoTrackable()
   root.v1 = variables.Variable(3 + 1j, dtype=tf.complex64)
   root.f = def_function.function(lambda x: tf.complex(x, x) + root.v1)
   to_save = root.f.get_concrete_function(input_data)
@@ -351,13 +352,13 @@ def _create_saved_model_v2_with_tensorlist_ops(save_dir):
   Args:
     save_dir: directory name of where the saved model will be stored.
   """
-  model = tf.keras.Sequential()
-  model.add(tf.keras.layers.Embedding(100, 20, input_shape=[10]))
-  model.add(tf.keras.layers.GRU(4))
+  model = tf_keras.Sequential()
+  model.add(tf_keras.layers.Embedding(100, 20, input_shape=[10]))
+  model.add(tf_keras.layers.GRU(4))
 
   result = model.predict(tf.ones([1, 10]))
 
-  tf.keras.backend.set_learning_phase(0)
+  #tf_keras.backend.set_learning_phase(0)
   tf.saved_model.save(model, save_dir)
 
   return {
@@ -427,8 +428,49 @@ def _create_saved_model_v1_with_hashtable(save_dir):
         }
     }
 
+def _create_saved_model_v2_with_hashtable(save_dir):
+  """Test a TF V2 model with HashTable Ops.
+
+  Args:
+    save_dir: directory name of where the saved model will be stored.
+  """
+  class Table(tf.Module):
+    def __init__(self):
+        super(Table, self).__init__()
+        keys = tf.constant(['a', 'b'])
+        vals= tf.constant([0, 1])
+        init = tf.lookup.KeyValueTensorInitializer(keys, vals)
+        self.table = tf.lookup.StaticHashTable(init, -1)
+
+    def initializeTable(self):
+        @tf.function
+        def lookup(input):
+            return self.table.lookup(input)
+
+        return lookup
+
+  model = Table()
+  concrete_fn = model.initializeTable().get_concrete_function(
+    input=tf.TensorSpec([None], tf.string))
+
+  tf.saved_model.save(model, save_dir, signatures={"serving_default": concrete_fn})
+
+  return {
+      "async": False,
+      "inputs": {
+          "input:0": {
+              "value": ["a", "b", "c"], "shape": [3], "dtype": "string"
+          }
+      },
+      "outputs": {
+          "StatefulPartitionedCall/None_Lookup/LookupTableFindV2:0": {
+              "value": [0, 1, -1], "shape": [3], "dtype": "int32"
+          }
+      }
+  }
+
 def _layers_mobilenet():
-  model = tf.keras.applications.MobileNetV2()
+  model = tf_keras.applications.MobileNetV2()
   model_path = 'mobilenet'
   tfjs.converters.save_keras_model(model, os.path.join(
       _tmp_dir, model_path))
@@ -471,6 +513,8 @@ def main():
       'saved_model_v2_with_tensorlist_ops', control_flow_v2=True)
   _save_and_convert_model(_create_saved_model_v1_with_hashtable,
       'saved_model_v1_with_hashtable')
+  _save_and_convert_model(_create_saved_model_v2_with_hashtable,
+      'saved_model_v2_with_hashtable')
 
   _layers_mobilenet()
 if __name__ == '__main__':

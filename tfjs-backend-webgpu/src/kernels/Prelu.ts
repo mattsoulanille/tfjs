@@ -19,8 +19,8 @@ import {KernelConfig, KernelFunc, Prelu, PreluInputs, TensorInfo} from '@tensorf
 
 import {WebGPUBackend} from '../backend_webgpu';
 
-import {BinaryOpType} from './binary_op_util';
-import {BinaryOpProgram} from './binary_op_webgpu';
+import {BinaryOpType} from '../binary_op_util';
+import {BinaryOpProgram} from '../binary_op_webgpu';
 
 export function prelu(args: {inputs: PreluInputs, backend: WebGPUBackend}):
     TensorInfo {
@@ -34,5 +34,5 @@ export function prelu(args: {inputs: PreluInputs, backend: WebGPUBackend}):
 export const preluConfig: KernelConfig = {
   kernelName: Prelu,
   backendName: 'webgpu',
-  kernelFunc: prelu as {} as KernelFunc
+  kernelFunc: prelu as unknown as KernelFunc
 };

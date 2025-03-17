@@ -140,14 +140,12 @@ export function func<T extends TensorContainer>(
 
 /**
  * Create a `Dataset` that produces each element from provided JavaScript
- * generator, which is a function*
- * (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Iterators_and_Generators#Generator_functions),
- * or a function that returns an
- * iterator
- * (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Iterators_and_Generators#Generator_functions).
+ * generator, which is a function that returns a (potentially async) iterator.
  *
- * The returned iterator should have `.next()` function that returns element in
- * format of `{value: TensorContainer, done:boolean}`.
+ * For more information on iterators and generators, see
+ * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Iterators_and_Generators .
+ * For the iterator protocol, see
+ * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols .
  *
  * Example of creating a dataset from an iterator factory:
  * ```js
@@ -188,8 +186,8 @@ export function func<T extends TensorContainer>(
  * await ds.forEachAsync(e => console.log(e));
  * ```
  *
- * @param generator A Javascript generator function that returns a JavaScript
- *     iterator.
+ * @param generator A JavaScript function that returns
+ *     a (potentially async) JavaScript iterator.
  *
  * @doc {
  *   heading: 'Data',
@@ -199,7 +197,8 @@ export function func<T extends TensorContainer>(
  *  }
  */
 export function generator<T extends TensorContainer>(
-    generator: () => Iterator<T>| Promise<Iterator<T>>): Dataset<T> {
+  generator: () => Iterator<T> | Promise<Iterator<T>> | AsyncIterator<T>,
+): Dataset<T> {
   return datasetFromIteratorFn(async () => {
     const gen = await generator();
     return iteratorFromFunction(() => gen.next());
@@ -207,8 +206,8 @@ export function generator<T extends TensorContainer>(
 }
 
 /**
- * Create an iterator that generate `Tensor`s from webcam video stream. This API
- * only works in Browser environment when the device has webcam.
+ * Create an iterator that generates `Tensor`s from webcam video stream. This
+ * API only works in Browser environment when the device has webcam.
  *
  * Note: this code snippet only works when the device has a webcam. It will
  * request permission to open the webcam when running.
@@ -243,7 +242,7 @@ export async function webcam(
 }
 
 /**
- * Create an iterator that generate frequency-domain spectrogram `Tensor`s from
+ * Create an iterator that generates frequency-domain spectrogram `Tensor`s from
  * microphone audio stream with browser's native FFT. This API only works in
  * browser environment when the device has microphone.
  *

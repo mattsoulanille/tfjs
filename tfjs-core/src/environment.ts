@@ -21,7 +21,7 @@ import {isPromise} from './util_base';
 // Expects flags from URL in the format ?tfjsflags=FLAG1:1,FLAG2:true.
 const TENSORFLOWJS_FLAGS_PREFIX = 'tfjsflags';
 
-type FlagValue = number|boolean;
+type FlagValue = number|boolean|string;
 type FlagEvaluationFn = (() => FlagValue)|(() => Promise<FlagValue>);
 export type Flags = {
   [featureName: string]: FlagValue
@@ -60,7 +60,7 @@ export class Environment {
       if (!(env().getBool('IS_TEST') || env().getBool('PROD'))) {
         console.warn(
             `Platform ${this.platformName} has already been set. ` +
-            `Overwriting the platform with ${platform}.`);
+            `Overwriting the platform with ${platformName}.`);
       }
     }
     this.platformName = platformName;
@@ -115,6 +115,10 @@ export class Environment {
 
   getBool(flagName: string): boolean {
     return this.get(flagName) as boolean;
+  }
+
+  getString(flagName: string): string {
+    return this.get(flagName) as string;
   }
 
   getFlags(): Flags {
@@ -187,14 +191,14 @@ function decodeParam(
 }
 
 function parseValue(flagName: string, value: string): FlagValue {
-  value = value.toLowerCase();
-  if (value === 'true' || value === 'false') {
-    return value === 'true';
-  } else if (`${+ value}` === value) {
-    return +value;
+  const lowerCaseValue = value.toLowerCase();
+  if (lowerCaseValue === 'true' || lowerCaseValue === 'false') {
+    return lowerCaseValue === 'true';
+  } else if (`${+ lowerCaseValue}` === lowerCaseValue) {
+    return +lowerCaseValue;
+  } else {
+    return value;
   }
-  throw new Error(
-      `Could not parse value flag value ${value} for flag ${flagName}.`);
 }
 
 /**

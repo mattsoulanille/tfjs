@@ -28,50 +28,40 @@
 
 import * as argparse from 'argparse';
 import chalk from 'chalk';
+import semver from 'semver';
 import * as fs from 'fs';
 import * as shell from 'shelljs';
-import {RELEASE_UNITS, WEBSITE_RELEASE_UNIT, TMP_DIR, $, question, printReleaseUnit, printPhase, makeReleaseDir, updateDependency, prepareReleaseBuild, createPR} from './release-util';
+import {RELEASE_UNITS, WEBSITE_RELEASE_UNIT, TMP_DIR, $, question, printReleaseUnit, printPhase, makeReleaseDir, updateDependency, prepareReleaseBuild, createPR, getPatchUpdateVersion, ALPHA_RELEASE_UNIT} from './release-util';
 import {releaseWebsite} from './release-website';
 
 const parser = new argparse.ArgumentParser();
 
 parser.addArgument('--git-protocol', {
   action: 'storeTrue',
-  help: 'Use the git protocal rather than the http protocol when cloning repos.'
+  help: 'Use the git protocol rather than the http protocol when cloning repos.'
 });
-
-// Computes the default updated version (does a patch version update).
-function getPatchUpdateVersion(version: string): string {
-  const versionSplit = version.split('.');
-
-  // For alpha or beta version string (e.g. "0.0.1-alpha.5"), increase the
-  // number after alpha/beta.
-  if (versionSplit[2].includes('alpha') || versionSplit[2].includes('beta')) {
-    return [
-      versionSplit[0], versionSplit[1], versionSplit[2], +versionSplit[3] + 1
-    ].join('.');
-  }
-
-  return [versionSplit[0], versionSplit[1], +versionSplit[2] + 1].join('.');
-}
 
 async function main() {
   const args = parser.parseArgs();
 
-  RELEASE_UNITS.forEach((_, i) => printReleaseUnit(i));
+  // The alpha release unit is released with the monorepo and should not be
+  // released by this script. Packages in the alpha release unit need their
+  // package.json dependencies rewritten.
+  const releaseUnits = RELEASE_UNITS.filter(r => r !== ALPHA_RELEASE_UNIT);
+  releaseUnits.forEach(printReleaseUnit);
   console.log();
 
   const releaseUnitStr =
       await question('Which release unit (leave empty for 0): ');
   const releaseUnitInt = +releaseUnitStr;
-  if (releaseUnitInt < 0 || releaseUnitInt >= RELEASE_UNITS.length) {
+  if (releaseUnitInt < 0 || releaseUnitInt >= releaseUnits.length) {
     console.log(chalk.red(`Invalid release unit: ${releaseUnitStr}`));
     process.exit(1);
   }
   console.log(chalk.blue(`Using release unit ${releaseUnitInt}`));
   console.log();
 
-  const releaseUnit = RELEASE_UNITS[releaseUnitInt];
+  const releaseUnit = releaseUnits[releaseUnitInt];
   const {name, phases} = releaseUnit;
 
   phases.forEach((_, i) => printPhase(phases, i));
@@ -108,8 +98,10 @@ async function main() {
 
   if (phaseInt !== 0) {
     // Phase0 should be published and release branch should have been created.
-    const firstPackageLatestVersion =
-        $(`npm view @tensorflow/${phases[0].packages[0]} dist-tags.latest`);
+    const firstPackageVersions: string[] = JSON.parse(
+        $(`npm view @tensorflow/${phases[0].packages[0]} versions --json`));
+    const firstPackageLatestVersion = semver.rsort(firstPackageVersions)[0];
+
     releaseBranch = `${name}_${firstPackageLatestVersion}`;
 
     $(`git clone -b ${releaseBranch} ${urlBase}tensorflow/tfjs ${
@@ -131,8 +123,9 @@ async function main() {
     const packageJsonPath = `${dir}/${packageName}/package.json`;
     let pkg = `${fs.readFileSync(packageJsonPath)}`;
     const parsedPkg = JSON.parse(`${pkg}`);
-    const latestVersion =
-        $(`npm view @tensorflow/${packageName} dist-tags.latest`);
+    const packageVersions: string[] =
+        JSON.parse($(`npm view @tensorflow/${packageName} versions --json`));
+    const latestVersion = semver.rsort(packageVersions)[0];
 
     console.log(chalk.magenta.bold(
         `~~~ Processing ${packageName} (${latestVersion}) ~~~`));
@@ -181,7 +174,7 @@ async function main() {
       `Please publish by running  ` +
       `YARN_REGISTRY="https://registry.npmjs.org/" yarn publish-npm ` +
       `after you merge the PR.` +
-      `Please remeber to update the website once you have released ` +
+      `Please remember to update the website once you have released ` +
       'a new package version');
 
   process.exit(0);

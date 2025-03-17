@@ -91,7 +91,7 @@ export class InputSpec {
  * `tf.SymbolicTensor` is a placeholder for a Tensor without any concrete value.
  *
  * They are most often encountered when building a graph of `Layer`s for a
- * a `tf.LayersModel` and the input data's shape, but not values are known.
+ * `tf.LayersModel` and the input data's shape, but not values are known.
  *
  * @doc {heading: 'Models', 'subheading': 'Classes'}
  */
@@ -751,19 +751,19 @@ export abstract class Layer extends serialization.Serializable {
    */
   protected assertInputCompatibility(inputs: Tensor|Tensor[]|SymbolicTensor|
                                      SymbolicTensor[]): void {
-    inputs = generic_utils.toList(inputs);
+    const inputsList = generic_utils.toList(inputs);
     if (this.inputSpec == null || this.inputSpec.length === 0) {
       return;
     }
     const inputSpec = generic_utils.toList(this.inputSpec);
-    if (inputs.length !== inputSpec.length) {
+    if (inputsList.length !== inputSpec.length) {
       throw new ValueError(
           `Layer ${this.name} expects ${inputSpec.length} inputs, ` +
-          `but it received ${inputs.length} input tensors. ` +
+          `but it received ${inputsList.length} input tensors. ` +
           `Input received: ${inputs}`);
     }
-    for (let inputIndex = 0; inputIndex < inputs.length; inputIndex++) {
-      const x = inputs[inputIndex];
+    for (let inputIndex = 0; inputIndex < inputsList.length; inputIndex++) {
+      const x = inputsList[inputIndex];
       const spec: InputSpec = inputSpec[inputIndex];
       if (spec == null) {
         continue;
@@ -876,9 +876,9 @@ export abstract class Layer extends serialization.Serializable {
   }
 
   /**
-   * Builds or executes a `Layer's logic.
+   * Builds or executes a `Layer`'s logic.
    *
-   * When called with `tf.Tensor`(s), execute the `Layer`s computation and
+   * When called with `tf.Tensor`(s), execute the `Layer`'s computation and
    * return Tensor(s). For example:
    *
    * ```js
@@ -928,7 +928,7 @@ export abstract class Layer extends serialization.Serializable {
    * // dense layer.
    * console.log(JSON.stringify(output2.shape));
    *
-   * // The input and output and be used to construct a model that consists
+   * // The input and output can be used to construct a model that consists
    * // of the flatten and dense layers.
    * const model = tf.model({inputs: input, outputs: output2});
    * ```
@@ -954,20 +954,8 @@ export abstract class Layer extends serialization.Serializable {
     // Ensure inputs are all the same type.
     const inputsList = generic_utils.toList(inputs);
 
-    let allAreSymbolic = true;
-    for (const input of inputsList) {
-      if (!(input instanceof SymbolicTensor)) {
-        allAreSymbolic = false;
-        break;
-      }
-    }
-    let noneAreSymbolic = true;
-    for (const input of inputsList) {
-      if (input instanceof SymbolicTensor) {
-        noneAreSymbolic = false;
-        break;
-      }
-    }
+    const allAreSymbolic = checkAllSymbolic(inputs);
+    const noneAreSymbolic = checkNoneSymbolic(inputs);
 
     if (allAreSymbolic === noneAreSymbolic) {
       throw new ValueError(
@@ -1017,8 +1005,13 @@ export abstract class Layer extends serialization.Serializable {
 
       // Actually call the layer, collecting output(s), mask(s), and shape(s).
       if (noneAreSymbolic) {
-        let output = this.call(inputs as Tensor | Tensor[], kwargs);
-        // TODO(michaelterry): Compute the outputMask
+        let output = this.call(inputs, kwargs);
+
+        // Apply masks to the output tensors if the layer supports it.
+        if (this.supportsMasking) {
+          // TODO(mattsoulanille): pass the input tensors' masks to computeMask
+          this.setMaskMetadata(inputs, output);
+        }
 
         // If the layer returns tensors from its inputs, unmodified,
         // we copy them to avoid loss of tensor metadata.
@@ -1074,8 +1067,7 @@ export abstract class Layer extends serialization.Serializable {
           this does nothing.
         */
         this.addInboundNode(
-            inputs as SymbolicTensor | SymbolicTensor[], output, null, null,
-            inputShape, outputShape, kwargs);
+            inputs, output, null, null, inputShape, outputShape, kwargs);
         this._refCount++;
 
         if (this.activityRegularizer != null) {
@@ -1232,7 +1224,7 @@ export abstract class Layer extends serialization.Serializable {
         // TODO(cais): Restore the following and use `providedWeights`, instead
         // of `weights` in the error message, once the deeplearn.js bug is
         // fixed: https://github.com/PAIR-code/deeplearnjs/issues/498 const
-        // providedWeights = JSON.stringify(weights).substr(0, 50);
+        // providedWeights = JSON.stringify(weights).slice(0, 50);
         throw new ValueError(
             `You called setWeights(weights) on layer "${this.name}" ` +
             `with a weight list of length ${weights.length}, ` +
@@ -1329,7 +1321,7 @@ export abstract class Layer extends serialization.Serializable {
   /**
    * Add losses to the layer.
    *
-   * The loss may potentionally be conditional on some inputs tensors,
+   * The loss may potentially be conditional on some inputs tensors,
    * for instance activity losses are conditional on the layer's inputs.
    *
    * @doc {heading: 'Models', 'subheading': 'Classes'}
@@ -1393,6 +1385,27 @@ export abstract class Layer extends serialization.Serializable {
     // if masking is explictly supported, by default
     // carry over the input mask
     return mask;
+  }
+
+  private setMaskMetadata(
+      inputs: Tensor|Tensor[], outputs: Tensor|Tensor[],
+      previousMask?: Tensor|Tensor[]): void {
+    if (!this.supportsMasking) {
+      return;
+    }
+
+    const outputMasks = this.computeMask(inputs, previousMask);
+    const outputsList = generic_utils.toList(outputs);
+    const outputMasksList = generic_utils.toList(outputMasks);
+
+    if (outputsList.length !== outputMasksList.length) {
+      throw new Error(
+          `${this.name} outputs ${outputsList.length} tensors ` +
+          `but ${outputsList.length} masks for those tensors`);
+    }
+    for (let i = 0; i < outputsList.length; i++) {
+      outputsList[i].kerasMask = outputMasksList[i];
+    }
   }
 
   /**
@@ -1474,7 +1487,7 @@ export abstract class Layer extends serialization.Serializable {
    * information, nor the layer class name.  These are handled
    * by 'Container' (one layer of abstraction above).
    *
-   * Porting Note: The TS dictionary follows TS naming standrds for
+   * Porting Note: The TS dictionary follows TS naming standards for
    * keys, and uses tfjs-layers type-safe Enums.  Serialization methods
    * should use a helper function to convert to the pythonic storage
    * standard. (see serialization_utils.convertTsToPythonic)
@@ -1514,11 +1527,11 @@ export abstract class Layer extends serialization.Serializable {
   /**
    * Attempt to dispose layer's weights.
    *
-   * This method decrease the reference count of the Layer object by 1.
+   * This method decreases the reference count of the Layer object by 1.
    *
    * A Layer is reference-counted. Its reference count is incremented by 1
    * the first item its `apply()` method is called and when it becomes a part
-   * of a new `Node` (through calling the `apply()`) method on a
+   * of a new `Node` (through calling the `apply()` method on a
    * `tf.SymbolicTensor`).
    *
    * If the reference count of a Layer becomes 0, all the weights will be
@@ -1641,4 +1654,30 @@ export function getSourceInputs(
       return sourceTensors;
     }
   }
+}
+
+type MaybeSymbolic = SymbolicTensor|Tensor;
+
+function checkAllSymbolic(tensors: MaybeSymbolic|MaybeSymbolic[]):
+    tensors is SymbolicTensor|SymbolicTensor[] {
+  let allAreSymbolic = true;
+  for (const tensor of generic_utils.toList(tensors)) {
+    if (!(tensor instanceof SymbolicTensor)) {
+      allAreSymbolic = false;
+      break;
+    }
+  }
+  return allAreSymbolic;
+}
+
+function checkNoneSymbolic(tensors: MaybeSymbolic|
+                           MaybeSymbolic[]): tensors is Tensor|Tensor[] {
+  let noneAreSymbolic = true;
+  for (const tensor of generic_utils.toList(tensors)) {
+    if (tensor instanceof SymbolicTensor) {
+      noneAreSymbolic = false;
+      break;
+    }
+  }
+  return noneAreSymbolic;
 }

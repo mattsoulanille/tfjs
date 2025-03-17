@@ -19,7 +19,7 @@ import {KernelConfig, KernelFunc, PadV2, PadV2Attrs, PadV2Inputs, TensorInfo, ut
 
 import {WebGPUBackend} from '../backend_webgpu';
 import {identity} from './Identity';
-import {PadProgram} from './pad_webgpu';
+import {PadProgram} from '../pad_webgpu';
 import {fill} from './Fill';
 
 export const padV2 =
@@ -52,5 +52,5 @@ export const padV2 =
 export const padV2Config: KernelConfig = {
   kernelName: PadV2,
   backendName: 'webgpu',
-  kernelFunc: padV2 as {} as KernelFunc
+  kernelFunc: padV2 as unknown as KernelFunc
 };

@@ -15,15 +15,21 @@
  * =============================================================================
  */
 
+// Import Object.fromEntries polyfill for Safari 11
+import 'core-js/es/object/from-entries';
 // Import core for side effects (e.g. flag registration)
 import '@tensorflow/tfjs-core';
 // tslint:disable-next-line:no-imports-from-dist
 import '@tensorflow/tfjs-core/dist/public/chained_ops/register_all_chained_ops';
 // tslint:disable-next-line: no-imports-from-dist
 import '@tensorflow/tfjs-core/dist/register_all_gradients';
+// Register the wasm backend.
+import './index';
 
 // tslint:disable-next-line: no-imports-from-dist
 import {setTestEnvs, setupTestFilters, TestFilter} from '@tensorflow/tfjs-core/dist/jasmine_util';
+
+import {setupCachedWasmPaths} from './test_util';
 
 setTestEnvs([{name: 'test-wasm', backendName: 'wasm', isDataSync: true}]);
 
@@ -57,13 +63,7 @@ const TEST_FILTERS: TestFilter[] = [
     ]
   },
   {include: 'depthToSpace'},
-  {
-    include: 'avgPool',
-    excludes: [
-      'gradient',   // Not yet implemented.
-      'avgPool3d',  // Not yet implemented.
-    ]
-  },
+  {include: 'avgPool '},
   {
     include: 'relu',
     excludes: [
@@ -78,21 +78,12 @@ const TEST_FILTERS: TestFilter[] = [
   {
     include: 'maxPool',
     excludes: [
-      'maxPoolBackprop',    // Not yet implemented.
-      'maxPool3d',          // Not yet implemented.
-      'maxPool3dBackprop',  // Not yet implemented.
-      'ignores NaNs',       // Actual != expected.
-      'maxPoolWithArgmax'   // Not yet implemented.
-
+      'ignores NaNs',      // Actual != expected.
     ]
   },
   {include: 'cropAndResize'},
-  {
-    include: 'resizeBilinear',
-    excludes: [
-      'gradients',  // Not yet implemented.
-    ]
-  },
+  {include: 'resizeBilinear'},
+  {include: 'resizeNearestNeighbor'},
   {
     include: 'matmul ',
     excludes: [
@@ -156,6 +147,7 @@ const TEST_FILTERS: TestFilter[] = [
     ]
   },
   {include: 'scatterND '},
+  {include: 'tensorScatterUpdate '},
   {
     include: 'abs ',
     excludes: [
@@ -222,7 +214,7 @@ const TEST_FILTERS: TestFilter[] = [
       'gradient'  // Split is not yet implemented
     ]
   },
-  {include: 'transpose'},
+  {include: 'transpose', excludes: ['accepts complex64 input']},
   {include: 'oneHot'},
   {include: 'split'},
   {include: 'pad ', excludes: ['complex', 'zerosLike']},
@@ -230,22 +222,17 @@ const TEST_FILTERS: TestFilter[] = [
     include: 'clip',
     excludes: [
       'gradient',
-      'propagates NaNs'  // clip delegates to XNNPACK which does not make
-                         // guarantees about behavior of nans.
+      'propagates NaNs',  // clip delegates to XNNPACK which does not make
+                          // guarantees about behavior of nans.
+      'basic vec4'        // basic vec4 also includes nans.
     ]
   },
   {include: 'addN'},
   {include: 'nonMaxSuppression'},
-  {include: 'argmax', excludes: ['gradient']},
+  {include: 'argmax '},
+  {include: 'argmin '},
   {include: 'exp '},
-  {
-    include: 'elu',
-    excludes: [
-      'derivative',  // Not yet implemented.
-      'gradient',    // Not yet implemented.
-      'selu'         // Not yet implemented.
-    ]
-  },
+  {include: 'elu '},
   {include: 'unstack'},
   {
     include: 'minimum',
@@ -290,8 +277,12 @@ const TEST_FILTERS: TestFilter[] = [
   },
   {startsWith: 'reverse'},
   {startsWith: 'sum '},
+  {startsWith: 'cumprod'},
   {startsWith: 'cumsum'},
   {startsWith: 'logicalAnd '},
+  {startsWith: 'logicalNot '},
+  {startsWith: 'logicalOr '},
+  {startsWith: 'logicalXor '},
   {
     startsWith: 'tile ',
     excludes: [
@@ -299,7 +290,9 @@ const TEST_FILTERS: TestFilter[] = [
       'string tensor'  // String tensors not yet implemented.
     ]
   },
+  {startsWith: 'erf'},
   {startsWith: 'sin '},
+  {startsWith: 'sinh '},
   {
     startsWith: 'cos ',
     excludes: [
@@ -379,6 +372,43 @@ const TEST_FILTERS: TestFilter[] = [
   {include: 'sparseReshape'},
   {include: 'sparseSegmentMean'},
   {include: 'sparseSegmentSum'},
+  {startsWith: 'sparseToDense', excludes: ['string']},
+  {include: 'stringNGrams'},
+  {include: 'stringSplit'},
+  {include: 'stringToHashBucketFast'},
+  {include: 'reciprocal'},
+  {include: 'isNaN'},
+  {include: 'atan '},
+  {include: 'acos '},
+  {include: 'acosh '},
+  {include: 'asin '},
+  {include: 'asinh '},
+  {include: 'diag '},
+  {include: 'denseBincount '},
+  {include: 'bitwiseAnd'},
+  {include: 'broadcastArgs '},
+  {include: 'searchSorted '},
+  {include: 'avgPool3d '},
+  {include: 'avgPool3dBackprop '},
+  {include: 'upperBound '},
+  {include: 'lowerBound '},
+  {include: 'dilation2d '},
+  {include: 'localResponseNormalization '},
+  {include: 'log1p '},
+  {include: 'atan2 '},
+  {include: 'atanh '},
+  {include: 'isInf '},
+  {include: 'isFinite '},
+  {include: 'sign '},
+  {include: 'selu '},
+  {include: 'softplus '},
+  {include: 'linspace'},
+  {include: 'bincount'},
+  {include: 'expm1 '},
+  {include: 'multinomial'},
+  {include: 'unique'},
+  {include: 'conv3d'},
+  {include: 'mod '},
 ];
 
 const customInclude = (testName: string) => {
@@ -396,7 +426,12 @@ const customInclude = (testName: string) => {
 };
 setupTestFilters(TEST_FILTERS, customInclude);
 
+beforeAll(setupCachedWasmPaths, 30_000);
+
 // Import and run all the tests from core.
 // tslint:disable-next-line:no-imports-from-dist
 // tslint:disable-next-line:no-require-imports
 require('@tensorflow/tfjs-core/dist/tests');
+// Import and run wasm tests
+// tslint:disable-next-line:no-require-imports
+require('./tests');

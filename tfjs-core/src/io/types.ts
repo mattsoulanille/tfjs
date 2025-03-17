@@ -215,6 +215,8 @@ export declare interface TrainingConfig {
   loss_weights?: number[]|{[key: string]: number};
 }
 
+export type WeightData = ArrayBuffer | ArrayBuffer[];
+
 /**
  * The serialized artifacts of a model, including topology and weights.
  *
@@ -248,10 +250,19 @@ export declare interface ModelArtifacts {
   weightSpecs?: WeightsManifestEntry[];
 
   /**
-   * Binary buffer for all weight values concatenated in the order specified
-   * by `weightSpecs`.
+   * Binary buffer(s) for all weight values in the order specified by
+   * `weightSpecs`. This may be a single ArrayBuffer of all the weights
+   * concatenated together or an Array of ArrayBuffers containing the weights
+   * (weights may be sharded across multiple ArrayBuffers).
    */
-  weightData?: ArrayBuffer;
+  weightData?: WeightData;
+
+  /**
+   * Returns a stream of the weights. Some models are too large to fit in
+   * V8's memory heap, and `getWeightStream` loads their weights without storing
+   * them all in memory at the same time.
+   */
+  getWeightStream?: () => ReadableStream<ArrayBuffer>;
 
   /**
    * Hard-coded format name for models saved from TensorFlow.js or converted
@@ -292,6 +303,11 @@ export declare interface ModelArtifacts {
    * Initializer for the model.
    */
   modelInitializer?: {};
+
+  /**
+   * Inputs and outputs signature for model initializer.
+   */
+  initializerSignature?: {};
 }
 
 /**
@@ -362,6 +378,11 @@ export declare interface ModelJSON {
    * Initializer for the model.
    */
   modelInitializer?: {};
+
+  /**
+   * Inputs and outputs signature for model initializer.
+   */
+  initializerSignature?: {};
 }
 
 /**
@@ -386,6 +407,28 @@ export interface IOHandler {
   save?: SaveHandler;
   load?: LoadHandler;
 }
+
+/**
+ * Type definition for handlers of synchronous loading operations.
+ */
+export type LoadHandlerSync = () => ModelArtifacts;
+
+/**
+ * Type definition for handlers of synchronous saving operations.
+ */
+export type SaveHandlerSync = (modelArtifact: ModelArtifacts) => SaveResult;
+
+/**
+ * Interface for a synchronous model import/export handler.
+ *
+ * The `save` and `load` handlers are both optional, in order to allow handlers
+ * that support only saving or loading.
+ */
+// tslint:disable-next-line:interface-name
+export type IOHandlerSync = {
+  save?: SaveHandlerSync;
+  load?: LoadHandlerSync;
+};
 
 /**
  * An interface for the manager of a model store.
@@ -446,7 +489,7 @@ export interface LoadOptions {
   /**
    * A function used to override the `window.fetch` function.
    */
-  fetchFunc?: Function;
+  fetchFunc?: typeof fetch;
 
   /**
    * Strict loading model: whether extraneous weights or missing
@@ -496,6 +539,12 @@ export interface LoadOptions {
    * With this func you can convert the weight file name to any URL.
    */
   weightUrlConverter?: (weightFileName: string) => Promise<string>;
+
+  /**
+   * Whether to stream the model directly to the backend or cache all its
+   * weights on CPU first. Useful for large models.
+   */
+  streamWeights?: boolean;
 }
 
 /**

@@ -24,12 +24,17 @@ import {Node} from '../types';
 
 import {executeOp} from './string_executor';
 import {createBoolAttr, createNumberAttr, createNumericArrayAttr, createStrAttr, createTensorAttr, validateParam} from './test_helper';
+import {RecursiveSpy, spyOnAllFunctions} from './spy_ops';
 
 describe('string', () => {
   let node: Node;
   const context = new ExecutionContext({}, {}, {});
+  let spyOps: RecursiveSpy<typeof tfOps>;
+  let spyOpsAsTfOps: typeof tfOps;
 
   beforeEach(() => {
+    spyOps = spyOnAllFunctions(tfOps);
+    spyOpsAsTfOps = spyOps as unknown as typeof tfOps;
     node = {
       name: 'test',
       op: '',
@@ -44,9 +49,32 @@ describe('string', () => {
   });
 
   describe('executeOp', () => {
+    describe('StaticRegexReplace', () => {
+      it('should call tfOps.string.staticRegexReplace', async () => {
+        node.op = 'StaticRegexReplace';
+        node.inputParams = {
+          input: createTensorAttr(0),
+        };
+        node.attrParams = {
+          pattern: createStrAttr('foo'),
+          rewrite: createStrAttr('bar'),
+          replaceGlobal: createBoolAttr(true),
+        };
+        node.inputNames = ['input'];
+
+        const input = [tfOps.tensor1d(['a', 'b', 'foo', 'd'])];
+        const result = executeOp(node, {input}, context,
+                                 spyOpsAsTfOps) as Tensor[];
+
+        expect(spyOps.string.staticRegexReplace)
+            .toHaveBeenCalledWith(input[0], 'foo', 'bar', true);
+
+        test_util.expectArraysEqual(
+            await result[0].data(), ['a', 'b', 'bar', 'd']);
+      });
+    });
     describe('StringNGrams', () => {
       it('should call tfOps.string.stringNGrams', async () => {
-        spyOn(tfOps.string, 'stringNGrams').and.callThrough();
         node.op = 'StringNGrams';
         node.inputParams = {
           data: createTensorAttr(0),
@@ -65,9 +93,10 @@ describe('string', () => {
 
         const data = [tfOps.tensor1d(['a', 'b', 'c', 'd', 'e', 'f'], 'string')];
         const dataSplits = [tfOps.tensor1d([0, 4, 6], 'int32')];
-        const result = executeOp(node, {data, dataSplits}, context) as Tensor[];
+        const result = executeOp(node, {data, dataSplits}, context,
+                                 spyOpsAsTfOps) as Tensor[];
 
-        expect(tfOps.string.stringNGrams)
+        expect(spyOps.string.stringNGrams)
             .toHaveBeenCalledWith(
                 data[0], dataSplits[0], '|', [3], 'LP', 'RP', -1, false);
         test_util.expectArraysEqual(await result[0].data(), [
@@ -88,7 +117,6 @@ describe('string', () => {
     });
     describe('StringSplit', () => {
       it('should call tfOps.string.stringSplit', async () => {
-        spyOn(tfOps.string, 'stringSplit').and.callThrough();
         node.op = 'StringSplit';
         node.inputParams = {
           input: createTensorAttr(0),
@@ -100,9 +128,10 @@ describe('string', () => {
 
         const input = [tfOps.tensor1d(['#a', 'b#', '#c#'], 'string')];
         const delimiter = [tfOps.scalar('#', 'string')];
-        const result = executeOp(node, {input, delimiter}, context) as Tensor[];
+        const result = executeOp(node, {input, delimiter}, context,
+                                 spyOpsAsTfOps) as Tensor[];
 
-        expect(tfOps.string.stringSplit)
+        expect(spyOps.string.stringSplit)
             .toHaveBeenCalledWith(input[0], delimiter[0], false);
         test_util.expectArraysEqual(
             await result[0].data(), [0, 0, 0, 1, 1, 0, 1, 1, 2, 0, 2, 1, 2, 2]);
@@ -123,16 +152,16 @@ describe('string', () => {
     });
     describe('StringToHashBucketFast', () => {
       it('should call tfOps.string.stringToHashBucketFast', async () => {
-        spyOn(tfOps.string, 'stringToHashBucketFast').and.callThrough();
         node.op = 'StringToHashBucketFast';
         node.inputParams = {input: createTensorAttr(0)};
         node.attrParams = {numBuckets: createNumberAttr(10)};
         node.inputNames = ['input'];
 
         const input = [tfOps.tensor1d(['a', 'b', 'c', 'd'], 'string')];
-        const result = executeOp(node, {input}, context) as Tensor[];
+        const result = executeOp(node, {input}, context,
+                                 spyOpsAsTfOps) as Tensor[];
 
-        expect(tfOps.string.stringToHashBucketFast)
+        expect(spyOps.string.stringToHashBucketFast)
             .toHaveBeenCalledWith(input[0], 10);
         test_util.expectArraysClose(await result[0].data(), [9, 2, 2, 5]);
       });

@@ -23,16 +23,54 @@ workspace(
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 http_archive(
-    name = "build_bazel_rules_nodejs",
-    sha256 = "4e1a5633267a0ca1d550cced2919dd4148575c0bafd47608b88aea79c41b5ca3",
-    urls = ["https://github.com/bazelbuild/rules_nodejs/releases/download/4.2.0/rules_nodejs-4.2.0.tar.gz"],
+    name = "bazel_skylib",
+    sha256 = "1c531376ac7e5a180e0237938a2536de0c54d93f5c278634818e0efc952dd56c",
+    urls = [
+        "https://github.com/bazelbuild/bazel-skylib/releases/download/1.0.3/bazel-skylib-1.0.3.tar.gz",
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.0.3/bazel-skylib-1.0.3.tar.gz",
+    ],
 )
 
+load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
+
+bazel_skylib_workspace()
+
+http_archive(
+    name = "build_bazel_rules_nodejs",
+    sha256 = "94070eff79305be05b7699207fbac5d2608054dd53e6109f7d00d923919ff45a",
+    urls = ["https://github.com/bazelbuild/rules_nodejs/releases/download/5.8.2/rules_nodejs-5.8.2.tar.gz"],
+)
+
+# Install rules_nodejs dependencies.
+load("@build_bazel_rules_nodejs//:repositories.bzl", "build_bazel_rules_nodejs_dependencies")
+
+build_bazel_rules_nodejs_dependencies()
+
+load("@rules_nodejs//nodejs:repositories.bzl", "nodejs_register_toolchains")
+
+nodejs_register_toolchains(
+    name = "nodejs",
+    node_version = "18.13.0",
+)
+
+# Install the yarn tool
+load("@rules_nodejs//nodejs:yarn_repositories.bzl", "yarn_repositories")
+
+yarn_repositories(
+    name = "yarn",
+    node_repository = "nodejs",
+)
+
+# Install yarn packages
 load("@build_bazel_rules_nodejs//:index.bzl", "yarn_install")
 
 yarn_install(
     name = "npm",
+    exports_directories_only = False,  # Required for ts_library
     package_json = "//:package.json",
+    package_path = "/",
+    symlink_node_modules = True,
+    yarn = "@yarn//:bin/yarn",
     yarn_lock = "//:yarn.lock",
 )
 
@@ -62,9 +100,11 @@ esbuild_repositories(npm_repository = "npm")
 # Emscripten toolchain
 http_archive(
     name = "emsdk",
-    sha256 = "7a58a9996b113d3e0675df30b5f17e28aa47de2e684a844f05394fe2f6f12e8e",
-    strip_prefix = "emsdk-c1589b55641787d55d53e883852035beea9aec3f/bazel",
-    url = "https://github.com/emscripten-core/emsdk/archive/c1589b55641787d55d53e883852035beea9aec3f.tar.gz",
+    # TODO: Remove repo_mapping when emsdk updates to rules_nodejs 5
+    repo_mapping = {"@nodejs": "@nodejs_host"},
+    sha256 = "b8270749b99d8d14922d1831b93781a5560fba6f7bce65cd477fc1b6aa262535",
+    strip_prefix = "emsdk-3.1.28/bazel",
+    urls = ["https://github.com/emscripten-core/emsdk/archive/refs/tags/3.1.28.tar.gz"],
 )
 
 load("@emsdk//:deps.bzl", emsdk_deps = "deps")
@@ -75,14 +115,18 @@ load("@emsdk//:emscripten_deps.bzl", emsdk_emscripten_deps = "emscripten_deps")
 
 emsdk_emscripten_deps()
 
+load("@emsdk//:toolchains.bzl", "register_emscripten_toolchains")
+
+register_emscripten_toolchains()
+
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 # xnnpack used for fast vectorized wasm operations
 git_repository(
     name = "xnnpack",
-    commit = "3bfbdaf00211b313b143af39279bb6bf1f7effc0",
+    commit = "5e8033a72a8d0f1c2b1f06e29137cc697c6b661d",
     remote = "https://github.com/google/XNNPACK.git",
-    shallow_since = "1617056836 -0700",
+    shallow_since = "1643627844 -0800",
 )
 
 # The libraries below are transitive dependencies of XNNPACK that we need to
@@ -170,24 +214,51 @@ http_archive(
 )
 
 http_archive(
-    name = "bazel_skylib",
-    sha256 = "1c531376ac7e5a180e0237938a2536de0c54d93f5c278634818e0efc952dd56c",
-    urls = [
-        "https://github.com/bazelbuild/bazel-skylib/releases/download/1.0.3/bazel-skylib-1.0.3.tar.gz",
-        "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.0.3/bazel-skylib-1.0.3.tar.gz",
-    ],
-)
-
-load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
-
-bazel_skylib_workspace()
-
-http_archive(
     name = "rules_python",
-    sha256 = "934c9ceb552e84577b0faf1e5a2f0450314985b4d8712b2b70717dc679fdc01b",
-    url = "https://github.com/bazelbuild/rules_python/releases/download/0.3.0/rules_python-0.3.0.tar.gz",
+    sha256 = "29a801171f7ca190c543406f9894abf2d483c206e14d6acbd695623662320097",
+    strip_prefix = "rules_python-0.18.1",
+    url = "https://github.com/bazelbuild/rules_python/releases/download/0.18.1/rules_python-0.18.1.tar.gz",
 )
 
-load("//:python_repositories.bzl", "python_repositories")
+load("@rules_python//python:repositories.bzl", "python_register_toolchains")
 
-python_repositories()
+# TODO(mattSoulanille): Change the docker so it doesn't run as root?
+# https://github.com/bazelbuild/rules_python/pull/713
+# https://github.com/GoogleCloudPlatform/cloud-builders/issues/641
+python_register_toolchains(
+    name = "python3_9",
+    ignore_root_user_error = True,
+    # Available versions are listed in @rules_python//python:versions.bzl.
+    python_version = "3.9",
+)
+
+load("@python3_9//:defs.bzl", "interpreter")
+load("@rules_python//python:pip.bzl", "pip_parse")
+
+pip_parse(
+    name = "tensorflowjs_deps",
+    python_interpreter_target = interpreter,
+    requirements_lock = "@//tfjs-converter/python:requirements_lock.txt",
+)
+
+load("@tensorflowjs_deps//:requirements.bzl", install_tfjs_deps = "install_deps")
+
+install_tfjs_deps()
+
+pip_parse(
+    name = "tensorflowjs_dev_deps",
+    python_interpreter_target = interpreter,
+    requirements_lock = "@//tfjs-converter/python:requirements-dev_lock.txt",
+)
+
+load("@tensorflowjs_dev_deps//:requirements.bzl", install_tfjs_dev_deps = "install_deps")
+
+install_tfjs_dev_deps()
+
+load("//tfjs-tflite:tflite_repositories.bzl", "tflite_repositories")
+
+tflite_repositories()
+
+load("//tfjs-tfdf:tfdf_repositories.bzl", "tfdf_repositories")
+
+tfdf_repositories()

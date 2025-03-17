@@ -36,7 +36,7 @@ class TFJSBackend {
   static TFJSBackend *Create(napi_env env);
 
   // Creates a new Tensor with given shape and data and returns an ID that
-  // refernces the new Tensor.
+  // references the new Tensor.
   // - shape_value (number[])
   // - dtype_value (number)
   // - array_value (TypedArray|Array)
@@ -84,6 +84,9 @@ class TFJSBackend {
 
   // Get number of loaded SavedModel in the backend:
   napi_value GetNumOfSavedModels(napi_env env);
+
+  // Get number of tensor handles in the backend:
+  napi_value GetNumOfTensors(napi_env env);
 
  private:
   TFJSBackend(napi_env env);

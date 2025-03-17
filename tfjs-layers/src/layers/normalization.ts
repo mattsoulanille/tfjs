@@ -295,7 +295,7 @@ export class BatchNormalization extends Layer {
     this.gammaRegularizer = getRegularizer(args.gammaRegularizer);
   }
 
-  public build(inputShape: Shape|Shape[]): void {
+  public override build(inputShape: Shape|Shape[]): void {
     inputShape = getExactlyOneShape(inputShape);
     const axis = this.axis >= 0 ? this.axis : (this.axis + inputShape.length);
     const dim = inputShape[axis];
@@ -326,7 +326,7 @@ export class BatchNormalization extends Layer {
     this.built = true;
   }
 
-  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
+  override call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     return tidy(() => {
       const training = kwargs['training'] == null ? false : kwargs['training'];
       const input = getExactlyOneTensor(inputs);
@@ -398,7 +398,7 @@ export class BatchNormalization extends Layer {
     });
   }
 
-  getConfig(): serialization.ConfigDict {
+  override getConfig(): serialization.ConfigDict {
     const config: serialization.ConfigDict = {
       axis: this.axis,
       momentum: this.momentum,
@@ -424,13 +424,13 @@ serialization.registerClass(BatchNormalization);
 
 export interface LayerNormalizationLayerArgs extends LayerArgs {
   /**
-   * The axis or axes that should be normalized (typically, the feature axis.)
-   * Defaults to -1 (the last axis.)
+   * The axis or axes that should be normalized (typically, the feature axis).
+   * Defaults to -1 (the last axis).
    */
   axis?: number|number[];
 
   /**
-   * A small positive float added to variance to avoid divison by zero.
+   * A small positive float added to variance to avoid division by zero.
    * Defaults to 1e-3.
    */
   epsilon?: number;
@@ -523,7 +523,7 @@ export class LayerNormalization extends Layer {
     this.supportsMasking = true;
   }
 
-  public build(inputShape: Shape|Shape[]): void {
+  public override build(inputShape: Shape|Shape[]): void {
     inputShape = getExactlyOneShape(inputShape);
     const nDims = inputShape.length;
 
@@ -568,7 +568,7 @@ export class LayerNormalization extends Layer {
     this.built = true;
   }
 
-  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
+  override call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     const input = getExactlyOneTensor(inputs);
     const inputShape = input.shape;
     const nDims = inputShape.length;
@@ -589,8 +589,8 @@ export class LayerNormalization extends Layer {
         }
       };
 
-      let scale = broadcast(this.gamma.read());
-      let offset = broadcast(this.beta.read());
+      let scale = this.scale ? broadcast(this.gamma.read()) : null;
+      let offset = this.center ? broadcast(this.beta.read()) : null;
 
       // TODO(https://github.com/tensorflow/tfjs/issues/2120): The tiling below
       // is a workaround for the limitation of core's batchNormalization?d don't
@@ -611,15 +611,19 @@ export class LayerNormalization extends Layer {
       }
       mean = tfc.tile(mean, momentsTiling);
       variance = tfc.tile(variance, momentsTiling);
-      scale = tfc.tile(scale, scaleOffsetTiling);
-      offset = tfc.tile(offset, scaleOffsetTiling);
+      if (scale != null) {
+        scale = tfc.tile(scale, scaleOffsetTiling);
+      }
+      if (offset != null) {
+        offset = tfc.tile(offset, scaleOffsetTiling);
+      }
 
       return batchNormalization(
           input, mean, variance, offset, scale, this.epsilon);
     });
   }
 
-  getConfig(): serialization.ConfigDict {
+  override getConfig(): serialization.ConfigDict {
     const config: serialization.ConfigDict = {
       axis: this.axis,
       epsilon: this.epsilon,

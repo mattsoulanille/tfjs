@@ -19,7 +19,7 @@ import {KernelConfig, KernelFunc, NumericDataType, TensorInfo, TopK, TopKAttrs, 
 
 import {WebGPUBackend} from '../backend_webgpu';
 import {topKImplCPU} from '../kernel_utils/shared';
-import {MergeProgram, SwapProgram} from './top_k_webgpu';
+import {MergeProgram, SwapProgram} from '../top_k_webgpu';
 import {fill} from './Fill';
 import {gatherV2} from './GatherV2';
 import {reshape} from './Reshape';
@@ -176,5 +176,5 @@ export function topK(
 export const topKConfig: KernelConfig = {
   kernelName: TopK,
   backendName: 'webgpu',
-  kernelFunc: topK as {} as KernelFunc
+  kernelFunc: topK as unknown as KernelFunc
 };

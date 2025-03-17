@@ -26,7 +26,7 @@ function getBrowserStackConfig() {
     hostname: 'bs-local.com',
     plugins: ['karma-jasmine', 'karma-browserstack-launcher'],
     reporters: ['progress', 'BrowserStack'],
-    port: 9812,
+    port: 9200,
     browserStack: {
       username: process.env.BROWSERSTACK_USERNAME,
       accessKey: process.env.BROWSERSTACK_ACCESS_KEY,
@@ -53,35 +53,37 @@ module.exports = function(config) {
     extraConfig = localRunConfig;
   }
 
-  let files = [
-    './node_modules/@tensorflow/tfjs-core/dist/tf-core.js',
-    './node_modules/@tensorflow/tfjs-backend-cpu/dist/tf-backend-cpu.js',
-    './node_modules/@tensorflow/tfjs-backend-webgl/dist/tf-backend-webgl.js',
-    './node_modules/@tensorflow/tfjs-layers/dist/tf-layers.js',
-    './node_modules/@tensorflow/tfjs-converter/dist/tf-converter.js',
-    './node_modules/@tensorflow/tfjs-backend-wasm/dist/tf-backend-wasm.js', {
-      pattern: './node_modules/@tensorflow/tfjs-backend-wasm/dist/*',
-      included: false,
-      served: true
-    },
+  let localBuildableFiles = [
+    'tfjs-core/dist/tf-core.js',
+    'tfjs-backend-cpu/dist/tf-backend-cpu.js',
+    'tfjs-backend-webgl/dist/tf-backend-webgl.js',
+    'tfjs-layers/dist/tf-layers.js',
+    'tfjs-converter/dist/tf-converter.js',
+    'tfjs-backend-wasm/dist/tf-backend-wasm.js',
+    'tfjs-automl/dist/tf-automl.js',
+  ].map(url => {
+    let name = url.split('/')[0].replace('tfjs-', '').replace('backend-', '');
+    if (config.localBuild?.includes(name)) {
+      return `../../../dist/bin/${url}`;
+    } else {
+      if (config.npmVersion){
+        let version = config.npmVersion;
+        return `https://unpkg.com/@tensorflow/${url.replace('/', '@' + version + '/')}`;
+      } else {
+        return `https://unpkg.com/@tensorflow/${url.replace('/', '@latest/')}`;
+      }
+    }
+  });
+
+  let files = localBuildableFiles.concat([
+    'https://cdn.jsdelivr.net/npm/@tensorflow-models/universal-sentence-encoder@latest/dist/universal-sentence-encoder.min.js',
+    'https://cdn.jsdelivr.net/npm/@tensorflow-models/speech-commands@latest/dist/speech-commands.min.js',
+    'https://cdn.jsdelivr.net/npm/@tensorflow-models/posenet@latest/dist/posenet.min.js',
+    'https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix@latest/dist/body-pix.min.js',
     {pattern: './benchmark_parameters.json', included: false, served: true},
     '../util.js', '../benchmark_util.js', '../model_config.js',
     'benchmark_models.js'
-  ];
-
-  if (config.cdn) {
-    files = [
-      'https://unpkg.com/@tensorflow/tfjs-core@latest/dist/tf-core.js',
-      'https://unpkg.com/@tensorflow/tfjs-backend-cpu@latest/dist/tf-backend-cpu.js',
-      'https://unpkg.com/@tensorflow/tfjs-backend-webgl@latest/dist/tf-backend-webgl.js',
-      'https://unpkg.com/@tensorflow/tfjs-layers@latest/dist/tf-layers.js',
-      'https://unpkg.com/@tensorflow/tfjs-converter@latest/dist/tf-converter.js',
-      'https://unpkg.com/@tensorflow/tfjs-backend-wasm@latest/dist/tf-backend-wasm.js',
-      {pattern: './benchmark_parameters.json', included: false, served: true},
-      '../util.js', '../benchmark_util.js', '../model_config.js',
-      'benchmark_models.js'
-    ];
-  }
+  ]);
 
   config.set({
     ...extraConfig,

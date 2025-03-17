@@ -106,10 +106,15 @@ tfjs_web_test(
         "webgl2",
     ],
     browsers = [
+        "bs_android_10",
         "bs_chrome_mac",
         "bs_firefox_mac",
-        "bs_android_9",
         "win_10_chrome",
+    ],
+    headless = False,
+    presubmit_browsers = [
+        "bs_chrome_mac",
+        "bs_android_10",
     ],
     static_files = STATIC_FILES,
 )
@@ -124,8 +129,13 @@ tfjs_web_test(
         "webgl1",
     ],
     browsers = [
+        "bs_ios_12",
         "bs_safari_mac",
-        "bs_ios_11",
+    ],
+    headless = False,
+    presubmit_browsers = [
+        "bs_safari_mac",
+        "bs_ios_12",
     ],
     static_files = STATIC_FILES,
 )
@@ -144,6 +154,7 @@ tfjs_web_test(
     browsers = [
         "bs_chrome_mac",
     ],
+    headless = False,
     presubmit_browsers = [],  # Only run in nightly
     static_files = STATIC_FILES,
 )
@@ -162,6 +173,7 @@ tfjs_web_test(
     browsers = [
         "bs_chrome_mac",
     ],
+    headless = False,
     presubmit_browsers = [],  # Only run in nightly
     static_files = STATIC_FILES,
 )
@@ -180,6 +192,26 @@ tfjs_web_test(
     browsers = [
         "bs_chrome_mac",
     ],
+    headless = False,
+    presubmit_browsers = [],  # Only run in nightly
+    static_files = STATIC_FILES,
+)
+
+tfjs_web_test(
+    name = "tfjs-backend-webgl_exp_conv_test",
+    srcs = [
+        "//tfjs-backend-webgl/src:tfjs-backend-webgl_test_bundle",
+    ],
+    args = [
+        "--testEnv",
+        "webgl2",
+        "--flags",
+        '{"WEBGL_EXP_CONV": true}',
+    ],
+    browsers = [
+        "bs_chrome_mac",
+    ],
+    headless = False,
     presubmit_browsers = [],  # Only run in nightly
     static_files = STATIC_FILES,
 )
@@ -188,5 +220,12 @@ js_library(
     name = "package_json",
     srcs = [
         ":package.json",
+    ],
+)
+
+test_suite(
+    name = "tests",
+    tests = [
+        ":tfjs-backend-webgl2_test",
     ],
 )

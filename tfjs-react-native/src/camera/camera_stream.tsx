@@ -110,7 +110,7 @@ const DEFAULT_USE_CUSTOM_SHADERS_TO_RESIZE = false;
  *    gl: ExpoWebGLRenderingContext,
  *    cameraTexture: WebGLTexture
  *  ) => void — When the component is mounted and ready this callback will
- *  be called and recieve the following 3 elements:
+ *  be called and receive the following 3 elements:
  *    - __images__ is a (iterator)[https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Iterators_and_Generators]
  *      that yields tensors representing the camera image on demand.
  *    - __updateCameraPreview__ is a function that will update the WebGL render
@@ -193,7 +193,7 @@ export function cameraWithTensors<T extends WrappedComponentProps>(
       };
     }
 
-    componentWillUnmount() {
+    override componentWillUnmount() {
       cancelAnimationFrame(this.rafID);
       if (this.glContext) {
         GLView.destroyContextAsync(this.glContext);
@@ -228,7 +228,7 @@ export function cameraWithTensors<T extends WrappedComponentProps>(
     }
 
     /**
-     * Callback for GL context creation. We do mose of the work of setting
+     * Callback for GL context creation. We do more of the work of setting
      * up the component here.
      * @param gl
      */
@@ -345,7 +345,7 @@ export function cameraWithTensors<T extends WrappedComponentProps>(
     /**
      * Render the component
      */
-    render() {
+    override render() {
       const { cameraLayout } = this.state;
 
       // Before passing props into the original wrapped component we want to

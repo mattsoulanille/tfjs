@@ -24,6 +24,9 @@ import * as tflite from '@tensorflow/tfjs-tflite';
 const CARTOONIZER_LINK =
     'https://github.com/margaretmz/Cartoonizer-with-TFLite';
 
+tflite.setWasmPath(
+    'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-tflite@0.0.1-alpha.8/dist/');
+
 async function start() {
   // Load model runner with the cartoonizer tflite model.
   const start = Date.now();
@@ -104,8 +107,7 @@ function handleClickTrigger(
   canvas.classList.add('show');
 
   // Show latency stat.
-  const stats = trigger.closest('.img-container')!.querySelector('.stats')! as
-      HTMLCanvasElement;
+  const stats = trigger.closest('.img-container')!.querySelector('.stats')!;
   stats.classList.add('show');
   stats.innerHTML = latency.toFixed(1) + ' ms';
 }

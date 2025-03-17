@@ -19,8 +19,13 @@ import shutil
 import tempfile
 
 import tensorflow.compat.v2 as tf
+import tf_keras
 from tensorflow.core.protobuf import config_pb2
 from tensorflow.core.protobuf import meta_graph_pb2
+from tensorflow.python.eager import def_function
+from tensorflow.python.framework import constant_op
+from tensorflow.python.ops import variables
+from tensorflow.python.trackable import autotrackable
 
 from tensorflowjs.converters import fuse_depthwise_conv2d
 from tensorflowjs.converters import fuse_prelu
@@ -39,13 +44,13 @@ class FusePreluTest(tf.test.TestCase):
 
   def testFusePrelu(self):
     layers = [
-        tf.keras.layers.PReLU(
+        tf_keras.layers.PReLU(
             alpha_initializer=tf.initializers.constant(0.25)),
-        tf.keras.layers.PReLU(
+        tf_keras.layers.PReLU(
             alpha_initializer=tf.initializers.constant(0.25))
     ]
-    model = tf.keras.Sequential(layers)
-    tf.keras.backend.set_learning_phase(0)
+    model = tf_keras.Sequential(layers)
+    tf_keras.backend.set_learning_phase(0)
     input_tensor = tf.constant([1.0, 1.0])
 
     @tf.function
@@ -88,13 +93,13 @@ class FusePreluTest(tf.test.TestCase):
 
   def testFusePreluWithConv2d(self):
     layers = [
-        tf.keras.layers.Conv2D(
+        tf_keras.layers.Conv2D(
             16, [3, 3], padding='same', use_bias=True,
             bias_initializer=tf.initializers.constant(0.25)),
-        tf.keras.layers.PReLU()
+        tf_keras.layers.PReLU()
     ]
-    model = tf.keras.Sequential(layers)
-    tf.keras.backend.set_learning_phase(0)
+    model = tf_keras.Sequential(layers)
+    tf_keras.backend.set_learning_phase(0)
     input_tensor = tf.constant([1.0, 1.0], shape=[1, 2, 1, 1])
 
     @tf.function
@@ -138,14 +143,14 @@ class FusePreluTest(tf.test.TestCase):
 
   def testFusePreluWithMatMul(self):
     layers = [
-        tf.keras.layers.Dense(
+        tf_keras.layers.Dense(
             2, use_bias=True,
             kernel_initializer=tf.initializers.constant(0.25),
             bias_initializer=tf.initializers.constant(0.25)),
-        tf.keras.layers.PReLU()
+        tf_keras.layers.PReLU()
     ]
-    model = tf.keras.Sequential(layers)
-    tf.keras.backend.set_learning_phase(0)
+    model = tf_keras.Sequential(layers)
+    tf_keras.backend.set_learning_phase(0)
     input_tensor = tf.constant([1.0, 1.0], shape=[1, 2])
 
     @tf.function
@@ -187,12 +192,12 @@ class FusePreluTest(tf.test.TestCase):
 
   def testFusePreluWithDepthwiseConv2d(self):
     layers = [
-        tf.keras.layers.DepthwiseConv2D(
+        tf_keras.layers.DepthwiseConv2D(
             1, bias_initializer=tf.initializers.constant(0.25)),
-        tf.keras.layers.PReLU()
+        tf_keras.layers.PReLU()
     ]
-    model = tf.keras.Sequential(layers)
-    tf.keras.backend.set_learning_phase(0)
+    model = tf_keras.Sequential(layers)
+    tf_keras.backend.set_learning_phase(0)
     input_tensor = tf.constant([1.0, 1.0], shape=[1, 2, 1, 1])
 
     @tf.function
@@ -234,5 +239,27 @@ class FusePreluTest(tf.test.TestCase):
     self.assertNotEqual(conv2d_op, None)
     self.assertEqual(conv2d_op.attr['fused_ops'].list.s, [b'BiasAdd', b'Prelu'])
     self.assertEqual(conv2d_op.attr['num_args'].i, 2)
+
+  def testNonPreluPattern(self):
+    """Test a basic model with functions to make sure functions are inlined."""
+    input_data = constant_op.constant(1., shape=[1])
+    root = autotrackable.AutoTrackable()
+    root.v1 = variables.Variable(3.)
+    root.v2 = variables.Variable(2.)
+
+    root.f = def_function.function(lambda x: tf.nn.relu(root.v1) + root.v2 * 2.0)
+    to_save = root.f.get_concrete_function(input_data)
+    graph = tf_saved_model_conversion_v2._freeze_saved_model_v2(
+        root.f.get_concrete_function(input_data))
+    graph_def = graph.as_graph_def()
+    graph_def = fuse_prelu.fuse_ops_for_prelu(graph_def)
+    const_op = None
+    for node in graph_def.node:
+      self.assertNotEqual("Prelu", node.op)
+      if node.op == 'Const':
+        const_op = node
+    self.assertNotEqual(const_op, None)
+    self.assertEqual(const_op.attr['value'].tensor.float_val, [2.0])
+
 if __name__ == '__main__':
   tf.test.main()

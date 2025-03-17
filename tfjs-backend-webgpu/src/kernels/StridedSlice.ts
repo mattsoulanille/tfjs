@@ -22,7 +22,7 @@ import {stridedSliceImplCPU} from '../kernel_utils/shared';
 
 import {reshape} from './Reshape';
 import {slice} from './Slice';
-import {StridedSliceProgram} from './strided_slice_webgpu';
+import {StridedSliceProgram} from '../strided_slice_webgpu';
 
 export function stridedSlice(args: {
   inputs: StridedSliceInputs,
@@ -99,5 +99,5 @@ export function stridedSlice(args: {
 export const stridedSliceConfig: KernelConfig = {
   kernelName: StridedSlice,
   backendName: 'webgpu',
-  kernelFunc: stridedSlice as {} as KernelFunc
+  kernelFunc: stridedSlice as unknown as KernelFunc
 };
