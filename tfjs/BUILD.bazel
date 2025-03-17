@@ -103,11 +103,11 @@ pkg_npm(
     ],
     tags = ["ci"],
     deps = [
-        ":copy_root_readme",
         ":copy_bundles",
         ":copy_custom_module",
         ":copy_miniprogram",
         ":copy_miniprogram_map",
+        ":copy_root_readme",
         ":copy_src_to_dist",
     ],
 )

@@ -465,6 +465,18 @@
   dependencies:
     "@types/node" "*"
 
+"@types/yargs-parser@*":
+  version "21.0.3"
+  resolved "https://registry.yarnpkg.com/@types/yargs-parser/-/yargs-parser-21.0.3.tgz#815e30b786d2e8f0dcd85fd5bcf5e1a04d008f15"
+  integrity sha512-I4q9QU9MQv4oEOz4tAHJtNz1cwuLxn2F3xcc2iV5WdqLPpUnj30aUuxt1mAxYTG+oe8CZMV/+6rU4S4gRDzqtQ==
+
+"@types/yargs@^15.0.7":
+  version "15.0.19"
+  resolved "https://registry.yarnpkg.com/@types/yargs/-/yargs-15.0.19.tgz#328fb89e46109ecbdb70c295d96ff2f46dfd01b9"
+  integrity sha512-2XUaGVmyQjgyAZldf0D0c14vvo/yv0MhQBSTJcejMMaitsn3nxCB6TmH4G0ZQf+uxROOa9mpanoSm8h6SG/1ZA==
+  dependencies:
+    "@types/yargs-parser" "*"
+
 "@verdaccio/commons-api@10.2.0":
   version "10.2.0"
   resolved "https://registry.yarnpkg.com/@verdaccio/commons-api/-/commons-api-10.2.0.tgz#3b684c31749837b0574375bb2e10644ecea9fcca"
@@ -965,7 +977,7 @@ caseless@~0.12.0:
   resolved "https://registry.yarnpkg.com/caseless/-/caseless-0.12.0.tgz#1b681c21ff84033c826543090689420d187151dc"
   integrity sha1-G2gcIf+EAzyCZUMJBolCDRhxUdw=
 
-chalk@^2.0.0, chalk@^2.3.0, chalk@~2.4.2:
+chalk@^2.0.0, chalk@^2.3.0:
   version "2.4.2"
   resolved "https://registry.yarnpkg.com/chalk/-/chalk-2.4.2.tgz#cd42541677a54333cf541a49108c1432b44c9424"
   integrity sha512-Mti+f9lpJNcwF4tWV8/OrTTtF1gZi+f8FqlyAdouralcFWFQWF2+NgCHShjkCb+IFBLq9buZwE1xckQU4peSuQ==
@@ -4822,7 +4834,7 @@ yargs-parser@^21.0.0:
   resolved "https://registry.yarnpkg.com/yargs-parser/-/yargs-parser-21.1.1.tgz#9096bceebf990d21bb31fa9516e0ede294a77d35"
   integrity sha512-tVpsJW7DdjecAiFpbIB1e3qxIQsE6NoPc5/eTdrbbIC4h0LVsWhnoa3g+m2HclBIujHzsxZ4VJVA+GUuc2/LBw==
 
-yargs@^16.0.0, yargs@^16.1.1:
+yargs@^16.0.0, yargs@^16.0.3, yargs@^16.1.1:
   version "16.2.0"
   resolved "https://registry.yarnpkg.com/yargs/-/yargs-16.2.0.tgz#1c82bf0f6b6a66eafce7ef30e376f49a12477f66"
   integrity sha512-D1mvvtDG0L5ft/jGWkLpG1+m0eQxOfaBvTNELraWj22wSVUMWxZUvYgJYcKh6jGGIkJFhH4IZPQhR4TKpc8mBw==

@@ -25,6 +25,7 @@ exports_files([
     "tsconfig.test.json",
     "tsconfig_base.json",
     "tsconfig_ts_library.json",
+    "README.md",
 ])
 
 ts_config(
